@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DocuApply - Tools PDF & Template Apply Email</title>
+    
+    <!-- External CSS Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Config Tailwind for specific colors/fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #f8fafc; }
+        
+        /* Layout Fixes */
+        html, body {
+            height: 100%;
+            overscroll-behavior-y: none; /* Mencegah pull-to-refresh yang tidak diinginkan */
+        }
+        
+        /* Animations */
+        .btn-bounce:active { transform: scale(0.97); }
+        .transition-smooth { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .drop-active { 
+            border-color: #6366f1 !important; 
+            background-color: #eef2ff !important; 
+            transform: scale(1.01);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Spinner */
+        .loader {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 2px solid #ffffff;
+            width: 20px;
+            height: 20px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Glass / Card Effects */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+    </style>
+</head>
+<body class="text-slate-600 flex flex-col h-dvh overflow-hidden antialiased selection:bg-indigo-100 selection:text-indigo-700">
+
+    <!-- Header -->
+    <header class="glass-header px-4 py-3 flex justify-between items-center z-30 shrink-0 gap-4">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-br from-indigo-500 to-violet-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+                <i class="fa-solid fa-layer-group text-lg"></i>
+            </div>
+            <div class="min-w-0">
+                <h1 class="text-lg font-bold text-slate-800 tracking-tight leading-none">DocuApply</h1>
+                <p class="text-[11px] text-slate-400 font-medium mt-0.5">PDF & Template Email</p>
+            </div>
+        </div>
+        
+        <!-- Navigation Tabs (Pill Style) -->
+        <div class="flex bg-slate-100/80 p-1.5 rounded-xl shrink-0 gap-1 border border-slate-200">
+            <button onclick="switchTab('merge')" id="tab-merge" class="px-4 py-2 text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-sm transition-all duration-200 ease-out flex items-center gap-2">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span class="hidden sm:inline">Merge PDF</span>
+            </button>
+            <button onclick="switchTab('email')" id="tab-email" class="px-4 py-2 text-xs font-semibold rounded-lg text-slate-500 hover:text-slate-700 hover:bg-white/50 transition-all duration-200 ease-out flex items-center gap-2">
+                <i class="fa-regular fa-envelope"></i>
+                <span class="hidden sm:inline">Template Email</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT: MERGE PDF SECTION -->
+    <main id="view-merge" class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- Sidebar Controls -->
+        <!-- Perbaikan Scroll: Menambahkan max-h-[45vh] di mobile agar tidak menutupi area bawah -->
+        <aside class="w-full md:w-80 lg:w-96 bg-white border-r border-slate-200/60 flex flex-col shrink-0 z-10 overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)] max-h-[45vh] md:max-h-full">
+            <div class="p-4 md:p-5 flex flex-col gap-4 md:gap-5 h-full">
+                
+                <!-- Dropzone -->
+                <div id="dropZone" class="group border-2 border-dashed border-slate-300 rounded-2xl p-4 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/30 transition-all duration-300 min-h-[120px] md:min-h-[180px]">
+                    <div class="w-10 h-10 md:w-14 md:h-14 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mb-2 md:mb-4 group-hover:scale-110 group-hover:bg-indigo-100 transition-transform duration-300">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl md:text-2xl"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-700 text-xs md:text-sm mb-0.5">Upload File</h3>
+                    <p class="text-[10px] md:text-xs text-slate-400">PDF atau Gambar (JPG/PNG)</p>
+                    <input type="file" id="fileInput" multiple accept="application/pdf,image/*" class="hidden">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="document.getElementById('fileInput').click()" class="btn-bounce bg-white border border-slate-200 hover:border-indigo-300 hover:bg-slate-50 text-slate-700 py-2.5 md:py-3 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-plus text-indigo-500"></i> Tambah
+                    </button>
+                    <button onclick="openCamera()" class="btn-bounce bg-white border border-slate-200 hover:border-teal-300 hover:bg-teal-50 text-slate-700 py-2.5 md:py-3 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-camera text-teal-500"></i> Foto
+                    </button>
+                </div>
+                
+                <!-- Options -->
+                <div class="bg-slate-50 border border-slate-100 p-3 md:p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="bg-white p-1.5 rounded-lg border border-slate-200 text-slate-400">
+                            <i class="fa-solid fa-compress"></i>
+                        </div>
+                        <span class="font-semibold text-xs text-slate-600">Kompresi Otomatis</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="compressionToggle" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
+                    </label>
+                </div>
+
+                <div class="mt-auto pt-2 md:pt-4">
+                    <button onclick="mergeAndDownload()" id="mergeBtn" class="btn-bounce w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white py-3 md:py-4 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+                        <span>Gabungkan PDF</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Preview Grid Area -->
+        <section class="flex-1 bg-slate-50/50 p-4 md:p-6 overflow-y-auto" id="previewContainer">
+            <div id="emptyState" class="h-full flex flex-col items-center justify-center text-slate-400 select-none py-10">
+                <div class="w-20 h-20 md:w-24 md:h-24 bg-slate-100 rounded-full flex items-center justify-center mb-4 md:mb-6">
+                    <i class="fa-regular fa-folder-open text-3xl md:text-4xl text-slate-300"></i>
+                </div>
+                <h3 class="text-base md:text-lg font-bold text-slate-600 mb-1">Belum ada file</h3>
+                <p class="text-xs md:text-sm text-slate-400 max-w-xs text-center">Upload file PDF atau Gambar di panel sebelah kiri untuk memulai.</p>
+            </div>
+            
+            <div id="gridArea" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 hidden pb-24">
+                <!-- Thumbnails will be injected here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- MAIN CONTENT: EMAIL TEMPLATE SECTION -->
+    <main id="view-email" class="flex-1 flex flex-col hidden bg-slate-50 relative overflow-hidden h-full">
+        
+        <!-- Step 1: Template List -->
+        <div id="emailTemplatesList" class="flex-1 overflow-y-auto p-4 sm:p-8 w-full max-w-4xl mx-auto">
+            <div class="text-center mb-10 mt-4">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Template Email Profesional</h2>
+                <p class="text-slate-500">Pilih template yang sesuai dengan kebutuhan lamaran Anda</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <!-- Template 1 -->
+                <div onclick="selectTemplate(0)" class="group bg-white p-6 rounded-2xl border border-slate-200 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-500 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-bl-[100px] -mr-4 -mt-4 transition-colors group-hover:bg-indigo-50"></div>
+                    <div class="relative z-10">
+                        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-briefcase"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 mb-2 text-lg">Umum / Standar</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed mb-4">Bahasa formal dan sopan. Cocok untuk melamar di perusahaan BUMN, Korporat, atau instansi resmi.</p>
+                        <span class="text-xs font-semibold text-indigo-600 group-hover:underline">Gunakan Template <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                    </div>
+                </div>
+
+                <!-- Template 2 -->
+                <div onclick="selectTemplate(1)" class="group bg-white p-6 rounded-2xl border border-slate-200 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-emerald-50 rounded-bl-[100px] -mr-4 -mt-4 transition-colors group-hover:bg-emerald-100"></div>
+                    <div class="relative z-10">
+                        <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 mb-2 text-lg">Fresh Graduate</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed mb-4">Menonjolkan motivasi belajar dan potensi diri. Cocok untuk lulusan baru atau magang.</p>
+                        <span class="text-xs font-semibold text-emerald-600 group-hover:underline">Gunakan Template <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                    </div>
+                </div>
+
+                <!-- Template 3 -->
+                <div onclick="selectTemplate(2)" class="group bg-white p-6 rounded-2xl border border-slate-200 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-purple-500/10 hover:border-purple-500 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-purple-50 rounded-bl-[100px] -mr-4 -mt-4 transition-colors group-hover:bg-purple-100"></div>
+                    <div class="relative z-10">
+                        <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-earth-americas"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 mb-2 text-lg">English Pro</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed mb-4">Format profesional berbahasa Inggris. Wajib untuk perusahaan Multinasional atau Startup.</p>
+                        <span class="text-xs font-semibold text-purple-600 group-hover:underline">Gunakan Template <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Compose Form -->
+        <div id="emailComposeForm" class="hidden flex-1 flex flex-col bg-white overflow-hidden h-full z-20">
+            <!-- Form Header -->
+            <div class="flex items-center gap-4 p-4 border-b border-slate-100 shrink-0 bg-white">
+                <button onclick="backToTemplates()" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-xl text-slate-500 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h2 class="font-bold text-slate-800 text-lg">Edit Email</h2>
+                    <p class="text-xs text-slate-400">Sesuaikan data sebelum dikirim</p>
+                </div>
+            </div>
+
+            <!-- Form Body -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+                <div class="max-w-3xl mx-auto space-y-6">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Kepada (Email HRD)</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-regular fa-envelope text-slate-400 group-focus-within:text-indigo-500"></i>
+                                </div>
+                                <input type="email" id="emailTo" placeholder="hrd@perusahaan.com" class="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm">
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Subjek Email</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-heading text-slate-400 group-focus-within:text-indigo-500"></i>
+                                </div>
+                                <input type="text" id="emailSubject" placeholder="Lamaran Pekerjaan..." class="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Isi Email</label>
+                        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
+                            <textarea id="emailBody" class="w-full p-4 text-sm text-slate-700 leading-relaxed resize-none h-[350px] focus:outline-none" placeholder="Tulis isi email..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Info Alert -->
+                    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
+                        <div class="bg-blue-100 p-1.5 rounded-full text-blue-600 shrink-0 mt-0.5">
+                            <i class="fa-solid fa-paperclip text-xs"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-blue-900">Ingat Lampiran!</h4>
+                            <p class="text-xs text-blue-700 mt-0.5 leading-relaxed">
+                                Setelah tombol "Kirim Email" ditekan, aplikasi email Anda akan terbuka. 
+                                Jangan lupa untuk <strong>melampirkan file PDF/CV secara manual</strong> di sana.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-4 border-t border-slate-100 bg-white shrink-0 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+                <div class="max-w-3xl mx-auto">
+                    <button onclick="sendEmail()" class="btn-bounce w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center justify-center gap-2 text-sm">
+                        <span>Buka Aplikasi Email</span>
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals (Camera) -->
+    <div id="cameraModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex flex-col animate-fade-in">
+        <div class="flex justify-between items-center p-6 text-white">
+            <h2 class="text-lg font-bold">Ambil Foto Dokumen</h2>
+            <button onclick="closeCamera()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="flex-1 relative flex items-center justify-center overflow-hidden p-4">
+            <div class="relative w-full max-w-lg aspect-[3/4] rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10">
+                <video id="cameraVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="cameraCanvas" class="hidden"></canvas>
+            </div>
+        </div>
+        <div class="p-8 flex justify-center pb-12">
+            <button onclick="capturePhoto()" class="w-20 h-20 rounded-full bg-white border-4 border-slate-200 shadow-2xl hover:scale-105 transition-transform flex items-center justify-center group">
+                <div class="w-16 h-16 rounded-full border-[3px] border-slate-900 group-hover:bg-slate-100 transition-colors"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <script>
+        // --- GLOBAL STATE & NAVIGATION ---
+        const views = {
+            merge: document.getElementById('view-merge'),
+            email: document.getElementById('view-email')
+        };
+        const tabs = {
+            merge: document.getElementById('tab-merge'),
+            email: document.getElementById('tab-email')
+        };
+
+        function switchTab(tabName) {
+            Object.values(views).forEach(el => el.classList.add('hidden'));
+            Object.values(tabs).forEach(el => {
+                // Reset styles to inactive state
+                el.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                el.classList.add('text-slate-500', 'hover:bg-white/50');
+            });
+
+            views[tabName].classList.remove('hidden');
+            if(tabName === 'email') views[tabName].classList.add('flex');
+
+            // Set Active Styles
+            tabs[tabName].classList.remove('text-slate-500', 'hover:bg-white/50');
+            tabs[tabName].classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+        }
+
+        // --- MERGE SCAN PRO LOGIC ---
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        let pages = [];
+        let cameraStream = null;
+
+        const gridArea = document.getElementById('gridArea');
+        const emptyState = document.getElementById('emptyState');
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+
+        new Sortable(gridArea, {
+            animation: 150,
+            ghostClass: 'opacity-50',
+            onEnd: (evt) => {
+                const item = pages.splice(evt.oldIndex, 1)[0];
+                pages.splice(evt.newIndex, 0, item);
+            }
+        });
+
+        // Event Listeners for Merge
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drop-active'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-active'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drop-active');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        async function handleFiles(fileList) {
+            if (!fileList.length) return;
+            const files = Array.from(fileList);
+            
+            // Show loading state if needed, but for now we rely on speed
+            for (const file of files) {
+                try {
+                    if (file.type === 'application/pdf') {
+                        await processPDF(file);
+                    } else if (file.type.startsWith('image/')) {
+                        await processImage(file);
+                    }
+                } catch (err) {
+                    alert(`Gagal memproses file: ${err.message}`);
+                }
+            }
+            renderGrid();
+        }
+
+        async function processImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const maxDim = 1200;
+                        let w = img.width, h = img.height;
+                        if (w > h && w > maxDim) { h *= maxDim/w; w = maxDim; }
+                        else if (h > w && h > maxDim) { w *= maxDim/h; h = maxDim; }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        
+                        pages.push({
+                            id: Date.now() + Math.random(),
+                            type: 'image',
+                            src: canvas.toDataURL('image/jpeg', 0.8),
+                            originalData: canvas.toDataURL('image/jpeg', 0.95),
+                            rotation: 0
+                        });
+                        resolve();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function processPDF(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await pdfjsLib.getDocument(arrayBuffer.slice(0)).promise;
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale: 0.5 });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width; canvas.height = viewport.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                
+                pages.push({
+                    id: Date.now() + Math.random() + i,
+                    type: 'pdf',
+                    src: canvas.toDataURL(),
+                    originalData: arrayBuffer,
+                    pageIndex: i - 1,
+                    rotation: 0
+                });
+            }
+        }
+
+        function renderGrid() {
+            gridArea.innerHTML = '';
+            if (pages.length === 0) {
+                emptyState.classList.remove('hidden');
+                gridArea.classList.add('hidden');
+                document.getElementById('mergeBtn').disabled = true;
+                return;
+            }
+            emptyState.classList.add('hidden');
+            gridArea.classList.remove('hidden');
+            document.getElementById('mergeBtn').disabled = false;
+
+            pages.forEach((page, index) => {
+                // New card design
+                const div = document.createElement('div');
+                div.className = 'bg-white rounded-xl border border-slate-200 overflow-hidden relative group shadow-sm hover:shadow-md transition-all aspect-[3/4] flex items-center justify-center cursor-move';
+                div.innerHTML = `
+                    <img src="${page.src}" class="max-w-full max-h-full object-contain p-2 transition-transform duration-300 group-hover:scale-105" style="transform: rotate(${page.rotation}deg)">
+                    
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+
+                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity scale-90 group-hover:scale-100">
+                         <button onclick="removePage('${page.id}')" class="bg-white text-red-500 rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-red-50 hover:text-red-600 transition-colors">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                         </button>
+                    </div>
+                    
+                    <div class="absolute bottom-2 left-2 bg-slate-800/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-lg">
+                        ${index + 1}
+                    </div>
+                `;
+                gridArea.appendChild(div);
+            });
+        }
+        
+        function removePage(id) { pages = pages.filter(p => p.id != id); renderGrid(); }
+
+        async function mergeAndDownload() {
+            if (!pages.length) return;
+            const btn = document.getElementById('mergeBtn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = `<div class="loader mr-2"></div> Memproses...`;
+            btn.disabled = true;
+            
+            try {
+                const { PDFDocument, degrees } = PDFLib;
+                const pdfDoc = await PDFDocument.create();
+                const compress = document.getElementById('compressionToggle').checked;
+                const quality = compress ? 0.6 : 0.95;
+
+                for (const p of pages) {
+                    if (p.type === 'image') {
+                        const img = new Image();
+                        img.src = p.originalData;
+                        await new Promise(r => img.onload = r);
+                        
+                        const c = document.createElement('canvas');
+                        c.width = img.width; c.height = img.height;
+                        c.getContext('2d').drawImage(img, 0,0);
+                        const imgData = c.toDataURL('image/jpeg', quality);
+                        
+                        const embed = await pdfDoc.embedJpg(imgData);
+                        const page = pdfDoc.addPage([img.width, img.height]);
+                        page.drawImage(embed, { x: 0, y: 0, width: img.width, height: img.height });
+                        if (p.rotation) page.setRotation(degrees(p.rotation));
+                    } else {
+                        const srcDoc = await PDFDocument.load(p.originalData);
+                        const [donor] = await pdfDoc.copyPages(srcDoc, [p.pageIndex]);
+                        pdfDoc.addPage(donor);
+                        const currentRot = donor.getRotation().angle;
+                        donor.setRotation(degrees(currentRot + p.rotation));
+                    }
+                }
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `MergeScan_Result_${Date.now()}.pdf`;
+                link.click();
+            } catch(e) {
+                alert("Terjadi kesalahan: " + e.message);
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
+        // --- EMAIL TEMPLATE LOGIC ---
+        const emailTemplates = [
+            {
+                name: "Lamaran Kerja Umum",
+                subject: "Lamaran Pekerjaan - [Posisi yang Dilamar] - [Nama Lengkap]",
+                body: `Kepada Yth,\nBapak/Ibu HRD [Nama Perusahaan]\nDi Tempat\n\nDengan hormat,\n\nBerdasarkan informasi yang saya dapatkan dari [Sumber Info] bahwa [Nama Perusahaan] sedang membuka lowongan pekerjaan untuk posisi [Posisi yang Dilamar], saya bermaksud untuk melamar posisi tersebut.\n\nSaya adalah lulusan [Jurusan] dari [Nama Universitas/Sekolah] dengan pengalaman kerja sebagai [Posisi Terakhir] selama [Lama Kerja] tahun. Saya memiliki keahlian di bidang [Sebutkan Keahlian Utama] yang saya yakini dapat memberikan kontribusi positif bagi perusahaan Bapak/Ibu.\n\nSebagai bahan pertimbangan, saya lampirkan dokumen pendukung berupa CV dan Portofolio.\n\nBesar harapan saya untuk dapat mengikuti tahap seleksi selanjutnya. Atas perhatian Bapak/Ibu, saya ucapkan terima kasih.\n\nHormat saya,\n\n[Nama Lengkap]\n[Nomor Telepon]`
+            },
+            {
+                name: "Fresh Graduate / Magang",
+                subject: "Lamaran Magang - [Posisi] - [Nama Lengkap]",
+                body: `Kepada Yth,\nHRD [Nama Perusahaan]\n\nDengan hormat,\n\nSaya yang bertanda tangan di bawah ini:\n\nNama: [Nama Lengkap]\nPendidikan Terakhir: [Jurusan] - [Universitas/Sekolah]\nNo. HP: [Nomor Telepon]\n\nBermaksud mengajukan lamaran untuk posisi Magang / Internship di perusahaan yang Bapak/Ibu pimpin. Meskipun saya baru lulus, saya memiliki semangat belajar yang tinggi dan telah aktif dalam organisasi [Sebutkan Organisasi] yang melatih kedisiplinan dan kerja tim saya.\n\nSaya menyertakan CV dan transkrip nilai sebagai bahan pertimbangan. Saya sangat berharap diberi kesempatan untuk wawancara.\n\nTerima kasih atas waktu dan perhatiannya.\n\nHormat saya,\n\n[Nama Lengkap]`
+            },
+            {
+                name: "Professional English",
+                subject: "Job Application - [Position Name] - [Full Name]",
+                body: `Dear Hiring Manager,\n[Company Name]\n\nI am writing to express my interest in the [Position Name] position at [Company Name], as advertised on [Source of Info].\n\nWith my background in [Your Field] and [Number] years of experience in [Key Skill/Industry], I am confident that I can contribute effectively to your team. In my previous role at [Previous Company], I successfully [Mention a Key Achievement].\n\nAttached specifically are my Resume and Cover Letter for your review. I welcome the opportunity to discuss how my skills and experiences align with the needs of your team.\n\nThank you for your time and consideration.\n\nSincerely,\n\n[Full Name]\n[Phone Number]\n[LinkedIn Profile Link]`
+            }
+        ];
+
+        function selectTemplate(index) {
+            const t = emailTemplates[index];
+            document.getElementById('emailSubject').value = t.subject;
+            document.getElementById('emailBody').value = t.body;
+            
+            document.getElementById('emailTemplatesList').classList.add('hidden');
+            document.getElementById('emailComposeForm').classList.remove('hidden');
+        }
+
+        function backToTemplates() {
+            document.getElementById('emailComposeForm').classList.add('hidden');
+            document.getElementById('emailTemplatesList').classList.remove('hidden');
+        }
+
+        function sendEmail() {
+            const to = document.getElementById('emailTo').value;
+            const subject = encodeURIComponent(document.getElementById('emailSubject').value);
+            const body = encodeURIComponent(document.getElementById('emailBody').value);
+            
+            if(!to) { alert("Mohon isi alamat email tujuan (HRD)."); return; }
+
+            const mailtoLink = `mailto:${to}?subject=${subject}&body=${body}`;
+            window.location.href = mailtoLink;
+        }
+
+        // --- UTILS (Camera & Modals) ---
+        async function openCamera() {
+            const modal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraVideo');
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }});
+                video.srcObject = cameraStream;
+                modal.classList.remove('hidden');
+            } catch (err) { alert("Izin kamera ditolak atau tidak tersedia."); }
+        }
+        function closeCamera() {
+            document.getElementById('cameraModal').classList.add('hidden');
+            if(cameraStream) cameraStream.getTracks().forEach(t=>t.stop());
+        }
+        function capturePhoto() {
+            const v = document.getElementById('cameraVideo');
+            const c = document.getElementById('cameraCanvas');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0,0);
+            const data = c.toDataURL('image/jpeg');
+            
+            if (!document.getElementById('view-merge').classList.contains('hidden')) {
+                pages.push({id:Date.now(), type:'image', src:data, originalData:data, rotation:0});
+                renderGrid();
+            }
+            closeCamera();
+        }
+    </script>
+</body>
+</html>
