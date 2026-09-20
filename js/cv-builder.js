@@ -1,7 +1,7 @@
 /* =====================================================
-   DocuApply — CV Builder v6
+   DocuApply — CV Builder v7
    - Export DOCX ASLI pakai dolanmiu/docx (Office Open XML)
-   - Fix PDF kosong (position:fixed + visible)
+   - PDF export pakai print-to-PDF (vector, ATS-friendly)
    - Toolbar grouping & responsive
    ===================================================== */
 window.DA = window.DA || {};
@@ -820,94 +820,234 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     EXPORT PDF
+     EXPORT PDF — Print-to-PDF (Native Browser)
+     Hasil: PDF asli, vector, ATS-friendly, konsisten HP & desktop
      ============================================ */
-  async function downloadPdf() {
-    if (!els.paper) return;
-    if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-      DA.toast.error('Library PDF tidak termuat. Refresh halaman.');
-      return;
+  function downloadPdf() {
+    if (!els.content) return;
+
+    const content = els.content.innerHTML;
+    const title = currentTemplate?.name || 'CV';
+    const safeTitle = title.replace(/[^a-zA-Z0-9_\s]/g, '_').trim();
+
+    // Build standalone HTML dengan CSS print khusus A4
+    const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(title)}</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #e2e8f0;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Toolbar (hidden saat print) */
+  .pdf-toolbar {
+    position: sticky;
+    top: 0;
+    background: #1e293b;
+    color: #fff;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    z-index: 999;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  .pdf-toolbar-info {
+    display: flex; flex-direction: column; gap: 2px;
+    min-width: 0; flex: 1;
+  }
+  .pdf-toolbar-title {
+    font-size: 14px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pdf-toolbar-hint {
+    font-size: 11px; opacity: 0.85; line-height: 1.3;
+  }
+  .pdf-print-btn {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff;
+    border: none;
+    padding: 11px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .pdf-print-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+  .pdf-print-btn:active { transform: scale(0.97); }
+
+  /* Paper preview */
+  .pdf-paper-wrapper {
+    padding: 20px 12px 40px;
+    display: flex;
+    justify-content: center;
+  }
+  .pdf-paper {
+    width: 100%;
+    max-width: 21cm;
+    background: #fff;
+    padding: 1.5cm 2cm;
+    box-shadow: 0 4px 32px rgba(15, 23, 42, 0.18);
+    color: #1e293b;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.55;
+    word-wrap: break-word;
+  }
+
+  /* Content styles */
+  .pdf-paper h1 {
+    font-size: 20pt; font-weight: 700;
+    margin: 0 0 8pt 0; line-height: 1.15;
+    text-align: center; color: #0f172a;
+  }
+  .pdf-paper h2 {
+    font-size: 13pt; font-weight: 700;
+    margin: 14pt 0 6pt 0; padding-bottom: 3pt;
+    border-bottom: 1.5px solid #cbd5e1;
+    text-transform: uppercase; letter-spacing: 0.03em;
+    color: #0f172a;
+  }
+  .pdf-paper h3 {
+    font-size: 12pt; font-weight: 700;
+    margin: 10pt 0 4pt 0; color: #1e293b;
+  }
+  .pdf-paper h4 {
+    font-size: 11.5pt; font-weight: 700;
+    margin: 8pt 0 4pt 0; color: #334155;
+  }
+  .pdf-paper p { margin: 0 0 6pt 0; }
+  .pdf-paper ul, .pdf-paper ol {
+    margin: 0 0 8pt 0; padding-left: 20pt;
+    list-style-position: outside;
+  }
+  .pdf-paper ul { list-style-type: disc; }
+  .pdf-paper ul ul { list-style-type: circle; }
+  .pdf-paper ol { list-style-type: decimal; }
+  .pdf-paper li { margin-bottom: 3pt; line-height: 1.5; }
+  .pdf-paper strong, .pdf-paper b { font-weight: 700; color: #0f172a; }
+  .pdf-paper em, .pdf-paper i { font-style: italic; }
+  .pdf-paper u { text-decoration: underline; }
+  .pdf-paper s, .pdf-paper strike { text-decoration: line-through; }
+  .pdf-paper sup { vertical-align: super; font-size: 0.75em; }
+  .pdf-paper sub { vertical-align: sub; font-size: 0.75em; }
+  .pdf-paper blockquote {
+    margin: 8pt 0; padding: 6pt 12pt;
+    border-left: 3px solid #cbd5e1;
+    color: #475569; font-style: italic;
+  }
+  .pdf-paper table {
+    border-collapse: collapse; width: 100%;
+    margin-bottom: 8pt; font-size: 10.5pt;
+  }
+  .pdf-paper td, .pdf-paper th {
+    padding: 5pt 8pt; border: 1px solid #cbd5e1;
+    vertical-align: top;
+  }
+  .pdf-paper th { background: #f1f5f9; font-weight: 700; }
+  .pdf-paper hr {
+    border: none; border-top: 1px solid #cbd5e1;
+    margin: 12pt 0;
+  }
+  .pdf-paper a { color: #4f46e5; text-decoration: underline; }
+  .pdf-paper img {
+    max-width: 100%; height: auto;
+    display: block; margin: 6pt auto;
+  }
+
+  /* Print mode: A4 precise */
+  @media print {
+    @page {
+      size: A4;
+      margin: 1.5cm 2cm;
     }
-
-    DA.toast.info('Menyiapkan PDF...', 2500);
-
-    const contentClone = els.content.cloneNode(true);
-    contentClone.removeAttribute('id');
-    contentClone.removeAttribute('contenteditable');
-    contentClone.removeAttribute('spellcheck');
-
-    const wrapper = document.createElement('div');
-    wrapper.id = 'cvPdfWrapper';
-    wrapper.style.cssText = `
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 794px !important;
-      min-height: 1123px !important;
-      background: #ffffff !important;
-      color: #1e293b !important;
-      padding: 57px 76px !important;
+    html, body {
+      background: #fff !important;
+    }
+    .pdf-toolbar { display: none !important; }
+    .pdf-paper-wrapper {
+      padding: 0 !important;
+      display: block !important;
+    }
+    .pdf-paper {
+      box-shadow: none !important;
+      padding: 0 !important;
+      max-width: none !important;
+      width: 100% !important;
       margin: 0 !important;
-      box-sizing: border-box !important;
-      font-family: Georgia, 'Times New Roman', serif !important;
-      font-size: 11pt !important;
-      line-height: 1.55 !important;
-      z-index: 999999 !important;
-      pointer-events: none !important;
-      overflow: hidden !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-    `;
-    wrapper.appendChild(contentClone);
-    document.body.appendChild(wrapper);
-
-    try {
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-      await new Promise((r) => setTimeout(r, 300));
-
-      const canvas = await html2canvas(wrapper, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        logging: false,
-        windowWidth: 794,
-        windowHeight: wrapper.scrollHeight,
-        width: 794,
-        height: wrapper.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-      const pdfW = pdf.internal.pageSize.getWidth();
-      const pdfH = pdf.internal.pageSize.getHeight();
-
-      const imgWmm = pdfW;
-      const imgHmm = (canvas.height * imgWmm) / canvas.width;
-
-      let y = 0, pageNum = 0;
-      while (y < imgHmm) {
-        if (pageNum > 0) pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, -y, imgWmm, imgHmm, undefined, 'FAST');
-        y += pdfH;
-        pageNum++;
-      }
-
-      const name = (currentTemplate?.name || 'CV').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now() + '.pdf';
-      pdf.save(name);
-      DA.toast.success('CV berhasil diunduh sebagai PDF');
-    } catch (err) {
-      console.error('[CV] PDF export error:', err);
-      DA.toast.error('Gagal export PDF: ' + err.message);
-    } finally {
-      wrapper.remove();
     }
+  }
+</style>
+</head>
+<body>
+
+  <div class="pdf-toolbar">
+    <div class="pdf-toolbar-info">
+      <div class="pdf-toolbar-title">📄 ${escapeHtml(title)}</div>
+      <div class="pdf-toolbar-hint">
+        Tap tombol <strong>Save as PDF</strong> di kanan, lalu pilih
+        <strong>"Simpan sebagai PDF"</strong> di dialog.
+      </div>
+    </div>
+    <button class="pdf-print-btn" onclick="window.print()">
+      <i style="font-style:normal;">🖨️</i> Save as PDF
+    </button>
+  </div>
+
+  <div class="pdf-paper-wrapper">
+    <div class="pdf-paper">${content}</div>
+  </div>
+
+  <script>
+    // Auto-trigger print di DESKTOP setelah load (di HP tidak bisa auto karena security)
+    (function () {
+      var isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isDesktop) {
+        setTimeout(function () {
+          try { window.print(); } catch (e) {}
+        }, 500);
+      }
+    })();
+  <\/script>
+</body>
+</html>`;
+
+    // Buka di tab baru via Blob URL
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+
+    if (!win) {
+      // Popup diblokir → fallback download HTML
+      DA.toast.warn('Popup diblokir browser. File HTML diunduh — buka file itu lalu Ctrl+P / Share > Print.', 6000);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeTitle || 'CV'}_${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } else {
+      DA.toast.success('Tab baru dibuka. Tap "Save as PDF" di sana untuk simpan.', 6000);
+    }
+
+    // Cleanup Blob URL
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   function escapeHtml(s = '') {
