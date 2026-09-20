@@ -503,27 +503,133 @@
         </button>
       </div>
 
+      <!-- TOOLBAR LENGKAP -->
       <div class="shrink-0 px-2 py-1.5 sm:px-3 sm:py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-1 overflow-x-auto cv-toolbar-scroll">
+
+        <!-- Undo / Redo -->
+        <button data-cmd="undo" class="cv-tool-btn" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+        <button data-cmd="redo" class="cv-tool-btn" title="Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+        <div class="cv-tool-divider"></div>
+
+        <!-- Font Family -->
+        <select id="cvFontFamily" class="cv-tool-select cv-tool-select-wide" title="Jenis Font">
+          <option value="">Font</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="Calibri, sans-serif">Calibri</option>
+          <option value="Helvetica, sans-serif">Helvetica</option>
+          <option value="Verdana, sans-serif">Verdana</option>
+          <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+          <option value="'Courier New', monospace">Courier New</option>
+          <option value="Garamond, serif">Garamond</option>
+          <option value="'Palatino Linotype', serif">Palatino</option>
+          <option value="Tahoma, sans-serif">Tahoma</option>
+          <option value="'Comic Sans MS', cursive">Comic Sans</option>
+        </select>
+
+        <!-- Font Size -->
+        <select id="cvFontSize" class="cv-tool-select" title="Ukuran Font">
+          <option value="">Size</option>
+          <option value="8pt">8</option>
+          <option value="9pt">9</option>
+          <option value="10pt">10</option>
+          <option value="11pt" selected>11</option>
+          <option value="12pt">12</option>
+          <option value="14pt">14</option>
+          <option value="16pt">16</option>
+          <option value="18pt">18</option>
+          <option value="20pt">20</option>
+          <option value="24pt">24</option>
+          <option value="28pt">28</option>
+          <option value="32pt">32</option>
+          <option value="36pt">36</option>
+          <option value="48pt">48</option>
+        </select>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Bold / Italic / Underline / Strike -->
         <button data-cmd="bold" class="cv-tool-btn" title="Bold (Ctrl+B)"><i class="fa-solid fa-bold"></i></button>
         <button data-cmd="italic" class="cv-tool-btn" title="Italic (Ctrl+I)"><i class="fa-solid fa-italic"></i></button>
         <button data-cmd="underline" class="cv-tool-btn" title="Underline (Ctrl+U)"><i class="fa-solid fa-underline"></i></button>
-        <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>
-        <select id="cvFormatBlock" class="cv-tool-select">
+        <button data-cmd="strikeThrough" class="cv-tool-btn" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Sub / Sup -->
+        <button data-cmd="superscript" class="cv-tool-btn" title="Superscript"><i class="fa-solid fa-superscript"></i></button>
+        <button data-cmd="subscript" class="cv-tool-btn" title="Subscript"><i class="fa-solid fa-subscript"></i></button>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Text Color -->
+        <div class="cv-color-group" title="Warna Teks">
+          <i class="fa-solid fa-font text-slate-500 dark:text-slate-400 text-xs"></i>
+          <input type="color" id="cvForeColor" value="#1e293b" class="cv-tool-color">
+        </div>
+
+        <!-- Highlight -->
+        <div class="cv-color-group" title="Warna Highlight">
+          <i class="fa-solid fa-highlighter text-slate-500 dark:text-slate-400 text-xs"></i>
+          <input type="color" id="cvBackColor" value="#fef08a" class="cv-tool-color">
+          <button id="cvClearBackColor" class="cv-tool-mini" title="Hapus highlight"><i class="fa-solid fa-xmark text-[9px]"></i></button>
+        </div>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Paragraph Style -->
+        <select id="cvFormatBlock" class="cv-tool-select cv-tool-select-wide" title="Gaya Paragraf">
           <option value="P">Normal</option>
           <option value="H1">Heading 1</option>
           <option value="H2">Heading 2</option>
           <option value="H3">Heading 3</option>
+          <option value="H4">Heading 4</option>
+          <option value="BLOCKQUOTE">Quote</option>
+          <option value="PRE">Code</option>
         </select>
-        <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Lists -->
         <button data-cmd="insertUnorderedList" class="cv-tool-btn" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
         <button data-cmd="insertOrderedList" class="cv-tool-btn" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
-        <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>
+        <button data-cmd="outdent" class="cv-tool-btn" title="Kurangi Indent"><i class="fa-solid fa-outdent"></i></button>
+        <button data-cmd="indent" class="cv-tool-btn" title="Tambah Indent"><i class="fa-solid fa-indent"></i></button>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Alignment -->
         <button data-cmd="justifyLeft" class="cv-tool-btn" title="Kiri"><i class="fa-solid fa-align-left"></i></button>
         <button data-cmd="justifyCenter" class="cv-tool-btn" title="Tengah"><i class="fa-solid fa-align-center"></i></button>
         <button data-cmd="justifyRight" class="cv-tool-btn" title="Kanan"><i class="fa-solid fa-align-right"></i></button>
-        <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0"></div>
-        <input type="color" id="cvForeColor" class="cv-tool-color" title="Warna teks" value="#1e293b">
-        <button data-cmd="removeFormat" class="cv-tool-btn" title="Hapus format"><i class="fa-solid fa-eraser"></i></button>
+        <button data-cmd="justifyFull" class="cv-tool-btn" title="Justify"><i class="fa-solid fa-align-justify"></i></button>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Insert -->
+        <button id="cvInsertLink" class="cv-tool-btn" title="Sisipkan Link"><i class="fa-solid fa-link"></i></button>
+        <button id="cvInsertHr" class="cv-tool-btn" title="Garis Horizontal"><i class="fa-solid fa-minus"></i></button>
+        <button id="cvInsertImage" class="cv-tool-btn" title="Sisipkan Gambar"><i class="fa-solid fa-image"></i></button>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Line height -->
+        <select id="cvLineHeight" class="cv-tool-select" title="Jarak Baris">
+          <option value="">Line</option>
+          <option value="1">1.0</option>
+          <option value="1.15">1.15</option>
+          <option value="1.5" selected>1.5</option>
+          <option value="1.75">1.75</option>
+          <option value="2">2.0</option>
+          <option value="2.5">2.5</option>
+        </select>
+
+        <div class="cv-tool-divider"></div>
+
+        <!-- Clear -->
+        <button data-cmd="removeFormat" class="cv-tool-btn" title="Hapus Semua Format"><i class="fa-solid fa-eraser"></i></button>
+
       </div>
 
       <div class="flex-1 min-h-0 overflow-auto p-2 sm:p-6 bg-slate-100 dark:bg-slate-950">
@@ -662,10 +768,9 @@
     <div class="pt-3 pb-1 flex justify-center sm:hidden">
       <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
     </div>
-
     <div class="px-5 pt-3 pb-4 sm:pt-6 border-b border-slate-100 dark:border-slate-800">
       <div class="flex items-start gap-3">
-        <div id="cvChoiceIcon" class="w-12 h-12 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center shrink-0">
+        <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center shrink-0">
           <i class="fa-solid fa-file-word text-lg"></i>
         </div>
         <div class="flex-1 min-w-0">
@@ -677,7 +782,6 @@
         </button>
       </div>
     </div>
-
     <div class="p-4 sm:p-5 space-y-3">
       <button id="cvChoiceDownload" class="cv-choice-option group">
         <div class="cv-choice-option-icon bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
@@ -694,7 +798,6 @@
         </div>
         <i class="fa-solid fa-arrow-right text-slate-300 dark:text-slate-600 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"></i>
       </button>
-
       <button id="cvChoiceEdit" class="cv-choice-option group">
         <div class="cv-choice-option-icon bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
           <i class="fa-solid fa-pen-to-square text-lg"></i>
@@ -711,7 +814,6 @@
         <i class="fa-solid fa-arrow-right text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all"></i>
       </button>
     </div>
-
     <div class="px-4 pb-4 sm:pb-5">
       <p class="text-[10px] text-slate-400 text-center leading-relaxed">
         <i class="fa-solid fa-circle-info mr-1"></i>
@@ -740,6 +842,8 @@
 </div>
 
 <div id="toastContainer" class="fixed top-16 sm:top-20 right-3 sm:right-4 z-[110] flex flex-col gap-2 pointer-events-none max-w-[calc(100vw-1.5rem)] sm:max-w-sm" style="z-index:110;"></div>
+
+<input type="file" id="cvImageInput" accept="image/*" class="hidden">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
