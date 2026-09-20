@@ -1,8 +1,9 @@
 /* =====================================================
-   DocuApply — CV Builder v3
-   - Modal pilihan: Download Original .docx ATAU Edit di App
-   - Download Original: file .docx asli dari server (100% identik)
-   - Edit di App: pakai docx-preview + export PDF/DOCX
+   DocuApply — CV Builder v4
+   - Pakai MAMMOTH.JS (proven working) bukan docx-preview
+   - Modal pilihan: Download Original / Edit di App
+   - Error detail di console untuk debug
+   - Auto-styling setelah convert ke HTML
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -35,7 +36,6 @@ DA.cvBuilder = (function () {
       saveLocal: document.getElementById('cvSaveLocal'),
       formatBlock: document.getElementById('cvFormatBlock'),
       foreColor: document.getElementById('cvForeColor'),
-      // Modal
       modal: document.getElementById('cvChoiceModal'),
       modalBackdrop: document.getElementById('cvChoiceBackdrop'),
       modalCancel: document.getElementById('cvChoiceCancel'),
@@ -132,7 +132,7 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     OPSI 1: DOWNLOAD ORIGINAL (.docx asli dari server)
+     OPSI 1: DOWNLOAD ORIGINAL
      ============================================ */
   async function downloadOriginal() {
     if (!currentTemplate) return;
@@ -151,11 +151,11 @@ DA.cvBuilder = (function () {
       downloadBlob(blob, filename);
 
       setTimeout(() => {
-        DA.toast.success(`Berhasil! File "${filename}" tersimpan. Buka di Word untuk edit.`, 5000);
+        DA.toast.success(`Berhasil! File "${filename}" tersimpan.`, 5000);
       }, 300);
     } catch (err) {
       console.error('[CV] Download error:', err);
-      DA.toast.error('Gagal mengunduh file: ' + err.message);
+      DA.toast.error('Gagal mengunduh: ' + err.message);
     }
   }
 
@@ -166,12 +166,11 @@ DA.cvBuilder = (function () {
     if (!currentTemplate) return;
     const t = currentTemplate;
     hideChoiceModal();
-    // Delay sedikit supaya animasi modal selesai
     setTimeout(() => openEditor(t), 200);
   }
 
   /* ============================================
-     OPEN EDITOR — fetch .docx dari server
+     OPEN EDITOR — pakai mammoth.js
      ============================================ */
   async function openEditor(template) {
     currentTemplate = template;
@@ -184,45 +183,72 @@ DA.cvBuilder = (function () {
     els.content.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:2rem;font-family:sans-serif;">Memuat template dari server...</p>';
 
     try {
+      // STEP 1: Fetch file .docx
       const url = 'cv-templates/' + encodeURIComponent(template.file);
+      console.log('[CV] Fetching:', url);
+
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`Gagal unduh file (${res.status})`);
+      if (!res.ok) throw new Error(`Gagal unduh file (HTTP ${res.status})`);
       const arrayBuffer = await res.arrayBuffer();
+      console.log('[CV] File size:', arrayBuffer.byteLength, 'bytes');
 
-      if (typeof docx === 'undefined' || typeof docx.renderAsync !== 'function') {
-        throw new Error('Library docx-preview tidak termuat. Refresh halaman lalu coba lagi.');
+      // STEP 2: Cek library mammoth
+      if (typeof mammoth === 'undefined' || typeof mammoth.convertToHtml !== 'function') {
+        throw new Error('Library mammoth.js tidak termuat. Cek koneksi lalu refresh halaman.');
+      }
+      console.log('[CV] Mammoth loaded ✓');
+
+      // STEP 3: Convert .docx → HTML
+      const result = await mammoth.convertToHtml(
+        { arrayBuffer },
+        {
+          styleMap: [
+            "p[style-name='Title'] => h1.doc-title:fresh",
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh",
+            "p[style-name='Heading 3'] => h3:fresh",
+            "p[style-name='Heading 4'] => h4:fresh",
+            "p[style-name='Subtitle'] => p.doc-subtitle:fresh",
+            "p[style-name='Quote'] => blockquote:fresh",
+          ],
+          includeDefaultStyleMap: true,
+          ignoreEmptyParagraphs: false,
+        }
+      );
+
+      const html = (result.value || '').trim();
+      const messages = result.messages || [];
+      if (messages.length) {
+        console.warn('[CV] Mammoth messages:', messages);
       }
 
-      const container = document.createElement('div');
-      container.style.cssText = 'position:absolute;left:-99999px;top:0;width:21cm;background:#fff;';
-
-      await docx.renderAsync(arrayBuffer, container, null, {
-        className: 'docx-render',
-        inWrapper: false,
-        ignoreWidth: false,
-        ignoreHeight: false,
-        ignoreFonts: false,
-        breakPages: true,
-        useBase64URL: true,
-        experimental: true,
-        renderHeaders: true,
-        renderFooters: true,
-      });
-
-      let html = container.innerHTML;
-      html = html.replace(/<section[^>]*class="docx[^"]*"[^>]*>/g, '<div class="docx-section">');
-      html = html.replace(/<\/section>/g, '</div>');
-      html = html.replace(/ style="[^"]*position:\s*absolute[^"]*"/gi, '');
-      html = html.replace(/ style="[^"]*page-break[^"]*"/gi, '');
-
-      els.content.innerHTML = html;
-
-      if (!els.content.textContent.trim() && !els.content.querySelector('img,table')) {
-        els.content.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:2rem;font-family:sans-serif;">Template kosong. Silakan tulis CV Anda di sini.</p>';
+      if (!html) {
+        throw new Error('File .docx tidak berisi teks yang bisa dikonversi. Coba "Download Original".');
       }
+
+      // STEP 4: Post-process HTML
+      let cleanedHtml = html;
+
+      // Konversi <p><strong>Nama</strong></p> jadi <h1> jika teks pendek & semua bold
+      cleanedHtml = cleanedHtml.replace(
+        /<p>(?:<strong>|<b>)([^<]{3,60})(?:<\/strong>|<\/b>)<\/p>/g,
+        (match, text) => {
+          const clean = text.trim();
+          // Hanya convert kalau mirip nama/judul (huruf besar mayoritas)
+          if (clean === clean.toUpperCase() && clean.length < 50) {
+            return `<h1>${clean}</h1>`;
+          }
+          return match;
+        }
+      );
+
+      // Set ke contenteditable
+      els.content.innerHTML = cleanedHtml;
+      console.log('[CV] Rendered content length:', cleanedHtml.length);
 
       originalHtml = els.content.innerHTML;
 
+      // STEP 5: Cek draft tersimpan
       const draftKey = 'cv_draft_' + template.id;
       const saved = DA.storage.get(draftKey);
       if (saved && saved.html && saved.html !== originalHtml) {
@@ -234,12 +260,16 @@ DA.cvBuilder = (function () {
       DA.toast.success('Template dimuat — siap diedit!');
     } catch (err) {
       console.error('[CV] Error load template:', err);
+
       els.content.innerHTML = `
         <div style="text-align:center;padding:2rem;color:#ef4444;font-family:sans-serif;">
-          <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem;margin-bottom:1rem;"></i>
+          <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem;margin-bottom:1rem;display:block;"></i>
           <p style="font-weight:700;font-size:1rem;margin-bottom:0.5rem;">Gagal memuat template</p>
-          <p style="font-size:0.85rem;opacity:0.8;">${escapeHtml(err.message || 'Unknown error')}</p>
-          <p style="font-size:0.75rem;opacity:0.6;margin-top:1rem;">Coba <strong>"Download Original"</strong> lalu edit di Word sebagai alternatif</p>
+          <p style="font-size:0.85rem;opacity:0.8;margin-bottom:0.5rem;">${escapeHtml(err.message || 'Unknown error')}</p>
+          <p style="font-size:0.75rem;opacity:0.7;margin-top:1rem;padding:0.75rem;background:#fef2f2;border-radius:0.5rem;">
+            💡 <strong>Solusi:</strong> Klik tombol kembali → pilih template lagi → pilih
+            <strong>"Download Original"</strong> untuk edit di Microsoft Word / Google Docs.
+          </p>
         </div>
       `;
       DA.toast.error('Gagal memuat template: ' + err.message);
@@ -314,7 +344,6 @@ DA.cvBuilder = (function () {
   function bindEvents() {
     els.back?.addEventListener('click', closeEditor);
 
-    // Modal
     els.modalCancel?.addEventListener('click', hideChoiceModal);
     els.modalBackdrop?.addEventListener('click', hideChoiceModal);
     els.choiceDownload?.addEventListener('click', downloadOriginal);
@@ -358,7 +387,6 @@ DA.cvBuilder = (function () {
     els.downloadDocx?.addEventListener('click', downloadDocx);
     els.downloadPdf?.addEventListener('click', downloadPdf);
 
-    // ESC to close modal
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !els.modal?.classList.contains('hidden')) {
         hideChoiceModal();
@@ -367,22 +395,18 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     EXPORT DOCX
+     EXPORT DOCX — pakai Blob HTML
      ============================================ */
   function downloadDocx() {
     if (!els.content) return;
     try {
       const htmlContent = els.content.innerHTML;
-      const cleanContent = htmlContent
-        .replace(/class="docx-[^"]*"/g, '')
-        .replace(/<div class="docx-section">/g, '<div>')
-        .replace(/ style="[^"]*position:[^"]*"/gi, '');
 
       const styles = `
         @page WordSection1 { size: 21cm 29.7cm; margin: 1.5cm 2cm 1.5cm 2cm; }
         div.WordSection1 { page: WordSection1; }
         body { font-family: Georgia, 'Times New Roman', serif; font-size: 11pt; line-height: 1.55; color: #1e293b; }
-        h1 { font-size: 20pt; font-weight: bold; margin-bottom: 6pt; line-height: 1.15; }
+        h1 { font-size: 20pt; font-weight: bold; margin-bottom: 6pt; line-height: 1.15; text-align: center; }
         h2 { font-size: 13pt; font-weight: bold; margin-top: 14pt; margin-bottom: 6pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; text-transform: uppercase; letter-spacing: 0.5pt; }
         h3 { font-size: 12pt; font-weight: bold; margin-top: 8pt; margin-bottom: 4pt; }
         p { margin-bottom: 6pt; margin-top: 0; }
@@ -415,7 +439,7 @@ DA.cvBuilder = (function () {
 </head>
 <body>
 <div class="WordSection1">
-${cleanContent}
+${htmlContent}
 </div>
 </body>
 </html>`;
@@ -431,7 +455,7 @@ ${cleanContent}
   }
 
   /* ============================================
-     EXPORT PDF — html2canvas + jsPDF
+     EXPORT PDF
      ============================================ */
   async function downloadPdf() {
     if (!els.paper) return;
