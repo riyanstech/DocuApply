@@ -9,6 +9,86 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>DocuApply — PDF, Photo & Email Tools</title>
 
+<!-- ============ CRITICAL LAYOUT CSS (loads FIRST, before Tailwind) ============ -->
+<style>
+  /* ---- Reset ---- */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  * { box-sizing: border-box; }
+
+  /* ---- App shell: flex column, fixed height ---- */
+  body {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden !important;
+  }
+
+  /* ---- Header & bottom nav don't grow ---- */
+  .fixed-y {
+    flex: 0 0 auto !important;
+  }
+
+  /* ---- Main content: fills remaining, allows inner scroll ---- */
+  #appMain {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+  /* ---- Views: absolutely fill main, hidden by default handled by .hidden ---- */
+  .view {
+    position: absolute !important;
+    top: 0; right: 0; bottom: 0; left: 0;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  @media (min-width: 768px) {
+    .view.view-row { flex-direction: row !important; }
+  }
+  /* Tailwind's .hidden MUST win */
+  .view.hidden,
+  .hidden {
+    display: none !important;
+  }
+
+  /* ---- Column container that holds a fixed toolbar + scroll content ---- */
+  .col-flex {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* ---- The one and only scroll-y container class ---- */
+  .scroll-y {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y;
+  }
+
+  /* ---- Debug mode: red outline on all scroll containers ---- */
+  body.debug .scroll-y { outline: 2px dashed red !important; outline-offset: -2px; }
+  body.debug .view:not(.hidden) { outline: 3px solid lime !important; outline-offset: -3px; }
+  body.debug .fixed-y { outline: 3px solid orange !important; outline-offset: -3px; }
+</style>
+
+<!-- ============ TAILWIND (for styling, not layout) ============ -->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,6 +112,10 @@
         document.documentElement.classList.add('dark');
       }
     } catch (e) {}
+    // Debug mode
+    if (new URLSearchParams(location.search).get('debug') === '1') {
+      document.addEventListener('DOMContentLoaded', () => document.body.classList.add('debug'));
+    }
   })();
 </script>
 
@@ -39,10 +123,10 @@
 <link rel="stylesheet" href="css/components.css">
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-700" style="height:100dvh;overflow:hidden;">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 antialiased selection:bg-indigo-100 selection:text-indigo-700">
 
 <!-- ===== HEADER ===== -->
-<header class="glass-header px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-30 shrink-0 gap-2 sm:gap-3" style="padding-top:max(0.625rem, env(safe-area-inset-top))">
+<header class="fixed-y glass-header px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-30 gap-2 sm:gap-3" style="padding-top:max(0.625rem, env(safe-area-inset-top));">
   <div class="flex items-center gap-2.5 min-w-0">
     <div class="bg-gradient-to-br from-indigo-500 to-violet-600 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
       <i class="fa-solid fa-layer-group text-base sm:text-lg"></i>
@@ -68,65 +152,67 @@
 </header>
 
 <!-- ===== MAIN ===== -->
-<main class="flex-1 min-h-0 overflow-hidden relative">
+<main id="appMain">
 
   <!-- ========== VIEW: PDF EDITOR ========== -->
-  <section id="view-editor" class="view flex flex-col md:flex-row overflow-hidden absolute inset-0">
+  <section id="view-editor" class="view view-row">
 
-    <!-- Desktop Sidebar -->
-    <aside class="hidden md:flex w-80 lg:w-96 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 flex-col shrink-0 z-10 overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-      <div class="p-5 flex flex-col gap-4 h-full">
-        <div id="dropZone" class="group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-7 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[160px]">
-          <div class="w-14 h-14 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
-          </div>
-          <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm mb-0.5">Upload File</h3>
-          <p class="text-xs text-slate-400">PDF atau Gambar (JPG/PNG)</p>
-          <input type="file" id="fileInput" multiple accept="application/pdf,image/*" class="hidden">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <button data-action="add" class="btn-bounce btn-secondary"><i class="fa-solid fa-plus text-indigo-500"></i> Tambah</button>
-          <button data-action="camera" class="btn-bounce btn-secondary"><i class="fa-solid fa-camera text-teal-500"></i> Foto</button>
-        </div>
-
-        <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-4 rounded-xl space-y-3">
-          <label class="flex items-center justify-between cursor-pointer">
-            <div class="flex items-center gap-2.5">
-              <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400">
-                <i class="fa-solid fa-compress"></i>
-              </div>
-              <span class="font-semibold text-xs text-slate-600 dark:text-slate-300">Kompresi Otomatis</span>
+    <!-- Desktop sidebar -->
+    <aside class="hidden md:flex w-80 lg:w-96 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 flex-col shrink-0 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+      <div class="scroll-y p-5">
+        <div class="flex flex-col gap-4 h-full">
+          <div id="dropZone" class="group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-7 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[160px]">
+            <div class="w-14 h-14 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
             </div>
-            <span class="switch">
-              <input type="checkbox" id="compressionToggle" checked>
-              <span class="slider"></span>
-            </span>
-          </label>
-          <div id="qualityWrapper" class="pl-11">
-            <label class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">Kualitas</label>
-            <select id="qualitySelect" class="input">
-              <option value="0.4">Low · ukuran terkecil</option>
-              <option value="0.6" selected>Medium · seimbang</option>
-              <option value="0.85">High · kualitas terbaik</option>
-            </select>
+            <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm mb-0.5">Upload File</h3>
+            <p class="text-xs text-slate-400">PDF atau Gambar (JPG/PNG)</p>
+            <input type="file" id="fileInput" multiple accept="application/pdf,image/*" class="hidden">
           </div>
-        </div>
 
-        <div class="mt-auto pt-4">
-          <button id="mergeBtn" class="btn-bounce w-full btn-primary py-4 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none" disabled>
-            <span>Gabungkan & Unduh PDF</span>
-            <i class="fa-solid fa-arrow-right"></i>
-          </button>
+          <div class="grid grid-cols-2 gap-3">
+            <button data-action="add" class="btn-bounce btn-secondary"><i class="fa-solid fa-plus text-indigo-500"></i> Tambah</button>
+            <button data-action="camera" class="btn-bounce btn-secondary"><i class="fa-solid fa-camera text-teal-500"></i> Foto</button>
+          </div>
+
+          <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-4 rounded-xl space-y-3">
+            <label class="flex items-center justify-between cursor-pointer">
+              <div class="flex items-center gap-2.5">
+                <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400">
+                  <i class="fa-solid fa-compress"></i>
+                </div>
+                <span class="font-semibold text-xs text-slate-600 dark:text-slate-300">Kompresi Otomatis</span>
+              </div>
+              <span class="switch">
+                <input type="checkbox" id="compressionToggle" checked>
+                <span class="slider"></span>
+              </span>
+            </label>
+            <div id="qualityWrapper" class="pl-11">
+              <label class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">Kualitas</label>
+              <select id="qualitySelect" class="input">
+                <option value="0.4">Low · ukuran terkecil</option>
+                <option value="0.6" selected>Medium · seimbang</option>
+                <option value="0.85">High · kualitas terbaik</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-auto pt-4">
+            <button id="mergeBtn" class="btn-bounce w-full btn-primary py-4 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none" disabled>
+              <span>Gabungkan & Unduh PDF</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
         </div>
       </div>
     </aside>
 
-    <!-- Preview Column -->
-    <section class="flex-1 min-h-0 min-w-0 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col overflow-hidden">
+    <!-- Preview column -->
+    <section class="col-flex bg-slate-50/50 dark:bg-slate-950/40">
 
       <!-- Toolbar -->
-      <div class="shrink-0 px-3 md:px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur flex items-center justify-between gap-2">
+      <div class="fixed-y px-3 md:px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur flex items-center justify-between gap-2">
         <div class="flex items-center gap-1">
           <button id="undoBtn" class="tool-btn" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
           <button id="redoBtn" class="tool-btn" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
@@ -143,8 +229,8 @@
         </div>
       </div>
 
-      <!-- Scrollable Preview -->
-      <div class="flex-1 min-h-0 overflow-y-auto p-3 md:p-5" id="previewContainer">
+      <!-- SCROLLABLE -->
+      <div class="scroll-y p-3 md:p-5" id="previewContainer">
         <div id="emptyState" class="h-full flex flex-col items-center justify-center text-slate-400 select-none py-10">
           <div class="w-16 h-16 md:w-24 md:h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
             <i class="fa-regular fa-folder-open text-3xl md:text-4xl text-slate-300 dark:text-slate-600"></i>
@@ -155,8 +241,8 @@
         <div id="gridArea" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4 hidden"></div>
       </div>
 
-      <!-- Mobile bottom action (flex item, bukan fixed) -->
-      <div class="md:hidden shrink-0 flex gap-2 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+      <!-- Mobile bottom bar -->
+      <div class="md:hidden fixed-y flex gap-2 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
         <button id="editorUploadBtn" class="flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
           <i class="fa-solid fa-cloud-arrow-up text-indigo-500"></i>
           <span>Upload</span>
@@ -173,16 +259,16 @@
   </section>
 
   <!-- ========== VIEW: IMAGE → PDF ========== -->
-  <section id="view-image2pdf" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
+  <section id="view-image2pdf" class="view">
 
-    <div class="shrink-0 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+    <div class="fixed-y px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
       <div class="max-w-5xl mx-auto">
         <h2 class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">Image → PDF</h2>
         <p class="text-[11px] text-slate-400 mt-0.5">Ubah gambar menjadi satu PDF</p>
       </div>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-y-auto">
+    <div class="scroll-y">
       <div class="max-w-5xl mx-auto p-4">
         <div id="i2pDrop" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all mb-5 min-h-[140px]">
           <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3">
@@ -195,7 +281,6 @@
 
         <div id="i2pGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 mb-5"></div>
 
-        <!-- Desktop settings panel -->
         <div id="i2pPanel" class="hidden md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
           <div class="grid grid-cols-4 gap-3">
             <div><label class="label">Ukuran</label><select id="i2pSize" class="input"><option value="fit" selected>Sesuai gambar</option><option value="a4">A4</option><option value="letter">Letter</option></select></div>
@@ -207,8 +292,7 @@
       </div>
     </div>
 
-    <!-- Sticky bottom action -->
-    <div class="shrink-0 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+    <div class="fixed-y p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
       <div class="max-w-5xl mx-auto flex gap-2">
         <button id="i2pSettingsBtnMobile" class="md:hidden flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform">
           <i class="fa-solid fa-sliders"></i>
@@ -220,7 +304,6 @@
       </div>
     </div>
 
-    <!-- Mobile settings sheet -->
     <div id="i2pSheet" class="md:hidden fixed inset-x-0 bottom-0 max-h-[70vh] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-50 translate-y-full transition-transform duration-300" style="padding-bottom:env(safe-area-inset-bottom);">
       <div class="pt-3 pb-1 flex justify-center">
         <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
@@ -232,22 +315,10 @@
         </button>
       </div>
       <div class="p-4 space-y-4 overflow-y-auto" style="max-height:calc(70vh - 100px);">
-        <div>
-          <label class="label">Ukuran Halaman</label>
-          <select id="i2pSizeM" class="input"><option value="fit" selected>Sesuai gambar</option><option value="a4">A4</option><option value="letter">Letter</option></select>
-        </div>
-        <div>
-          <label class="label">Orientasi</label>
-          <select id="i2pOrientM" class="input"><option value="auto" selected>Otomatis</option><option value="p">Portrait</option><option value="l">Landscape</option></select>
-        </div>
-        <div>
-          <label class="label">Margin (pt)</label>
-          <input id="i2pMarginM" type="number" min="0" max="100" value="20" class="input">
-        </div>
-        <div>
-          <label class="label">Kualitas</label>
-          <select id="i2pQualityM" class="input"><option value="0.6">Medium</option><option value="0.85" selected>High</option><option value="0.95">Max</option></select>
-        </div>
+        <div><label class="label">Ukuran Halaman</label><select id="i2pSizeM" class="input"><option value="fit" selected>Sesuai gambar</option><option value="a4">A4</option><option value="letter">Letter</option></select></div>
+        <div><label class="label">Orientasi</label><select id="i2pOrientM" class="input"><option value="auto" selected>Otomatis</option><option value="p">Portrait</option><option value="l">Landscape</option></select></div>
+        <div><label class="label">Margin (pt)</label><input id="i2pMarginM" type="number" min="0" max="100" value="20" class="input"></div>
+        <div><label class="label">Kualitas</label><select id="i2pQualityM" class="input"><option value="0.6">Medium</option><option value="0.85" selected>High</option><option value="0.95">Max</option></select></div>
       </div>
     </div>
 
@@ -255,16 +326,16 @@
   </section>
 
   <!-- ========== VIEW: SPLIT PDF ========== -->
-  <section id="view-split" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
+  <section id="view-split" class="view">
 
-    <div class="shrink-0 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+    <div class="fixed-y px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
       <div class="max-w-5xl mx-auto">
         <h2 class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">Split PDF</h2>
         <p class="text-[11px] text-slate-400 mt-0.5">Pilih halaman untuk diekstrak atau pisah semua</p>
       </div>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-y-auto">
+    <div class="scroll-y">
       <div class="max-w-5xl mx-auto p-4">
         <div id="splitDrop" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all mb-5 min-h-[140px]">
           <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3">
@@ -279,8 +350,7 @@
       </div>
     </div>
 
-    <!-- Sticky bottom action -->
-    <div id="splitBar" class="hidden shrink-0 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+    <div id="splitBar" class="hidden fixed-y p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
       <div class="max-w-5xl mx-auto space-y-3">
         <div class="flex items-center justify-between text-xs">
           <span class="font-semibold text-slate-600 dark:text-slate-300"><span id="splitCount">0</span> halaman terpilih</span>
@@ -304,16 +374,16 @@
   </section>
 
   <!-- ========== VIEW: PHOTO STUDIO ========== -->
-  <section id="view-photo" class="view hidden absolute inset-0 flex flex-col md:flex-row overflow-hidden">
+  <section id="view-photo" class="view view-row">
 
-    <!-- CANVAS AREA -->
-    <section class="order-1 md:order-2 flex-1 min-h-0 min-w-0 flex flex-col bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-950 dark:to-slate-900 relative overflow-hidden">
-      <div class="shrink-0 px-3 py-2 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 z-10">
+    <!-- Canvas area -->
+    <section class="col-flex bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-950 dark:to-slate-900 relative">
+      <div class="fixed-y px-3 py-2 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 z-10">
         <span id="photoStatus" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate pr-2">Belum ada foto</span>
         <span id="photoDimensions" class="text-[10px] font-semibold text-slate-400 shrink-0"></span>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-auto flex items-center justify-center p-2 sm:p-6 md:p-8 relative" id="photoStageWrap">
+      <div class="scroll-y flex items-center justify-center p-2 sm:p-6 md:p-8" id="photoStageWrap" style="display:flex;">
         <div id="photoEmpty" class="flex flex-col items-center justify-center text-slate-400 select-none py-6 px-4 text-center">
           <div class="w-16 h-16 sm:w-24 sm:h-24 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-slate-200/50 dark:shadow-none">
             <i class="fa-solid fa-image-portrait text-3xl sm:text-4xl text-slate-300 dark:text-slate-600"></i>
@@ -328,23 +398,25 @@
         </div>
       </div>
 
-      <div class="md:hidden shrink-0 absolute bottom-3 left-3 right-3 flex gap-2 z-20 pointer-events-none">
-        <button id="mobileUploadBtn" class="pointer-events-auto flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-xl shadow-black/10 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
-          <i class="fa-solid fa-cloud-arrow-up text-indigo-500"></i>
-          <span>Upload Foto</span>
-        </button>
-        <button id="mobileSettingsBtn" class="pointer-events-auto w-14 h-14 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl shadow-xl shadow-indigo-500/30 active:scale-95 transition-transform">
-          <i class="fa-solid fa-sliders text-lg"></i>
-        </button>
+      <div class="md:hidden fixed-y relative p-3 pointer-events-none" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+        <div class="flex gap-2 pointer-events-auto">
+          <button id="mobileUploadBtn" class="flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
+            <i class="fa-solid fa-cloud-arrow-up text-indigo-500"></i>
+            <span>Upload Foto</span>
+          </button>
+          <button id="mobileSettingsBtn" class="w-14 h-14 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform">
+            <i class="fa-solid fa-sliders text-lg"></i>
+          </button>
+        </div>
       </div>
     </section>
 
-    <!-- SIDEBAR / SHEET -->
-    <aside id="photoSidebar" class="photo-sidebar order-2 md:order-1 w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 md:border-r border-slate-200/60 dark:border-slate-800 flex flex-col shrink-0 z-50 md:z-10 overflow-hidden">
-      <div class="md:hidden shrink-0 pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing" id="sheetHandle">
+    <!-- Sidebar / bottom sheet -->
+    <aside id="photoSidebar" class="photo-sidebar w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 md:border-r border-slate-200/60 dark:border-slate-800 flex flex-col shrink-0 z-50 md:z-10">
+      <div class="md:hidden fixed-y pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing" id="sheetHandle">
         <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
       </div>
-      <div class="md:hidden shrink-0 px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+      <div class="md:hidden fixed-y px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
         <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <i class="fa-solid fa-sliders text-indigo-500"></i>
           Pengaturan
@@ -354,7 +426,7 @@
         </button>
       </div>
 
-      <div class="md:hidden shrink-0 px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 flex gap-1 overflow-x-auto ps-tabs-scroll">
+      <div class="md:hidden fixed-y px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 flex gap-1 overflow-x-auto ps-tabs-scroll">
         <button data-ps-tab="main" class="ps-tab active"><i class="fa-solid fa-house"></i> Utama</button>
         <button data-ps-tab="ai" class="ps-tab"><i class="fa-solid fa-microchip"></i> AI</button>
         <button data-ps-tab="brush" class="ps-tab"><i class="fa-solid fa-eraser"></i> Kuas</button>
@@ -362,7 +434,7 @@
         <button data-ps-tab="output" class="ps-tab"><i class="fa-solid fa-download"></i> Simpan</button>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="scroll-y">
         <div class="p-3 sm:p-4 md:p-5 flex flex-col gap-3 sm:gap-4 pb-6">
           <div id="photoDrop" class="hidden md:flex group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[110px]">
             <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -397,15 +469,6 @@
               </div>
             </div>
 
-            <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-2xl p-3 flex items-start gap-2.5">
-              <div class="bg-blue-100 dark:bg-blue-500/20 p-1.5 rounded-lg text-blue-600 dark:text-blue-400 shrink-0">
-                <i class="fa-solid fa-lightbulb text-xs"></i>
-              </div>
-              <div class="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
-                Setelah hapus BG, atur <strong>Perluas Subjek</strong> & <strong>Haluskan Tepi</strong> di tab AI.
-              </div>
-            </div>
-
             <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
               <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-indigo-500">
                 <i class="fa-solid fa-microchip text-xs"></i>
@@ -420,20 +483,12 @@
 
           <div data-ps-panel="ai" class="ps-panel hidden md:block space-y-3">
             <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-3.5 rounded-2xl space-y-3.5">
-              <div class="flex items-center gap-2">
-                <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-indigo-500">
-                  <i class="fa-solid fa-microchip text-xs"></i>
-                </div>
-                <span class="font-semibold text-xs text-slate-600 dark:text-slate-300">Pengaturan AI</span>
-              </div>
-
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Perluas Subjek</label>
                   <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400"><span id="photoExpandVal">3</span>px</span>
                 </div>
                 <input type="range" id="photoExpand" min="0" max="10" value="3" class="w-full">
-                <p class="text-[10px] text-slate-400 mt-1">Naikkan jika badan/rambut terpotong</p>
               </div>
 
               <div>
@@ -442,7 +497,6 @@
                   <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400"><span id="photoSmoothVal">3</span></span>
                 </div>
                 <input type="range" id="photoSmooth" min="0" max="8" value="3" step="0.5" class="w-full">
-                <p class="text-[10px] text-slate-400 mt-1">Tinggi = tepi lebih halus</p>
               </div>
 
               <label class="flex items-center justify-between cursor-pointer py-1">
@@ -507,20 +561,17 @@
             </div>
 
             <div id="photoColorOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3.5 space-y-3">
-              <div>
-                <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 block mb-2">Pilih Warna</label>
-                <div class="flex gap-2 flex-wrap mb-3">
-                  <button data-preset="#ffffff" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#ffffff"></button>
-                  <button data-preset="#2563eb" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#2563eb"></button>
-                  <button data-preset="#dc2626" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#dc2626"></button>
-                  <button data-preset="#16a34a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#16a34a"></button>
-                  <button data-preset="#0f172a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#0f172a"></button>
-                </div>
-                <input type="color" id="photoColor" value="#ffffff" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer bg-transparent">
+              <div class="flex gap-2 flex-wrap mb-3">
+                <button data-preset="#ffffff" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600" style="background:#ffffff"></button>
+                <button data-preset="#2563eb" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600" style="background:#2563eb"></button>
+                <button data-preset="#dc2626" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600" style="background:#dc2626"></button>
+                <button data-preset="#16a34a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600" style="background:#16a34a"></button>
+                <button data-preset="#0f172a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600" style="background:#0f172a"></button>
               </div>
+              <input type="color" id="photoColor" value="#ffffff" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer bg-transparent">
             </div>
 
-            <div id="photoGradientOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3.5 space-y-2">
+            <div id="photoGradientOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3.5">
               <div class="grid grid-cols-2 gap-3">
                 <div><label class="label">Warna 1</label><input type="color" id="photoGrad1" value="#dbeafe" class="w-full h-11 rounded-xl border border-slate-200 cursor-pointer bg-transparent"></div>
                 <div><label class="label">Warna 2</label><input type="color" id="photoGrad2" value="#93c5fd" class="w-full h-11 rounded-xl border border-slate-200 cursor-pointer bg-transparent"></div>
@@ -572,9 +623,9 @@
   </section>
 
   <!-- ========== VIEW: EMAIL ========== -->
-  <section id="view-email" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
+  <section id="view-email" class="view">
 
-    <div id="emailTemplatesList" class="flex-1 min-h-0 overflow-y-auto">
+    <div id="emailTemplatesList" class="scroll-y">
       <div class="max-w-5xl mx-auto p-4">
         <div class="text-center mb-6 mt-2">
           <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Template Email</h2>
@@ -593,9 +644,9 @@
       </div>
     </div>
 
-    <div id="emailComposeForm" class="hidden flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
+    <div id="emailComposeForm" class="hidden col-flex bg-white dark:bg-slate-900">
 
-      <div class="shrink-0 flex items-center gap-3 p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div class="fixed-y flex items-center gap-3 p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
         <button id="emailBack" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 shrink-0 active:scale-95 transition-transform">
           <i class="fa-solid fa-arrow-left"></i>
         </button>
@@ -608,7 +659,7 @@
         </button>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/40">
+      <div class="scroll-y bg-slate-50/50 dark:bg-slate-950/40">
         <div class="max-w-3xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-5 pb-6">
 
           <details class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
@@ -631,7 +682,7 @@
             </div>
           </details>
 
-          <div class="grid grid-cols-1 gap-4">
+          <div class="space-y-4">
             <div class="space-y-2">
               <label class="label">Kepada (Email HRD)</label>
               <div class="input-group">
@@ -669,7 +720,7 @@
         </div>
       </div>
 
-      <div class="shrink-0 p-3 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+      <div class="fixed-y p-3 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
         <div class="max-w-3xl mx-auto grid grid-cols-3 gap-2">
           <button id="emailSave" class="btn-bounce bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
             <i class="fa-solid fa-bookmark"></i>
@@ -691,7 +742,7 @@
 </main>
 
 <!-- ===== MOBILE BOTTOM NAV ===== -->
-<nav id="navMobile" class="lg:hidden shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 grid grid-cols-5 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
+<nav id="navMobile" class="fixed-y lg:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 grid grid-cols-5 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
   <button data-tab="editor"    class="m-nav-btn py-2"><i class="fa-solid fa-file-pdf"></i><span>Editor</span></button>
   <button data-tab="image2pdf" class="m-nav-btn py-2"><i class="fa-solid fa-image"></i><span>Image</span></button>
   <button data-tab="split"     class="m-nav-btn py-2"><i class="fa-solid fa-scissors"></i><span>Split</span></button>
@@ -745,9 +796,7 @@
           window.dispatchEvent(new CustomEvent('imgy:ready'));
           return;
         }
-      } catch (err) {
-        console.warn('[AI] CDN gagal:', url);
-      }
+      } catch (err) { console.warn('[AI] CDN gagal:', url); }
     }
     window.dispatchEvent(new CustomEvent('imgy:error'));
   })();
