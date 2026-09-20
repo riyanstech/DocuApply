@@ -1,10 +1,9 @@
 /* =====================================================
-   DocuApply — Photo Studio v4
-   - Model FIXED ke "isnet" (Akurat) — tanpa selector
-   - Reset Brush langsung tanpa confirm dialog
-   - Box blur algorithm diperbaiki + adaptive radius
-   - S-curve ganda untuk tepi lebih tegas
-   - Better decontamination
+   DocuApply — Photo Studio v5 (Mobile-First)
+   - Model FIXED: isnet (Akurat)
+   - Reset Brush tanpa confirm
+   - Post-processing: fill holes + erode + soft dilate + box blur + s-curve
+   - Mobile bottom sheet drawer dengan tab navigation
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -14,7 +13,7 @@ DA.photoStudio = (function () {
   const { downloadBlob, bindDropZone } = DA.utils;
 
   const MAX_DIM = 1400;
-  const AI_MODEL = 'isnet';   // ← FIXED
+  const AI_MODEL = 'isnet';
   const PAS_FOTO = {
     '2x3': { w: 236, h: 354 },
     '3x4': { w: 354, h: 472 },
@@ -59,6 +58,13 @@ DA.photoStudio = (function () {
     els = {
       drop: document.getElementById('photoDrop'),
       input: document.getElementById('photoInput'),
+      inputMobile: document.getElementById('photoInputMobile'),
+      mobileUploadBtn: document.getElementById('mobileUploadBtn'),
+      mobileSettingsBtn: document.getElementById('mobileSettingsBtn'),
+      mobileCloseBtn: document.getElementById('mobileCloseBtn'),
+      sidebar: document.getElementById('photoSidebar'),
+      backdrop: document.getElementById('photoBackdrop'),
+      sheetHandle: document.getElementById('sheetHandle'),
       stage: document.getElementById('photoStage'),
       stageWrap: document.getElementById('photoStageWrap'),
       empty: document.getElementById('photoEmpty'),
@@ -109,52 +115,68 @@ DA.photoStudio = (function () {
     window.addEventListener('imgy:error', () => {
       S.aiReady = false; S.aiFailed = true;
       updateAIStatusBadge(); updateUI();
-      DA.toast.warn('AI gagal dimuat. Cek koneksi internet lalu refresh.', 5000);
+      DA.toast.warn('AI gagal dimuat. Cek koneksi lalu refresh.', 5000);
     });
     if (typeof window.imglyRemoveBackground === 'function') {
       S.aiReady = true; updateAIStatusBadge();
     }
 
     /* ===== Settings ===== */
-    els.expand.addEventListener('input', (e) => {
+    els.expand?.addEventListener('input', (e) => {
       S.expand = Number(e.target.value);
-      els.expandVal.textContent = S.expand;
+      if (els.expandVal) els.expandVal.textContent = S.expand;
       DA.storage.set('photoExpand', S.expand);
       if (S.hasCutout && S.aiOutputMask) applyPostProcess();
     });
-    els.smooth.addEventListener('input', (e) => {
+    els.smooth?.addEventListener('input', (e) => {
       S.smooth = Number(e.target.value);
-      els.smoothVal.textContent = S.smooth;
+      if (els.smoothVal) els.smoothVal.textContent = S.smooth;
       DA.storage.set('photoSmooth', S.smooth);
       if (S.hasCutout && S.aiOutputMask) applyPostProcess();
     });
-    els.fillHoles.addEventListener('change', () => {
+    els.fillHoles?.addEventListener('change', () => {
       S.fillHoles = els.fillHoles.checked;
       if (S.hasCutout && S.aiOutputMask) applyPostProcess();
     });
-    els.decontam.addEventListener('change', () => {
+    els.decontam?.addEventListener('change', () => {
       S.decontam = els.decontam.checked;
       if (S.hasCutout && S.aiOutputMask) applyPostProcess();
     });
 
-    /* Restore prefs */
     const savedExpand = DA.storage.get('photoExpand');
-    if (savedExpand != null) { S.expand = savedExpand; els.expand.value = savedExpand; els.expandVal.textContent = savedExpand; }
+    if (savedExpand != null && els.expand) {
+      S.expand = savedExpand;
+      els.expand.value = savedExpand;
+      if (els.expandVal) els.expandVal.textContent = savedExpand;
+    }
     const savedSmooth = DA.storage.get('photoSmooth');
-    if (savedSmooth != null) { S.smooth = savedSmooth; els.smooth.value = savedSmooth; els.smoothVal.textContent = savedSmooth; }
+    if (savedSmooth != null && els.smooth) {
+      S.smooth = savedSmooth;
+      els.smooth.value = savedSmooth;
+      if (els.smoothVal) els.smoothVal.textContent = savedSmooth;
+    }
 
-    /* ===== Dropzone ===== */
-    bindDropZone(els.drop, els.input, onFile);
+    /* ===== Dropzones (desktop + mobile) ===== */
+    if (els.drop && els.input) bindDropZone(els.drop, els.input, onFile);
+
+    els.mobileUploadBtn?.addEventListener('click', () => els.inputMobile?.click());
+    els.inputMobile?.addEventListener('change', (e) => {
+      const f = e.target.files?.[0];
+      e.target.value = '';
+      if (!f) return;
+      onFile([f]);
+      setTimeout(openSheet, 300);
+    });
 
     /* ===== Buttons ===== */
-    els.removeBtn.addEventListener('click', removeBg);
-    els.resetBtn.addEventListener('click', resetMask);
-    els.undoBtn.addEventListener('click', undo);
-    els.downloadBtn.addEventListener('click', download);
+    els.removeBtn?.addEventListener('click', removeBg);
+    els.resetBtn?.addEventListener('click', resetMask);
+    els.undoBtn?.addEventListener('click', undo);
+    els.downloadBtn?.addEventListener('click', download);
 
-    els.brushSize.addEventListener('input', (e) => {
+    els.brushSize?.addEventListener('input', (e) => {
       S.brushSize = Number(e.target.value);
-      els.brushSizeVal.textContent = S.brushSize;
+      if (els.brushSizeVal) els.brushSizeVal.textContent = S.brushSize;
     });
 
     document.querySelectorAll('[data-brush-mode]').forEach((b) =>
@@ -165,19 +187,19 @@ DA.photoStudio = (function () {
     );
     document.querySelectorAll('[data-preset]').forEach((b) =>
       b.addEventListener('click', () => {
-        els.bgColor.value = b.dataset.preset;
+        if (els.bgColor) els.bgColor.value = b.dataset.preset;
         S.bg.color = b.dataset.preset;
         rebuildBg(); scheduleRender();
       })
     );
 
-    els.bgColor.addEventListener('input', (e) => { S.bg.color = e.target.value; rebuildBg(); scheduleRender(); });
-    els.bgGrad1.addEventListener('input', (e) => { S.bg.g1 = e.target.value; rebuildBg(); scheduleRender(); });
-    els.bgGrad2.addEventListener('input', (e) => { S.bg.g2 = e.target.value; rebuildBg(); scheduleRender(); });
-    els.blurRadius.addEventListener('input', (e) => { S.bg.blur = Number(e.target.value); rebuildBg(); scheduleRender(); });
+    els.bgColor?.addEventListener('input', (e) => { S.bg.color = e.target.value; rebuildBg(); scheduleRender(); });
+    els.bgGrad1?.addEventListener('input', (e) => { S.bg.g1 = e.target.value; rebuildBg(); scheduleRender(); });
+    els.bgGrad2?.addEventListener('input', (e) => { S.bg.g2 = e.target.value; rebuildBg(); scheduleRender(); });
+    els.blurRadius?.addEventListener('input', (e) => { S.bg.blur = Number(e.target.value); rebuildBg(); scheduleRender(); });
 
-    els.bgImgBtn.addEventListener('click', () => els.bgImgInput.click());
-    els.bgImgInput.addEventListener('change', (e) => {
+    els.bgImgBtn?.addEventListener('click', () => els.bgImgInput?.click());
+    els.bgImgInput?.addEventListener('change', (e) => {
       const f = e.target.files?.[0]; e.target.value = '';
       if (!f) return;
       const url = URL.createObjectURL(f);
@@ -197,14 +219,19 @@ DA.photoStudio = (function () {
     c.addEventListener('pointermove', onPointerMove);
     c.addEventListener('pointerup', onPointerUp);
     c.addEventListener('pointercancel', onPointerUp);
-    c.addEventListener('pointerleave', () => { els.cursor.style.display = 'none'; });
+    c.addEventListener('pointerleave', () => { if (els.cursor) els.cursor.style.display = 'none'; });
     c.addEventListener('pointerenter', () => {
-      if (S.hasCutout && !isTouchDevice()) els.cursor.style.display = 'block';
+      if (S.hasCutout && !isTouchDevice() && els.cursor) els.cursor.style.display = 'block';
     });
 
-    const themeBtn = document.getElementById('themeToggle');
-    themeBtn?.addEventListener('click', () => scheduleRender());
+    /* ===== Theme + resize ===== */
+    document.getElementById('themeToggle')?.addEventListener('click', () => scheduleRender());
     window.addEventListener('resize', () => scheduleRender());
+
+    /* ============================================
+       MOBILE BOTTOM SHEET
+       ============================================ */
+    setupMobileSheet();
 
     updateUI();
     updateAIStatusBadge();
@@ -216,12 +243,103 @@ DA.photoStudio = (function () {
       setTimeout(() => { if (S.aiReady) preloadModel(); }, 3000);
     }
 
+    /* Timeout warning */
     setTimeout(() => {
       if (!S.aiReady && !S.aiFailed) {
         S.aiFailed = true;
         updateAIStatusBadge(); updateUI();
       }
     }, 30000);
+
+    /* Auto-switch to brush tab after cutout */
+    window.addEventListener('photo-cutout-ready', () => {
+      if (window.matchMedia('(max-width: 767px)').matches) {
+        const brushTab = document.querySelector('[data-ps-tab="brush"]');
+        if (brushTab) brushTab.click();
+      }
+    });
+  }
+
+  /* ============================================
+     MOBILE SHEET
+     ============================================ */
+  function setupMobileSheet() {
+    const sidebar = els.sidebar;
+    const backdrop = els.backdrop;
+    if (!sidebar) return;
+
+    /* Open/close */
+    window.openPhotoSheet = openSheet;
+    window.closePhotoSheet = closeSheet;
+
+    els.mobileSettingsBtn?.addEventListener('click', openSheet);
+    els.mobileCloseBtn?.addEventListener('click', closeSheet);
+    backdrop?.addEventListener('click', closeSheet);
+
+    /* Tabs */
+    document.querySelectorAll('[data-ps-tab]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const key = tab.dataset.psTab;
+        document.querySelectorAll('[data-ps-tab]').forEach((t) =>
+          t.classList.toggle('active', t === tab)
+        );
+        document.querySelectorAll('.ps-panel').forEach((p) =>
+          p.classList.toggle('active', p.dataset.psPanel === key)
+        );
+        /* Scroll content to top */
+        const scroll = sidebar.querySelector('.flex-1.overflow-y-auto');
+        if (scroll) scroll.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    /* Initial tab on mobile */
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      document.querySelector('[data-ps-tab="main"]')?.click();
+    }
+
+    /* Swipe down to close */
+    const handle = els.sheetHandle;
+    let startY = 0, deltaY = 0, dragging = false;
+
+    handle?.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+      dragging = true;
+      sidebar.style.transition = 'none';
+    }, { passive: true });
+
+    handle?.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      deltaY = e.touches[0].clientY - startY;
+      if (deltaY > 0) {
+        sidebar.style.transform = `translateY(${deltaY}px)`;
+      }
+    }, { passive: true });
+
+    handle?.addEventListener('touchend', () => {
+      dragging = false;
+      sidebar.style.transition = '';
+      sidebar.style.transform = '';
+      if (deltaY > 80) closeSheet();
+      deltaY = 0;
+    });
+
+    /* Ensure closed initially on mobile */
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      closeSheet();
+    }
+  }
+
+  function openSheet() {
+    if (!els.sidebar) return;
+    els.sidebar.classList.add('open');
+    els.backdrop?.classList.add('show');
+  }
+
+  function closeSheet() {
+    if (!els.sidebar) return;
+    els.sidebar.classList.remove('open');
+    els.backdrop?.classList.remove('show');
+    els.sidebar.style.transform = '';
   }
 
   function isTouchDevice() {
@@ -235,13 +353,13 @@ DA.photoStudio = (function () {
     if (!els.aiStatus) return;
     if (S.aiReady) {
       els.aiStatus.textContent = 'siap';
-      els.aiStatus.className = 'ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300';
+      els.aiStatus.className = 'text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0';
     } else if (S.aiFailed) {
       els.aiStatus.textContent = 'gagal';
-      els.aiStatus.className = 'ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300';
+      els.aiStatus.className = 'text-[10px] font-bold px-2 py-1 rounded-lg bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 shrink-0';
     } else {
       els.aiStatus.textContent = 'memuat…';
-      els.aiStatus.className = 'ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300';
+      els.aiStatus.className = 'text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 shrink-0';
     }
   }
 
@@ -301,8 +419,8 @@ DA.photoStudio = (function () {
     els.canvas.width = w; els.canvas.height = h;
     els.stage.classList.remove('hidden');
     els.empty.classList.add('hidden');
-    els.dimensions.textContent = `${w} × ${h}px`;
-    els.status.textContent = 'Foto siap — belum ada cutout';
+    if (els.dimensions) els.dimensions.textContent = `${w} × ${h}px`;
+    if (els.status) els.status.textContent = 'Foto siap — belum ada cutout';
 
     els.canvas.getContext('2d').drawImage(canvas, 0, 0);
     updateUI();
@@ -320,9 +438,9 @@ DA.photoStudio = (function () {
     }
 
     setBusy(true);
-    els.progress.classList.remove('hidden');
+    els.progress?.classList.remove('hidden');
     setProgress(2, 'Menyiapkan AI...');
-    els.status.textContent = 'Menghapus background...';
+    if (els.status) els.status.textContent = 'Menghapus background...';
     const t0 = performance.now();
 
     try {
@@ -366,19 +484,22 @@ DA.photoStudio = (function () {
       checkCutoutQuality();
 
       const dt = ((performance.now() - t0) / 1000).toFixed(1);
-      els.status.textContent = `Cutout siap (${dt}s) — rapikan dengan kuas jika perlu`;
+      if (els.status) els.status.textContent = `Cutout siap (${dt}s)`;
       DA.toast.success(`Background dihapus dalam ${dt}s`);
+
+      /* Notify UI → auto-switch to brush tab on mobile */
+      window.dispatchEvent(new CustomEvent('photo-cutout-ready'));
     } catch (err) {
       console.error('[PhotoStudio] removeBg error:', err);
       DA.toast.error('Gagal: ' + (err?.message || 'unknown error'));
     } finally {
       setBusy(false);
-      setTimeout(() => els.progress.classList.add('hidden'), 400);
+      setTimeout(() => els.progress?.classList.add('hidden'), 400);
     }
   }
 
   /* ============================================
-     POST-PROCESSING
+     POST-PROCESSING PIPELINE
      ============================================ */
   function applyPostProcess() {
     if (!S.aiOutputMask) return;
@@ -386,23 +507,16 @@ DA.photoStudio = (function () {
     let m = new Uint8ClampedArray(S.aiOutputMask);
 
     if (S.fillHoles) m = fillHoles(m, W, H);
-
-    /* Erode 1px untuk hilangkan halo warna background */
     m = morphOp(m, W, H, 1, 'erode');
-
-    /* Soft dilate sesuai slider */
     if (S.expand > 0) m = softDilate(m, W, H, S.expand);
 
-    /* Box blur x3 = gaussian approximation, adaptive radius */
     const smoothRadius = Math.max(0, Math.round(S.smooth));
     if (smoothRadius > 0) {
-      /* Adaptive: gambar besar butuh blur lebih banyak */
       const adaptive = Math.min(smoothRadius, Math.max(1, Math.round(W / 400)));
       const r = Math.max(1, adaptive);
       m = boxBlur(m, W, H, r);
       m = boxBlur(m, W, H, r);
       m = boxBlur(m, W, H, r);
-      /* S-curve ganda untuk restore kontras tepi */
       m = sCurve(m, W, H);
       m = sCurve(m, W, H);
     }
@@ -415,7 +529,6 @@ DA.photoStudio = (function () {
     updateUI();
   }
 
-  /* -------- Fill holes -------- */
   function fillHoles(mask, W, H) {
     const visited = new Uint8Array(W * H);
     const stack = [];
@@ -450,7 +563,6 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Morphology -------- */
   function morphOp(mask, W, H, r, op) {
     const out = new Uint8ClampedArray(W * H);
     const r2 = r * r;
@@ -478,7 +590,6 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Soft dilate -------- */
   function softDilate(mask, W, H, r) {
     const rad = Math.ceil(r);
     const sigma = Math.max(0.5, r / 2);
@@ -512,14 +623,12 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Box blur (fixed sliding window with clamp) -------- */
   function boxBlur(src, W, H, radius) {
     if (radius < 1) return src;
     const r = radius;
     const size = r * 2 + 1;
     const tmp = new Float32Array(W * H);
 
-    /* Horizontal pass */
     for (let y = 0; y < H; y++) {
       const row = y * W;
       let sum = 0;
@@ -535,7 +644,6 @@ DA.photoStudio = (function () {
       }
     }
 
-    /* Vertical pass */
     const out = new Uint8ClampedArray(W * H);
     for (let x = 0; x < W; x++) {
       let sum = 0;
@@ -553,12 +661,10 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- S-curve (smoothstep) -------- */
   function sCurve(mask, W, H) {
     const out = new Uint8ClampedArray(W * H);
     for (let i = 0; i < mask.length; i++) {
       const v = mask[i] / 255;
-      /* smoothstep */
       const s = v < 0.5
         ? 2 * v * v
         : 1 - Math.pow(-2 * v + 2, 2) / 2;
@@ -567,7 +673,6 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Decontaminate -------- */
   function decontaminate(mask, W, H) {
     const out = new Uint8ClampedArray(mask);
     for (let i = 0; i < mask.length; i++) {
@@ -578,7 +683,6 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Quality check -------- */
   function checkCutoutQuality() {
     if (!S.mask) return;
     let fg = 0;
@@ -723,7 +827,7 @@ DA.photoStudio = (function () {
   }
 
   function updateCursor(e) {
-    if (!S.hasCutout || isTouchDevice()) return;
+    if (!S.hasCutout || isTouchDevice() || !els.cursor) return;
     const rect = els.canvas.getBoundingClientRect();
     const stageRect = els.stage.getBoundingClientRect();
     const scale = rect.width / S.W;
@@ -756,7 +860,7 @@ DA.photoStudio = (function () {
   }
 
   /* ============================================
-     RESET (FIXED — no confirm dialog)
+     RESET (no confirm)
      ============================================ */
   function resetMask() {
     if (!S.baseMask) {
@@ -778,10 +882,10 @@ DA.photoStudio = (function () {
     document.querySelectorAll('[data-bg-type]').forEach((b) =>
       b.classList.toggle('active', b.dataset.bgType === type)
     );
-    els.colorOpts.classList.toggle('hidden', type !== 'color');
-    els.gradOpts.classList.toggle('hidden', type !== 'gradient');
-    els.imgOpts.classList.toggle('hidden', type !== 'image');
-    els.blurOpts.classList.toggle('hidden', type !== 'blur');
+    els.colorOpts?.classList.toggle('hidden', type !== 'color');
+    els.gradOpts?.classList.toggle('hidden', type !== 'gradient');
+    els.imgOpts?.classList.toggle('hidden', type !== 'image');
+    els.blurOpts?.classList.toggle('hidden', type !== 'blur');
     if (type === 'image' && !S.bg.img) DA.toast.info('Pilih gambar background dulu');
     rebuildBg();
     scheduleRender();
@@ -792,31 +896,30 @@ DA.photoStudio = (function () {
      ============================================ */
   function updateUI() {
     const canRemove = !!S.file && S.aiReady;
-    els.removeBtn.disabled = !canRemove;
-    if (!S.aiReady && !S.aiFailed && S.file) els.removeBtn.title = 'AI masih dimuat...';
-    else if (S.aiFailed) els.removeBtn.title = 'AI gagal dimuat';
-    else els.removeBtn.title = 'Hapus background otomatis';
+    if (els.removeBtn) els.removeBtn.disabled = !canRemove;
+    if (els.resetBtn) els.resetBtn.disabled = !S.hasCutout;
+    if (els.undoBtn) els.undoBtn.disabled = !S.history.length;
+    if (els.brushPanel) els.brushPanel.classList.toggle('hidden', !S.hasCutout);
+    if (els.downloadBtn) els.downloadBtn.disabled = !S.file;
 
-    if (!S.file) els.status.textContent = 'Belum ada foto';
-    else if (!S.aiReady && !S.aiFailed && !S.hasCutout) els.status.textContent = 'Foto siap — AI masih dimuat...';
-    else if (S.aiFailed && !S.hasCutout) els.status.textContent = 'Foto siap — AI gagal dimuat';
-
-    els.resetBtn.disabled = !S.hasCutout;
-    els.undoBtn.disabled = !S.history.length;
-    els.brushPanel.classList.toggle('hidden', !S.hasCutout);
-    els.downloadBtn.disabled = !S.file;
+    if (els.status) {
+      if (!S.file) els.status.textContent = 'Belum ada foto';
+      else if (!S.aiReady && !S.aiFailed && !S.hasCutout) els.status.textContent = 'Foto siap — AI dimuat...';
+      else if (S.aiFailed && !S.hasCutout) els.status.textContent = 'Foto siap — AI gagal dimuat';
+    }
   }
 
   function setBusy(busy) {
+    if (!els.removeBtn) return;
     els.removeBtn.disabled = busy || !S.file || !S.aiReady;
     els.removeBtn.innerHTML = busy
-      ? '<div class="loader !w-3.5 !h-3.5 !border-slate-300 !border-t-indigo-500 mr-2"></div><span class="text-xs">Proses...</span>'
-      : '<i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i><span class="text-xs">Hapus BG</span>';
+      ? '<div class="loader !w-4 !h-4 !border-white/30 !border-t-white mr-2"></div><span>Proses...</span>'
+      : '<i class="fa-solid fa-wand-magic-sparkles"></i><span>Hapus BG</span>';
   }
 
   function setProgress(pct, text) {
-    els.progressBar.style.width = Math.max(0, Math.min(100, pct)) + '%';
-    els.progressText.textContent = text || 'Memproses...';
+    if (els.progressBar) els.progressBar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    if (els.progressText) els.progressText.textContent = text || 'Memproses...';
   }
 
   /* ============================================
@@ -824,8 +927,8 @@ DA.photoStudio = (function () {
      ============================================ */
   function download() {
     if (!S.file) return;
-    const sizeKey = els.sizeSel.value;
-    const format = els.formatSel.value;
+    const sizeKey = els.sizeSel?.value || 'original';
+    const format = els.formatSel?.value || 'png';
 
     let outW = S.W, outH = S.H;
     if (sizeKey !== 'original' && PAS_FOTO[sizeKey]) {
