@@ -10,7 +10,6 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: filter 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
 .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
 
@@ -84,6 +83,9 @@
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s var(--ease);
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 .nav-btn:hover { color: #334155; background: rgba(255, 255, 255, 0.6); }
 .nav-btn.active {
@@ -110,6 +112,7 @@
   padding: 6px 2px;
   background: transparent;
   border: none;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -209,7 +212,7 @@
 .dark .input-iconed { background: #0f172a; border-color: #1e293b; color: #e2e8f0; }
 .dark .input-iconed:focus { border-color: #6366f1; }
 
-/* ============ Thumbnail card ============ */
+/* ============ Thumbnail ============ */
 .thumb-card {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -260,6 +263,8 @@
   transition: all 0.15s;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  border: none;
+  cursor: pointer;
 }
 .thumb-action:hover { transform: scale(1.1); }
 .thumb-action:active { transform: scale(0.92); }
@@ -398,13 +403,12 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
 /* ============ Photo Studio Mobile Bottom Sheet ============ */
 @media (max-width: 767px) {
   #photoSidebar.photo-sidebar {
-    position: fixed !important;
+    position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    top: auto !important;
+    top: auto;
     max-height: 82vh;
-    min-height: auto;
     border-radius: 24px 24px 0 0;
     box-shadow: 0 -12px 48px rgba(15, 23, 42, 0.25);
     transform: translateY(100%);
@@ -413,8 +417,6 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
     border-top: 1px solid rgba(226, 232, 240, 0.6);
     padding-bottom: env(safe-area-inset-bottom);
     will-change: transform;
-    display: flex !important;
-    flex-direction: column !important;
   }
   .dark #photoSidebar.photo-sidebar {
     border-top-color: rgba(30, 41, 59, 0.9);
@@ -437,38 +439,31 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
 
 @media (min-width: 768px) {
   #photoSidebar.photo-sidebar {
-    position: relative !important;
+    position: relative;
     transform: none !important;
     max-height: none;
     border-radius: 0;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.02);
-    padding-bottom: 0;
-    display: flex !important;
-    flex-direction: column !important;
+    box-shadow: none;
   }
   #photoBackdrop { display: none !important; }
   .ps-panel { display: block !important; }
 }
 
-/* ============ Mobile Sheets (editor / i2p) ============ */
+/* ============ Mobile Sheets ============ */
 @media (max-width: 767px) {
-  #i2pSheet,
-  #editorSettingsSheet {
+  #i2pSheet {
     transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   }
-  #i2pSheet.open,
-  #editorSettingsSheet.open {
+  #i2pSheet.open {
     transform: translateY(0) !important;
   }
-  #i2pBackdrop.show,
-  #editorBackdrop.show {
-    display: block !important;
-    opacity: 1;
-  }
-  #i2pBackdrop,
-  #editorBackdrop {
+  #i2pBackdrop {
     opacity: 0;
     transition: opacity 0.3s ease;
+  }
+  #i2pBackdrop.show {
+    display: block !important;
+    opacity: 1;
   }
 }
 
@@ -480,7 +475,6 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   .m-nav-btn i { font-size: 16px; }
   .m-nav-btn { min-height: 50px; }
   .ps-tab { padding: 8px 10px; font-size: 11px; }
-  .ps-tab i { font-size: 10px; }
 }
 
 @supports (padding: max(0px)) {
@@ -505,10 +499,6 @@ button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill {
     width: 26px;
     height: 26px;
   }
-  input[type="range"]::-moz-range-thumb {
-    width: 26px;
-    height: 26px;
-  }
   .bg-pill { min-height: 50px; }
   .brush-mode-btn { min-height: 46px; }
 }
@@ -518,7 +508,6 @@ button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill {
   #navMobile { display: grid !important; }
 }
 
-/* ============ Animations ============ */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(6px); }
