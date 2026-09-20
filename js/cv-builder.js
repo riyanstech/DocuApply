@@ -1,8 +1,8 @@
 /* =====================================================
-   DocuApply — CV Builder v7
-   - Export DOCX ASLI pakai dolanmiu/docx (Office Open XML)
+   DocuApply — CV Builder v8
+   - Support override template dari Admin Dashboard
+   - Export DOCX ASLI (Office Open XML)
    - PDF export pakai print-to-PDF (vector, ATS-friendly)
-   - Toolbar grouping & responsive
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -57,6 +57,9 @@ DA.cvBuilder = (function () {
 
     loadTemplates();
     bindEvents();
+
+    // Re-render saat admin update
+    window.addEventListener('cvTemplates:updated', loadTemplates);
   }
 
   /* ============================================
@@ -64,6 +67,15 @@ DA.cvBuilder = (function () {
      ============================================ */
   async function loadTemplates() {
     try {
+      // Prioritas: override dari admin
+      const override = DA.storage.get('cvTemplatesOverride');
+      if (override && Array.isArray(override) && override.length) {
+        els.loading?.classList.add('hidden');
+        renderTemplates(override);
+        return;
+      }
+
+      // Fallback: fetch dari server
       const res = await fetch('cv-templates/templates.json?t=' + Date.now());
       if (!res.ok) throw new Error('templates.json tidak ditemukan');
       const data = await res.json();
@@ -89,10 +101,15 @@ DA.cvBuilder = (function () {
     amber:   { bg: 'bg-amber-100',   text: 'text-amber-600',   hover: 'group-hover:bg-amber-600' },
     rose:    { bg: 'bg-rose-100',    text: 'text-rose-600',    hover: 'group-hover:bg-rose-600' },
     indigo:  { bg: 'bg-indigo-100',  text: 'text-indigo-600',  hover: 'group-hover:bg-indigo-600' },
+    slate:   { bg: 'bg-slate-100',   text: 'text-slate-600',   hover: 'group-hover:bg-slate-600' },
   };
 
   function renderTemplates(templates) {
+    if (!els.grid) return;
     els.grid.innerHTML = '';
+    els.empty?.classList.add('hidden');
+    els.loading?.classList.add('hidden');
+
     templates.forEach((t) => {
       const c = COLOR_MAP[t.color] || COLOR_MAP.blue;
       const card = document.createElement('div');
@@ -821,7 +838,6 @@ DA.cvBuilder = (function () {
 
   /* ============================================
      EXPORT PDF — Print-to-PDF (Native Browser)
-     Hasil: PDF asli, vector, ATS-friendly, konsisten HP & desktop
      ============================================ */
   function downloadPdf() {
     if (!els.content) return;
@@ -830,7 +846,6 @@ DA.cvBuilder = (function () {
     const title = currentTemplate?.name || 'CV';
     const safeTitle = title.replace(/[^a-zA-Z0-9_\s]/g, '_').trim();
 
-    // Build standalone HTML dengan CSS print khusus A4
     const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -839,104 +854,41 @@ DA.cvBuilder = (function () {
 <title>${escapeHtml(title)}</title>
 <style>
   * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0;
-    background: #e2e8f0;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  /* Toolbar (hidden saat print) */
+  html, body { margin: 0; padding: 0; background: #e2e8f0; -webkit-text-size-adjust: 100%; }
   .pdf-toolbar {
-    position: sticky;
-    top: 0;
-    background: #1e293b;
-    color: #fff;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    z-index: 999;
+    position: sticky; top: 0; background: #1e293b; color: #fff;
+    padding: 12px 16px; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px; z-index: 999;
     box-shadow: 0 2px 12px rgba(0,0,0,0.25);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
-  .pdf-toolbar-info {
-    display: flex; flex-direction: column; gap: 2px;
-    min-width: 0; flex: 1;
-  }
-  .pdf-toolbar-title {
-    font-size: 14px; font-weight: 700;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .pdf-toolbar-hint {
-    font-size: 11px; opacity: 0.85; line-height: 1.3;
-  }
+  .pdf-toolbar-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .pdf-toolbar-title { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pdf-toolbar-hint { font-size: 11px; opacity: 0.85; line-height: 1.3; }
   .pdf-print-btn {
     background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    color: #fff;
-    border: none;
-    padding: 11px 20px;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
-    transition: all 0.15s;
-    -webkit-tap-highlight-color: transparent;
+    color: #fff; border: none; padding: 11px 20px; border-radius: 12px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    white-space: nowrap; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+    transition: all 0.15s; -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
   .pdf-print-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
   .pdf-print-btn:active { transform: scale(0.97); }
-
-  /* Paper preview */
-  .pdf-paper-wrapper {
-    padding: 20px 12px 40px;
-    display: flex;
-    justify-content: center;
-  }
+  .pdf-paper-wrapper { padding: 20px 12px 40px; display: flex; justify-content: center; }
   .pdf-paper {
-    width: 100%;
-    max-width: 21cm;
-    background: #fff;
-    padding: 1.5cm 2cm;
-    box-shadow: 0 4px 32px rgba(15, 23, 42, 0.18);
-    color: #1e293b;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 11pt;
-    line-height: 1.55;
-    word-wrap: break-word;
+    width: 100%; max-width: 21cm; background: #fff;
+    padding: 1.5cm 2cm; box-shadow: 0 4px 32px rgba(15, 23, 42, 0.18);
+    color: #1e293b; font-family: Georgia, 'Times New Roman', serif;
+    font-size: 11pt; line-height: 1.55; word-wrap: break-word;
   }
-
-  /* Content styles */
-  .pdf-paper h1 {
-    font-size: 20pt; font-weight: 700;
-    margin: 0 0 8pt 0; line-height: 1.15;
-    text-align: center; color: #0f172a;
-  }
-  .pdf-paper h2 {
-    font-size: 13pt; font-weight: 700;
-    margin: 14pt 0 6pt 0; padding-bottom: 3pt;
-    border-bottom: 1.5px solid #cbd5e1;
-    text-transform: uppercase; letter-spacing: 0.03em;
-    color: #0f172a;
-  }
-  .pdf-paper h3 {
-    font-size: 12pt; font-weight: 700;
-    margin: 10pt 0 4pt 0; color: #1e293b;
-  }
-  .pdf-paper h4 {
-    font-size: 11.5pt; font-weight: 700;
-    margin: 8pt 0 4pt 0; color: #334155;
-  }
+  .pdf-paper h1 { font-size: 20pt; font-weight: 700; margin: 0 0 8pt 0; line-height: 1.15; text-align: center; color: #0f172a; }
+  .pdf-paper h2 { font-size: 13pt; font-weight: 700; margin: 14pt 0 6pt 0; padding-bottom: 3pt; border-bottom: 1.5px solid #cbd5e1; text-transform: uppercase; letter-spacing: 0.03em; color: #0f172a; }
+  .pdf-paper h3 { font-size: 12pt; font-weight: 700; margin: 10pt 0 4pt 0; color: #1e293b; }
+  .pdf-paper h4 { font-size: 11.5pt; font-weight: 700; margin: 8pt 0 4pt 0; color: #334155; }
   .pdf-paper p { margin: 0 0 6pt 0; }
-  .pdf-paper ul, .pdf-paper ol {
-    margin: 0 0 8pt 0; padding-left: 20pt;
-    list-style-position: outside;
-  }
+  .pdf-paper ul, .pdf-paper ol { margin: 0 0 8pt 0; padding-left: 20pt; list-style-position: outside; }
   .pdf-paper ul { list-style-type: disc; }
   .pdf-paper ul ul { list-style-type: circle; }
   .pdf-paper ol { list-style-type: decimal; }
@@ -947,56 +899,23 @@ DA.cvBuilder = (function () {
   .pdf-paper s, .pdf-paper strike { text-decoration: line-through; }
   .pdf-paper sup { vertical-align: super; font-size: 0.75em; }
   .pdf-paper sub { vertical-align: sub; font-size: 0.75em; }
-  .pdf-paper blockquote {
-    margin: 8pt 0; padding: 6pt 12pt;
-    border-left: 3px solid #cbd5e1;
-    color: #475569; font-style: italic;
-  }
-  .pdf-paper table {
-    border-collapse: collapse; width: 100%;
-    margin-bottom: 8pt; font-size: 10.5pt;
-  }
-  .pdf-paper td, .pdf-paper th {
-    padding: 5pt 8pt; border: 1px solid #cbd5e1;
-    vertical-align: top;
-  }
+  .pdf-paper blockquote { margin: 8pt 0; padding: 6pt 12pt; border-left: 3px solid #cbd5e1; color: #475569; font-style: italic; }
+  .pdf-paper table { border-collapse: collapse; width: 100%; margin-bottom: 8pt; font-size: 10.5pt; }
+  .pdf-paper td, .pdf-paper th { padding: 5pt 8pt; border: 1px solid #cbd5e1; vertical-align: top; }
   .pdf-paper th { background: #f1f5f9; font-weight: 700; }
-  .pdf-paper hr {
-    border: none; border-top: 1px solid #cbd5e1;
-    margin: 12pt 0;
-  }
+  .pdf-paper hr { border: none; border-top: 1px solid #cbd5e1; margin: 12pt 0; }
   .pdf-paper a { color: #4f46e5; text-decoration: underline; }
-  .pdf-paper img {
-    max-width: 100%; height: auto;
-    display: block; margin: 6pt auto;
-  }
-
-  /* Print mode: A4 precise */
+  .pdf-paper img { max-width: 100%; height: auto; display: block; margin: 6pt auto; }
   @media print {
-    @page {
-      size: A4;
-      margin: 1.5cm 2cm;
-    }
-    html, body {
-      background: #fff !important;
-    }
+    @page { size: A4; margin: 1.5cm 2cm; }
+    html, body { background: #fff !important; }
     .pdf-toolbar { display: none !important; }
-    .pdf-paper-wrapper {
-      padding: 0 !important;
-      display: block !important;
-    }
-    .pdf-paper {
-      box-shadow: none !important;
-      padding: 0 !important;
-      max-width: none !important;
-      width: 100% !important;
-      margin: 0 !important;
-    }
+    .pdf-paper-wrapper { padding: 0 !important; display: block !important; }
+    .pdf-paper { box-shadow: none !important; padding: 0 !important; max-width: none !important; width: 100% !important; margin: 0 !important; }
   }
 </style>
 </head>
 <body>
-
   <div class="pdf-toolbar">
     <div class="pdf-toolbar-info">
       <div class="pdf-toolbar-title">📄 ${escapeHtml(title)}</div>
@@ -1015,7 +934,6 @@ DA.cvBuilder = (function () {
   </div>
 
   <script>
-    // Auto-trigger print di DESKTOP setelah load (di HP tidak bisa auto karena security)
     (function () {
       var isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isDesktop) {
@@ -1028,13 +946,11 @@ DA.cvBuilder = (function () {
 </body>
 </html>`;
 
-    // Buka di tab baru via Blob URL
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const win = window.open(url, '_blank');
 
     if (!win) {
-      // Popup diblokir → fallback download HTML
       DA.toast.warn('Popup diblokir browser. File HTML diunduh — buka file itu lalu Ctrl+P / Share > Print.', 6000);
       const a = document.createElement('a');
       a.href = url;
@@ -1046,7 +962,6 @@ DA.cvBuilder = (function () {
       DA.toast.success('Tab baru dibuka. Tap "Save as PDF" di sana untuk simpan.', 6000);
     }
 
-    // Cleanup Blob URL
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
