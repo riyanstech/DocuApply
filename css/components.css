@@ -490,8 +490,9 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
 
 #navMobile { z-index: 40; }
 header.glass-header { z-index: 30; }
-#toastContainer { z-index: 90; }
+#toastContainer { z-index: 110; }
 #cameraModal { z-index: 80; }
+#cvChoiceModal { z-index: 100; }
 
 /* =====================================================
    CV BUILDER
@@ -605,6 +606,164 @@ header.glass-header { z-index: 30; }
 .cv-content img { max-width: 100%; height: auto; }
 .cv-content hr { border: none; border-top: 1px solid #cbd5e1; margin: 10pt 0; }
 
+/* Reset style dari docx-preview */
+.cv-content .docx-wrapper,
+.cv-content .docx-render {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+.cv-content .docx-render > section,
+.cv-content .docx-section {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  border: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  width: auto !important;
+  page-break-after: auto !important;
+}
+.cv-content .docx-render > section > article,
+.cv-content .docx-render > section > header,
+.cv-content .docx-render > section > footer {
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+.cv-content .docx-render table,
+.cv-content table {
+  border-collapse: collapse;
+}
+.cv-content .docx-render td,
+.cv-content .docx-render th,
+.cv-content td,
+.cv-content th {
+  vertical-align: top;
+}
+.cv-content .docx-render ul,
+.cv-content .docx-render ol {
+  margin-left: 18pt;
+  padding-left: 0;
+}
+.cv-content .docx-render p {
+  margin: 0 0 6pt 0;
+}
+
+#cvPaperClone { pointer-events: none; }
+
+@media print {
+  body > *:not(#cvPaper) { display: none !important; }
+  #cvPaper { box-shadow: none; margin: 0; }
+}
+
+/* =====================================================
+   CV CHOICE MODAL
+   ===================================================== */
+
+#cvChoiceModal:not(.hidden) {
+  display: flex !important;
+  animation: cvModalFade 0.25s ease;
+}
+
+#cvChoiceSheet {
+  animation: cvSheetSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (min-width: 640px) {
+  #cvChoiceSheet {
+    animation: cvSheetPop 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+
+@keyframes cvModalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cvSheetSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes cvSheetPop {
+  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Choice option button */
+.cv-choice-option {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  text-align: left;
+}
+.cv-choice-option:hover {
+  border-color: #a5b4fc;
+  background: #f8faff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+.cv-choice-option:active {
+  transform: scale(0.98);
+}
+.dark .cv-choice-option {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+.dark .cv-choice-option:hover {
+  background: #1e293b;
+  border-color: #4338ca;
+}
+
+.cv-choice-option-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cv-choice-option-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1e293b;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.dark .cv-choice-option-title { color: #e2e8f0; }
+
+.cv-choice-option-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+.dark .cv-choice-option-desc { color: #94a3b8; }
+
+.cv-choice-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 /* =====================================================
    Responsive
    ===================================================== */
@@ -621,9 +780,12 @@ header.glass-header { z-index: 30; }
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+  #cvChoiceSheet {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
-button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill, .cv-tool-btn {
+button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill, .cv-tool-btn, .cv-choice-option {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
