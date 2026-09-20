@@ -39,7 +39,7 @@
 <link rel="stylesheet" href="css/components.css">
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 flex flex-col h-dvh overflow-hidden antialiased selection:bg-indigo-100 selection:text-indigo-700">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-700" style="height:100dvh;overflow:hidden;">
 
 <!-- ===== HEADER ===== -->
 <header class="glass-header px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-30 shrink-0 gap-2 sm:gap-3" style="padding-top:max(0.625rem, env(safe-area-inset-top))">
@@ -68,12 +68,12 @@
 </header>
 
 <!-- ===== MAIN ===== -->
-<main class="flex-1 overflow-hidden relative">
+<main class="flex-1 min-h-0 overflow-hidden relative">
 
   <!-- ========== VIEW: PDF EDITOR ========== -->
   <section id="view-editor" class="view flex flex-col md:flex-row overflow-hidden absolute inset-0">
 
-    <!-- Desktop Sidebar (hidden on mobile) -->
+    <!-- Desktop Sidebar -->
     <aside class="hidden md:flex w-80 lg:w-96 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 flex-col shrink-0 z-10 overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
       <div class="p-5 flex flex-col gap-4 h-full">
         <div id="dropZone" class="group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-7 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[160px]">
@@ -122,8 +122,8 @@
       </div>
     </aside>
 
-    <!-- Preview Area -->
-    <section class="flex-1 bg-slate-50/50 dark:bg-slate-950/40 overflow-hidden flex flex-col">
+    <!-- Preview Column -->
+    <section class="flex-1 min-h-0 min-w-0 bg-slate-50/50 dark:bg-slate-950/40 flex flex-col overflow-hidden">
 
       <!-- Toolbar -->
       <div class="shrink-0 px-3 md:px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur flex items-center justify-between gap-2">
@@ -143,7 +143,8 @@
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-3 md:p-5 pb-28 md:pb-5" id="previewContainer">
+      <!-- Scrollable Preview -->
+      <div class="flex-1 min-h-0 overflow-y-auto p-3 md:p-5" id="previewContainer">
         <div id="emptyState" class="h-full flex flex-col items-center justify-center text-slate-400 select-none py-10">
           <div class="w-16 h-16 md:w-24 md:h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
             <i class="fa-regular fa-folder-open text-3xl md:text-4xl text-slate-300 dark:text-slate-600"></i>
@@ -154,88 +155,35 @@
         <div id="gridArea" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4 hidden"></div>
       </div>
 
-      <!-- Mobile bottom action bar -->
-      <div class="md:hidden fixed-bottom-bar left-0 right-0 flex gap-2 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-20" style="bottom:0;">
-        <button id="editorUploadBtn" class="pointer-events-auto flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
+      <!-- Mobile bottom action (flex item, bukan fixed) -->
+      <div class="md:hidden shrink-0 flex gap-2 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+        <button id="editorUploadBtn" class="flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
           <i class="fa-solid fa-cloud-arrow-up text-indigo-500"></i>
           <span>Upload</span>
         </button>
-        <button id="editorCameraBtn" class="pointer-events-auto flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm px-4 py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
+        <button id="editorCameraBtn" class="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm px-4 py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
           <i class="fa-solid fa-camera text-teal-500"></i>
         </button>
-        <button id="editorMergeBtn" class="pointer-events-auto flex items-center justify-center gap-2 flex-1 bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-bold text-sm py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform disabled:opacity-40 disabled:shadow-none" disabled>
+        <button id="editorMergeBtn" class="flex items-center justify-center gap-2 flex-1 bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-bold text-sm py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform disabled:opacity-40 disabled:shadow-none" disabled>
           <i class="fa-solid fa-download"></i>
           <span>Simpan PDF</span>
         </button>
       </div>
     </section>
-
-    <!-- Mobile settings bottom sheet -->
-    <div id="editorSettingsSheet" class="md:hidden fixed inset-x-0 bottom-0 top-auto max-h-[60vh] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-50 translate-y-full transition-transform duration-300" style="padding-bottom:env(safe-area-inset-bottom);">
-      <div class="pt-3 pb-1 flex justify-center cursor-grab">
-        <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
-      </div>
-      <div class="px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
-        <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <i class="fa-solid fa-sliders text-indigo-500"></i>
-          Pengaturan
-        </h3>
-        <button id="editorSheetClose" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="p-4 space-y-4">
-        <label class="flex items-center justify-between cursor-pointer py-2">
-          <div class="flex items-center gap-2.5">
-            <div class="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-slate-500">
-              <i class="fa-solid fa-compress"></i>
-            </div>
-            <div>
-              <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Kompresi Otomatis</div>
-              <div class="text-[10px] text-slate-400">Perkecil ukuran file PDF</div>
-            </div>
-          </div>
-          <span class="switch">
-            <input type="checkbox" id="compressionToggleMobile" checked>
-            <span class="slider"></span>
-          </span>
-        </label>
-        <div id="qualityWrapperMobile">
-          <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 block mb-2">Kualitas</label>
-          <select id="qualitySelectMobile" class="input">
-            <option value="0.4">Low · ukuran terkecil</option>
-            <option value="0.6" selected>Medium · seimbang</option>
-            <option value="0.85">High · kualitas terbaik</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Backdrop -->
-    <div id="editorBackdrop" class="md:hidden fixed inset-0 bg-black/50 z-40 hidden"></div>
   </section>
 
   <!-- ========== VIEW: IMAGE → PDF ========== -->
   <section id="view-image2pdf" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
 
-    <!-- Header -->
     <div class="shrink-0 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
-      <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
-        <div>
-          <h2 class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">Image → PDF</h2>
-          <p class="text-[11px] text-slate-400 mt-0.5">Ubah gambar menjadi satu PDF</p>
-        </div>
-        <button id="i2pSettingsBtn" class="hidden md:flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300">
-          <i class="fa-solid fa-sliders"></i> Pengaturan
-        </button>
+      <div class="max-w-5xl mx-auto">
+        <h2 class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">Image → PDF</h2>
+        <p class="text-[11px] text-slate-400 mt-0.5">Ubah gambar menjadi satu PDF</p>
       </div>
     </div>
 
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto">
-      <div class="max-w-5xl mx-auto p-4 pb-32">
-
-        <!-- Dropzone -->
+    <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="max-w-5xl mx-auto p-4">
         <div id="i2pDrop" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all mb-5 min-h-[140px]">
           <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3">
             <i class="fa-solid fa-image text-xl"></i>
@@ -245,7 +193,6 @@
           <input type="file" id="i2pInput" multiple accept="image/*" class="hidden">
         </div>
 
-        <!-- Grid -->
         <div id="i2pGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 mb-5"></div>
 
         <!-- Desktop settings panel -->
@@ -261,7 +208,7 @@
     </div>
 
     <!-- Sticky bottom action -->
-    <div class="shrink-0 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-20" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+    <div class="shrink-0 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
       <div class="max-w-5xl mx-auto flex gap-2">
         <button id="i2pSettingsBtnMobile" class="md:hidden flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform">
           <i class="fa-solid fa-sliders"></i>
@@ -275,7 +222,7 @@
 
     <!-- Mobile settings sheet -->
     <div id="i2pSheet" class="md:hidden fixed inset-x-0 bottom-0 max-h-[70vh] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-50 translate-y-full transition-transform duration-300" style="padding-bottom:env(safe-area-inset-bottom);">
-      <div class="pt-3 pb-1 flex justify-center cursor-grab">
+      <div class="pt-3 pb-1 flex justify-center">
         <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
       </div>
       <div class="px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
@@ -287,19 +234,11 @@
       <div class="p-4 space-y-4 overflow-y-auto" style="max-height:calc(70vh - 100px);">
         <div>
           <label class="label">Ukuran Halaman</label>
-          <select id="i2pSizeM" class="input">
-            <option value="fit" selected>Sesuai gambar</option>
-            <option value="a4">A4</option>
-            <option value="letter">Letter</option>
-          </select>
+          <select id="i2pSizeM" class="input"><option value="fit" selected>Sesuai gambar</option><option value="a4">A4</option><option value="letter">Letter</option></select>
         </div>
         <div>
           <label class="label">Orientasi</label>
-          <select id="i2pOrientM" class="input">
-            <option value="auto" selected>Otomatis</option>
-            <option value="p">Portrait</option>
-            <option value="l">Landscape</option>
-          </select>
+          <select id="i2pOrientM" class="input"><option value="auto" selected>Otomatis</option><option value="p">Portrait</option><option value="l">Landscape</option></select>
         </div>
         <div>
           <label class="label">Margin (pt)</label>
@@ -307,11 +246,7 @@
         </div>
         <div>
           <label class="label">Kualitas</label>
-          <select id="i2pQualityM" class="input">
-            <option value="0.6">Medium</option>
-            <option value="0.85" selected>High</option>
-            <option value="0.95">Max</option>
-          </select>
+          <select id="i2pQualityM" class="input"><option value="0.6">Medium</option><option value="0.85" selected>High</option><option value="0.95">Max</option></select>
         </div>
       </div>
     </div>
@@ -329,8 +264,8 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto">
-      <div class="max-w-5xl mx-auto p-4 pb-32">
+    <div class="flex-1 min-h-0 overflow-y-auto">
+      <div class="max-w-5xl mx-auto p-4">
         <div id="splitDrop" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all mb-5 min-h-[140px]">
           <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3">
             <i class="fa-solid fa-file-pdf text-xl"></i>
@@ -345,7 +280,7 @@
     </div>
 
     <!-- Sticky bottom action -->
-    <div id="splitBar" class="hidden shrink-0 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-20" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+    <div id="splitBar" class="hidden shrink-0 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
       <div class="max-w-5xl mx-auto space-y-3">
         <div class="flex items-center justify-between text-xs">
           <span class="font-semibold text-slate-600 dark:text-slate-300"><span id="splitCount">0</span> halaman terpilih</span>
@@ -372,13 +307,13 @@
   <section id="view-photo" class="view hidden absolute inset-0 flex flex-col md:flex-row overflow-hidden">
 
     <!-- CANVAS AREA -->
-    <section class="order-1 md:order-2 flex-1 min-h-0 flex flex-col bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-950 dark:to-slate-900 relative overflow-hidden">
+    <section class="order-1 md:order-2 flex-1 min-h-0 min-w-0 flex flex-col bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-950 dark:to-slate-900 relative overflow-hidden">
       <div class="shrink-0 px-3 py-2 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 z-10">
         <span id="photoStatus" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate pr-2">Belum ada foto</span>
         <span id="photoDimensions" class="text-[10px] font-semibold text-slate-400 shrink-0"></span>
       </div>
 
-      <div class="flex-1 overflow-auto flex items-center justify-center p-2 sm:p-6 md:p-8 relative" id="photoStageWrap">
+      <div class="flex-1 min-h-0 overflow-auto flex items-center justify-center p-2 sm:p-6 md:p-8 relative" id="photoStageWrap">
         <div id="photoEmpty" class="flex flex-col items-center justify-center text-slate-400 select-none py-6 px-4 text-center">
           <div class="w-16 h-16 sm:w-24 sm:h-24 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-slate-200/50 dark:shadow-none">
             <i class="fa-solid fa-image-portrait text-3xl sm:text-4xl text-slate-300 dark:text-slate-600"></i>
@@ -393,7 +328,7 @@
         </div>
       </div>
 
-      <div class="md:hidden absolute bottom-3 left-3 right-3 flex gap-2 z-20 pointer-events-none">
+      <div class="md:hidden shrink-0 absolute bottom-3 left-3 right-3 flex gap-2 z-20 pointer-events-none">
         <button id="mobileUploadBtn" class="pointer-events-auto flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-xl shadow-black/10 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
           <i class="fa-solid fa-cloud-arrow-up text-indigo-500"></i>
           <span>Upload Foto</span>
@@ -405,7 +340,7 @@
     </section>
 
     <!-- SIDEBAR / SHEET -->
-    <aside id="photoSidebar" class="photo-sidebar order-2 md:order-1 w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 md:border-r border-slate-200/60 dark:border-slate-800 flex flex-col shrink-0 z-50 md:z-10 overflow-hidden md:overflow-y-auto">
+    <aside id="photoSidebar" class="photo-sidebar order-2 md:order-1 w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 md:border-r border-slate-200/60 dark:border-slate-800 flex flex-col shrink-0 z-50 md:z-10 overflow-hidden">
       <div class="md:hidden shrink-0 pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing" id="sheetHandle">
         <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
       </div>
@@ -427,7 +362,7 @@
         <button data-ps-tab="output" class="ps-tab"><i class="fa-solid fa-download"></i> Simpan</button>
       </div>
 
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 min-h-0 overflow-y-auto">
         <div class="p-3 sm:p-4 md:p-5 flex flex-col gap-3 sm:gap-4 pb-6">
           <div id="photoDrop" class="hidden md:flex group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[110px]">
             <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -542,12 +477,6 @@
                 <i class="fa-solid fa-rotate-left text-xs"></i>
                 <span>Undo Sapuan</span>
               </button>
-              <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 flex items-start gap-2.5">
-                <i class="fa-solid fa-hand-pointer text-indigo-500 mt-0.5"></i>
-                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Ketuk & geser pada foto untuk edit tepi.
-                </p>
-              </div>
             </div>
           </div>
 
@@ -630,14 +559,6 @@
                 </select>
               </div>
             </div>
-            <div class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-3 flex items-start gap-2.5">
-              <div class="bg-emerald-100 dark:bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 shrink-0">
-                <i class="fa-solid fa-circle-info text-xs"></i>
-              </div>
-              <p class="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
-                <strong>PNG</strong> untuk transparan, <strong>JPG</strong> untuk ukuran kecil.
-              </p>
-            </div>
             <button id="photoDownload" class="btn-bounce w-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none" disabled>
               <i class="fa-solid fa-download"></i>
               <span>Download Foto</span>
@@ -653,9 +574,8 @@
   <!-- ========== VIEW: EMAIL ========== -->
   <section id="view-email" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
 
-    <!-- Step 1: Template List -->
-    <div id="emailTemplatesList" class="flex-1 overflow-y-auto">
-      <div class="max-w-5xl mx-auto p-4 pb-24">
+    <div id="emailTemplatesList" class="flex-1 min-h-0 overflow-y-auto">
+      <div class="max-w-5xl mx-auto p-4">
         <div class="text-center mb-6 mt-2">
           <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Template Email</h2>
           <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Pilih template sesuai kebutuhan lamaran</p>
@@ -673,10 +593,8 @@
       </div>
     </div>
 
-    <!-- Step 2: Compose Form -->
-    <div id="emailComposeForm" class="hidden flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
+    <div id="emailComposeForm" class="hidden flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
 
-      <!-- Sticky header -->
       <div class="shrink-0 flex items-center gap-3 p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
         <button id="emailBack" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 shrink-0 active:scale-95 transition-transform">
           <i class="fa-solid fa-arrow-left"></i>
@@ -690,11 +608,9 @@
         </button>
       </div>
 
-      <!-- Scrollable body -->
-      <div class="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/40">
-        <div class="max-w-3xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-5 pb-24">
+      <div class="flex-1 min-h-0 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/40">
+        <div class="max-w-3xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-5 pb-6">
 
-          <!-- Placeholder autofill -->
           <details class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
             <summary class="cursor-pointer p-3.5 font-semibold text-sm text-slate-700 dark:text-slate-200 flex items-center justify-between">
               <span><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i> Isi Cepat Placeholder</span>
@@ -753,7 +669,6 @@
         </div>
       </div>
 
-      <!-- Sticky footer -->
       <div class="shrink-0 p-3 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
         <div class="max-w-3xl mx-auto grid grid-cols-3 gap-2">
           <button id="emailSave" class="btn-bounce bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
@@ -822,22 +737,19 @@
     ];
     for (const url of CDNS) {
       try {
-        console.info('[PhotoStudio] Mencoba load AI dari:', url);
         const mod = await import(/* @vite-ignore */ url);
         const fn = mod.removeBackground || mod.imglyRemoveBackground ||
           (mod.default && (mod.default.removeBackground || mod.default));
         if (typeof fn === 'function') {
           window.imglyRemoveBackground = fn;
-          window.dispatchEvent(new CustomEvent('imgy:ready', { detail: { cdn: url } }));
-          console.info('[PhotoStudio] ✅ AI siap dari:', url);
+          window.dispatchEvent(new CustomEvent('imgy:ready'));
           return;
         }
       } catch (err) {
-        console.warn('[PhotoStudio] ❌ CDN gagal:', url, err?.message || err);
+        console.warn('[AI] CDN gagal:', url);
       }
     }
     window.dispatchEvent(new CustomEvent('imgy:error'));
-    console.error('[PhotoStudio] Semua CDN gagal.');
   })();
 </script>
 
