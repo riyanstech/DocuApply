@@ -1,12 +1,10 @@
 /* =====================================================
-   DocuApply — Photo Studio v3
-   Improvements:
-   - SOFT dilate (gaussian-weighted, tidak bikin tepi tajam)
-   - Box-blur mask (anti-alias tepi)
-   - S-curve threshold untuk restore kontras setelah blur
-   - Erode 1px sebelum dilate (hapus halo/contamination)
-   - Alpha decontamination (opsional)
-   - Deteksi otomatis kalau cutout jelek → saran
+   DocuApply — Photo Studio v4
+   - Model FIXED ke "isnet" (Akurat) — tanpa selector
+   - Reset Brush langsung tanpa confirm dialog
+   - Box blur algorithm diperbaiki + adaptive radius
+   - S-curve ganda untuk tepi lebih tegas
+   - Better decontamination
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -16,6 +14,7 @@ DA.photoStudio = (function () {
   const { downloadBlob, bindDropZone } = DA.utils;
 
   const MAX_DIM = 1400;
+  const AI_MODEL = 'isnet';   // ← FIXED
   const PAS_FOTO = {
     '2x3': { w: 236, h: 354 },
     '3x4': { w: 354, h: 472 },
@@ -27,9 +26,9 @@ DA.photoStudio = (function () {
     W: 0, H: 0,
     originalCanvas: null,
     imageData: null,
-    aiOutputMask: null,     // raw AI output
-    baseMask: null,         // setelah post-process
-    mask: null,             // working (bisa di-edit kuas)
+    aiOutputMask: null,
+    baseMask: null,
+    mask: null,
     bg: {
       type: 'transparent',
       color: '#ffffff',
@@ -44,9 +43,8 @@ DA.photoStudio = (function () {
     hasCutout: false,
     aiReady: false,
     aiFailed: false,
-    model: 'isnet_fp16',
     expand: 3,
-    smooth: 2,
+    smooth: 3,
     fillHoles: true,
     decontam: true,
   };
@@ -91,7 +89,6 @@ DA.photoStudio = (function () {
       formatSel: document.getElementById('photoFormat'),
       downloadBtn: document.getElementById('photoDownload'),
       aiStatus: document.getElementById('photoAiStatus'),
-      modelSel: document.getElementById('photoModel'),
       expand: document.getElementById('photoExpand'),
       expandVal: document.getElementById('photoExpandVal'),
       smooth: document.getElementById('photoSmooth'),
@@ -106,7 +103,7 @@ DA.photoStudio = (function () {
     window.addEventListener('imgy:ready', () => {
       S.aiReady = true; S.aiFailed = false;
       updateAIStatusBadge(); updateUI();
-      console.info('[PhotoStudio] AI siap');
+      console.info('[PhotoStudio] AI siap, model:', AI_MODEL);
       preloadModel();
     });
     window.addEventListener('imgy:error', () => {
@@ -118,38 +115,29 @@ DA.photoStudio = (function () {
       S.aiReady = true; updateAIStatusBadge();
     }
 
-    /* ===== AI settings ===== */
-    els.modelSel.addEventListener('change', () => {
-      S.model = els.modelSel.value;
-      DA.storage.set('photoModel', S.model);
-      preloadModel();
-    });
-    const savedModel = DA.storage.get('photoModel');
-    if (savedModel) { S.model = savedModel; els.modelSel.value = savedModel; }
-
+    /* ===== Settings ===== */
     els.expand.addEventListener('input', (e) => {
       S.expand = Number(e.target.value);
       els.expandVal.textContent = S.expand;
+      DA.storage.set('photoExpand', S.expand);
       if (S.hasCutout && S.aiOutputMask) applyPostProcess();
     });
-
     els.smooth.addEventListener('input', (e) => {
       S.smooth = Number(e.target.value);
       els.smoothVal.textContent = S.smooth;
+      DA.storage.set('photoSmooth', S.smooth);
       if (S.hasCutout && S.aiOutputMask) applyPostProcess();
     });
-
     els.fillHoles.addEventListener('change', () => {
       S.fillHoles = els.fillHoles.checked;
       if (S.hasCutout && S.aiOutputMask) applyPostProcess();
     });
-
     els.decontam.addEventListener('change', () => {
       S.decontam = els.decontam.checked;
       if (S.hasCutout && S.aiOutputMask) applyPostProcess();
     });
 
-    /* ===== Restore saved prefs ===== */
+    /* Restore prefs */
     const savedExpand = DA.storage.get('photoExpand');
     if (savedExpand != null) { S.expand = savedExpand; els.expand.value = savedExpand; els.expandVal.textContent = savedExpand; }
     const savedSmooth = DA.storage.get('photoSmooth');
@@ -203,22 +191,25 @@ DA.photoStudio = (function () {
       img.src = url;
     });
 
+    /* ===== Canvas events ===== */
     const c = els.canvas;
     c.addEventListener('pointerdown', onPointerDown);
     c.addEventListener('pointermove', onPointerMove);
     c.addEventListener('pointerup', onPointerUp);
     c.addEventListener('pointercancel', onPointerUp);
-    c.addEventListener('pointerleave', () => { els.cursor.classList.add('hidden'); });
-    c.addEventListener('pointerenter', () => { if (S.hasCutout) els.cursor.classList.remove('hidden'); });
+    c.addEventListener('pointerleave', () => { els.cursor.style.display = 'none'; });
+    c.addEventListener('pointerenter', () => {
+      if (S.hasCutout && !isTouchDevice()) els.cursor.style.display = 'block';
+    });
 
     const themeBtn = document.getElementById('themeToggle');
     themeBtn?.addEventListener('click', () => scheduleRender());
-
     window.addEventListener('resize', () => scheduleRender());
 
     updateUI();
     updateAIStatusBadge();
 
+    /* Auto preload */
     if ('requestIdleCallback' in window) {
       requestIdleCallback(() => { if (S.aiReady) preloadModel(); }, { timeout: 5000 });
     } else {
@@ -230,11 +221,15 @@ DA.photoStudio = (function () {
         S.aiFailed = true;
         updateAIStatusBadge(); updateUI();
       }
-    }, 25000);
+    }, 30000);
+  }
+
+  function isTouchDevice() {
+    return matchMedia('(hover: none)').matches || 'ontouchstart' in window;
   }
 
   /* ============================================
-     AI STATUS BADGE
+     AI STATUS
      ============================================ */
   function updateAIStatusBadge() {
     if (!els.aiStatus) return;
@@ -251,7 +246,7 @@ DA.photoStudio = (function () {
   }
 
   /* ============================================
-     PRELOAD MODEL
+     PRELOAD
      ============================================ */
   function preloadModel() {
     if (!S.aiReady || !S.file) return;
@@ -264,8 +259,8 @@ DA.photoStudio = (function () {
         if (!blob) return;
         const remover = window.imglyRemoveBackground;
         if (typeof remover !== 'function') return;
-        remover(blob, { model: S.model, output: { format: 'image/png' } })
-          .then(() => console.info('[PhotoStudio] Model preloaded:', S.model))
+        remover(blob, { model: AI_MODEL, output: { format: 'image/png' } })
+          .then(() => console.info('[PhotoStudio] Model preloaded'))
           .catch(() => {});
       }, 'image/png');
     } catch {}
@@ -314,7 +309,7 @@ DA.photoStudio = (function () {
   }
 
   /* ============================================
-     AI BACKGROUND REMOVAL
+     AI REMOVE BACKGROUND
      ============================================ */
   async function removeBg() {
     if (!S.file) return;
@@ -332,7 +327,7 @@ DA.photoStudio = (function () {
 
     try {
       const blob = await remover(S.file, {
-        model: S.model,
+        model: AI_MODEL,
         output: { format: 'image/png', quality: 0.9 },
         progress: (key, current, total) => {
           if (!total) return;
@@ -383,39 +378,35 @@ DA.photoStudio = (function () {
   }
 
   /* ============================================
-     POST-PROCESSING PIPELINE
-     1. Fill holes (flood fill dari border)
-     2. Erode 1px (hapus kontaminasi warna background asli)
-     3. Soft dilate N pixel (user-controlled)
-     4. Box-blur x3 (anti-alias tepi = gaussian approx)
-     5. S-curve threshold (restore kontras setelah blur)
-     6. Alpha decontamination (opsional)
+     POST-PROCESSING
      ============================================ */
   function applyPostProcess() {
     if (!S.aiOutputMask) return;
     const W = S.W, H = S.H;
     let m = new Uint8ClampedArray(S.aiOutputMask);
 
-    // 1. Fill holes
     if (S.fillHoles) m = fillHoles(m, W, H);
 
-    // 2. Erode 1px — bikin tepi sedikit masuk, menghilangkan halo/kontaminasi warna
+    /* Erode 1px untuk hilangkan halo warna background */
     m = morphOp(m, W, H, 1, 'erode');
 
-    // 3. Soft dilate — perluas dengan gaussian-weighted
+    /* Soft dilate sesuai slider */
     if (S.expand > 0) m = softDilate(m, W, H, S.expand);
 
-    // 4. Box blur x3 ≈ gaussian → anti-aliasing tepi
+    /* Box blur x3 = gaussian approximation, adaptive radius */
     const smoothRadius = Math.max(0, Math.round(S.smooth));
     if (smoothRadius > 0) {
-      m = boxBlur(m, W, H, smoothRadius);
-      m = boxBlur(m, W, H, smoothRadius);
-      m = boxBlur(m, W, H, smoothRadius);
-      // 5. S-curve sharpen untuk restore "punch" setelah blur
+      /* Adaptive: gambar besar butuh blur lebih banyak */
+      const adaptive = Math.min(smoothRadius, Math.max(1, Math.round(W / 400)));
+      const r = Math.max(1, adaptive);
+      m = boxBlur(m, W, H, r);
+      m = boxBlur(m, W, H, r);
+      m = boxBlur(m, W, H, r);
+      /* S-curve ganda untuk restore kontras tepi */
+      m = sCurve(m, W, H);
       m = sCurve(m, W, H);
     }
 
-    // 6. Alpha decontamination — paksa pixel tepi jadi pure binary kalau dekat 0/255
     if (S.decontam) m = decontaminate(m, W, H);
 
     S.baseMask = new Uint8ClampedArray(m);
@@ -424,7 +415,7 @@ DA.photoStudio = (function () {
     updateUI();
   }
 
-  /* -------- Fill holes: flood fill dari border -------- */
+  /* -------- Fill holes -------- */
   function fillHoles(mask, W, H) {
     const visited = new Uint8Array(W * H);
     const stack = [];
@@ -459,7 +450,7 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Morphology (erode/dilate) circular -------- */
+  /* -------- Morphology -------- */
   function morphOp(mask, W, H, r, op) {
     const out = new Uint8ClampedArray(W * H);
     const r2 = r * r;
@@ -487,11 +478,10 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Soft dilate dengan gaussian weight -------- */
+  /* -------- Soft dilate -------- */
   function softDilate(mask, W, H, r) {
-    // Buat kernel gaussian
     const rad = Math.ceil(r);
-    const sigma = r / 2;
+    const sigma = Math.max(0.5, r / 2);
     const kernel = [];
     let kSum = 0;
     for (let dy = -rad; dy <= rad; dy++) {
@@ -522,52 +512,53 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Box blur (O(n) — horizontal + vertical) -------- */
-  function boxBlur(mask, W, H, radius) {
-    if (radius < 1) return mask;
+  /* -------- Box blur (fixed sliding window with clamp) -------- */
+  function boxBlur(src, W, H, radius) {
+    if (radius < 1) return src;
+    const r = radius;
+    const size = r * 2 + 1;
     const tmp = new Float32Array(W * H);
-    const w = radius * 2 + 1;
 
-    // Horizontal
+    /* Horizontal pass */
     for (let y = 0; y < H; y++) {
       const row = y * W;
       let sum = 0;
-      for (let k = -radius; k <= radius; k++) {
-        sum += mask[row + Math.max(0, Math.min(W - 1, k))];
+      for (let k = -r; k <= r; k++) {
+        const idx = Math.min(W - 1, Math.max(0, k));
+        sum += src[row + idx];
       }
       for (let x = 0; x < W; x++) {
-        tmp[row + x] = sum / w;
-        const outX = x - radius;
-        const inX = x + radius + 1;
-        sum -= mask[row + Math.max(0, Math.min(W - 1, outX))];
-        sum += mask[row + Math.max(0, Math.min(W - 1, inX))];
+        tmp[row + x] = sum / size;
+        const removeIdx = Math.max(0, x - r);
+        const addIdx = Math.min(W - 1, x + r + 1);
+        sum += src[row + addIdx] - src[row + removeIdx];
       }
     }
 
-    // Vertical
+    /* Vertical pass */
     const out = new Uint8ClampedArray(W * H);
     for (let x = 0; x < W; x++) {
       let sum = 0;
-      for (let k = -radius; k <= radius; k++) {
-        sum += tmp[Math.max(0, Math.min(H - 1, k)) * W + x];
+      for (let k = -r; k <= r; k++) {
+        const idx = Math.min(H - 1, Math.max(0, k));
+        sum += tmp[idx * W + x];
       }
       for (let y = 0; y < H; y++) {
-        out[y * W + x] = sum / w;
-        const outY = y - radius;
-        const inY = y + radius + 1;
-        sum -= tmp[Math.max(0, Math.min(H - 1, outY)) * W + x];
-        sum += tmp[Math.max(0, Math.min(H - 1, inY)) * W + x];
+        out[y * W + x] = sum / size;
+        const removeIdx = Math.max(0, y - r);
+        const addIdx = Math.min(H - 1, y + r + 1);
+        sum += tmp[addIdx * W + x] - tmp[removeIdx * W + x];
       }
     }
     return out;
   }
 
-  /* -------- S-curve: sharpen edges setelah blur -------- */
+  /* -------- S-curve (smoothstep) -------- */
   function sCurve(mask, W, H) {
     const out = new Uint8ClampedArray(W * H);
     for (let i = 0; i < mask.length; i++) {
       const v = mask[i] / 255;
-      // smoothstep
+      /* smoothstep */
       const s = v < 0.5
         ? 2 * v * v
         : 1 - Math.pow(-2 * v + 2, 2) / 2;
@@ -576,13 +567,13 @@ DA.photoStudio = (function () {
     return out;
   }
 
-  /* -------- Alpha decontamination -------- */
+  /* -------- Decontaminate -------- */
   function decontaminate(mask, W, H) {
     const out = new Uint8ClampedArray(mask);
     for (let i = 0; i < mask.length; i++) {
       const v = mask[i];
-      if (v < 30) out[i] = 0;
-      else if (v > 225) out[i] = 255;
+      if (v < 25) out[i] = 0;
+      else if (v > 230) out[i] = 255;
     }
     return out;
   }
@@ -594,7 +585,7 @@ DA.photoStudio = (function () {
     for (let i = 0; i < S.mask.length; i++) if (S.mask[i] > 128) fg++;
     const ratio = fg / S.mask.length;
     if (ratio < 0.15) {
-      DA.toast.warn('Subjek terdeteksi kecil. Coba naikkan "Perluas Subjek" atau pakai model "Akurat".', 6000);
+      DA.toast.warn('Subjek terdeteksi kecil. Naikkan "Perluas Subjek".', 6000);
     }
   }
 
@@ -732,7 +723,7 @@ DA.photoStudio = (function () {
   }
 
   function updateCursor(e) {
-    if (!S.hasCutout) return;
+    if (!S.hasCutout || isTouchDevice()) return;
     const rect = els.canvas.getBoundingClientRect();
     const stageRect = els.stage.getBoundingClientRect();
     const scale = rect.width / S.W;
@@ -740,7 +731,7 @@ DA.photoStudio = (function () {
     els.cursor.style.top  = (rect.top - stageRect.top + (e.clientY - rect.top)) + 'px';
     els.cursor.style.width  = (S.brushSize * scale) + 'px';
     els.cursor.style.height = (S.brushSize * scale) + 'px';
-    els.cursor.classList.remove('hidden');
+    els.cursor.style.display = 'block';
   }
 
   function setBrushMode(mode) {
@@ -765,20 +756,22 @@ DA.photoStudio = (function () {
   }
 
   /* ============================================
-     RESET
+     RESET (FIXED — no confirm dialog)
      ============================================ */
   function resetMask() {
-    if (!S.baseMask) return;
-    if (!DA.confirm('Reset semua sapuan kuas ke hasil AI awal?')) return;
+    if (!S.baseMask) {
+      DA.toast.warn('Belum ada cutout untuk direset');
+      return;
+    }
     S.mask = new Uint8ClampedArray(S.baseMask);
     S.history = [];
     scheduleRender();
     updateUI();
-    DA.toast.info('Mask direset');
+    DA.toast.success('Kuas direset ke hasil AI awal');
   }
 
   /* ============================================
-     BACKGROUND TYPE
+     BG TYPE
      ============================================ */
   function setBgType(type) {
     S.bg.type = type;
