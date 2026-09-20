@@ -1,14 +1,12 @@
 /* =====================================================
-   DocuApply — Main entry (tab switching, theme, init)
+   DocuApply — Main entry
    ===================================================== */
 (function () {
-  /* ---------- PDF.js worker ---------- */
   if (window.pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 
-  /* ---------- Tab switching ---------- */
   const VIEWS = {
     editor:    document.getElementById('view-editor'),
     image2pdf: document.getElementById('view-image2pdf'),
@@ -23,13 +21,8 @@
 
     Object.entries(VIEWS).forEach(([k, el]) => {
       if (!el) return;
-      if (k === name) {
-        el.classList.remove('hidden');
-        if (k === 'editor' || k === 'email' || k === 'photo') el.classList.add('flex');
-      } else {
-        el.classList.add('hidden');
-        el.classList.remove('flex');
-      }
+      // Hanya toggle 'hidden' — display: flex sudah statis di HTML
+      el.classList.toggle('hidden', k !== name);
     });
 
     ALL_NAV.forEach((btn) => {
@@ -44,7 +37,6 @@
     btn.addEventListener('click', () => switchTab(btn.dataset.tab))
   );
 
-  /* ---------- Theme toggle ---------- */
   function initTheme() {
     const btn = document.getElementById('themeToggle');
     btn.addEventListener('click', () => {
@@ -54,10 +46,8 @@
     });
   }
 
-  /* ---------- Init ---------- */
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
-
     if (DA.camera)       DA.camera.init();
     if (DA.pdfEditor)    DA.pdfEditor.init();
     if (DA.imageToPdf)   DA.imageToPdf.init();
