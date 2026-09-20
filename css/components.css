@@ -475,7 +475,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   }
 }
 
-/* ============ Fix: Photo Studio z-index stacking ============ */
+/* ============ Fix: z-index stacking ============ */
 #photoSidebar.photo-sidebar { z-index: 60; }
 
 @media (min-width: 768px) {
@@ -587,69 +587,143 @@ header.glass-header { z-index: 30; }
   color: #1e293b;
   word-wrap: break-word;
 }
+
+/* =====================================================
+   CV Content — Styling hasil mammoth.js
+   ===================================================== */
+
+/* Heading dari Word */
+.cv-content h1,
+.cv-content .doc-title {
+  font-size: 20pt;
+  font-weight: 700;
+  margin: 0 0 8pt 0;
+  line-height: 1.15;
+  text-align: center;
+  color: #0f172a;
+}
+.cv-content h2 {
+  font-size: 13pt;
+  font-weight: 700;
+  margin: 14pt 0 6pt 0;
+  padding-bottom: 3pt;
+  border-bottom: 1.5px solid #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #0f172a;
+}
+.cv-content h3 {
+  font-size: 12pt;
+  font-weight: 700;
+  margin: 10pt 0 4pt 0;
+  color: #1e293b;
+}
+.cv-content h4 {
+  font-size: 11.5pt;
+  font-weight: 700;
+  margin: 8pt 0 4pt 0;
+  color: #334155;
+}
+
+/* Paragraph */
+.cv-content p {
+  margin: 0 0 6pt 0;
+  font-size: 11pt;
+  line-height: 1.55;
+}
+.cv-content .doc-subtitle {
+  font-size: 11pt;
+  font-style: italic;
+  color: #64748b;
+  text-align: center;
+  margin-bottom: 12pt;
+}
+
+/* Lists */
+.cv-content ul,
+.cv-content ol {
+  margin: 0 0 8pt 0;
+  padding-left: 20pt;
+  list-style-position: outside;
+}
+.cv-content ul { list-style-type: disc; }
+.cv-content ul ul { list-style-type: circle; margin-bottom: 4pt; }
+.cv-content ul ul ul { list-style-type: square; }
+.cv-content ol { list-style-type: decimal; }
+.cv-content li {
+  margin-bottom: 3pt;
+  font-size: 11pt;
+  line-height: 1.5;
+}
+.cv-content li > p {
+  margin-bottom: 3pt;
+}
+
+/* Blockquote */
+.cv-content blockquote {
+  margin: 8pt 0;
+  padding: 6pt 12pt;
+  border-left: 3px solid #cbd5e1;
+  color: #475569;
+  font-style: italic;
+}
+
+/* Table */
+.cv-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 8pt;
+  font-size: 10.5pt;
+}
+.cv-content table td,
+.cv-content table th {
+  padding: 5pt 8pt;
+  border: 1px solid #cbd5e1;
+  vertical-align: top;
+}
+.cv-content table th {
+  background: #f1f5f9;
+  font-weight: 700;
+}
+
+/* Horizontal rule */
+.cv-content hr {
+  border: none;
+  border-top: 1px solid #cbd5e1;
+  margin: 12pt 0;
+}
+
+/* Links */
+.cv-content a {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+/* Bold/italic/underline */
+.cv-content strong, .cv-content b { font-weight: 700; color: #0f172a; }
+.cv-content em, .cv-content i { font-style: italic; }
+.cv-content u { text-decoration: underline; }
+
+/* Images */
+.cv-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 6pt auto;
+}
+
+/* Reset spacing */
+.cv-content > p:first-child { margin-top: 0; }
+.cv-content > p:last-child { margin-bottom: 0; }
+
+/* Placeholder text */
 .cv-content:empty::before {
   content: 'Mulai ketik CV Anda di sini...';
   color: #94a3b8;
-}
-.cv-content h1 { font-size: 20pt; font-weight: 700; margin-bottom: 6pt; line-height: 1.15; }
-.cv-content h2 { font-size: 13pt; font-weight: 700; margin-top: 14pt; margin-bottom: 6pt; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 3pt; text-transform: uppercase; letter-spacing: 0.03em; }
-.cv-content h3 { font-size: 12pt; font-weight: 700; margin-top: 8pt; margin-bottom: 4pt; }
-.cv-content p { margin-bottom: 6pt; }
-.cv-content ul, .cv-content ol { margin-left: 18pt; margin-bottom: 6pt; }
-.cv-content li { margin-bottom: 2pt; }
-.cv-content strong, .cv-content b { font-weight: 700; }
-.cv-content em, .cv-content i { font-style: italic; }
-.cv-content u { text-decoration: underline; }
-.cv-content a { color: #4f46e5; text-decoration: underline; }
-.cv-content table { border-collapse: collapse; width: 100%; margin-bottom: 8pt; }
-.cv-content table td, .cv-content table th { padding: 4pt 6pt; border: 1px solid #e2e8f0; }
-.cv-content img { max-width: 100%; height: auto; }
-.cv-content hr { border: none; border-top: 1px solid #cbd5e1; margin: 10pt 0; }
-
-/* Reset style dari docx-preview */
-.cv-content .docx-wrapper,
-.cv-content .docx-render {
-  background: transparent !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-}
-.cv-content .docx-render > section,
-.cv-content .docx-section {
-  margin: 0 !important;
-  padding: 0 !important;
-  background: #fff !important;
-  box-shadow: none !important;
-  border: none !important;
-  min-height: 0 !important;
-  height: auto !important;
-  width: auto !important;
-  page-break-after: auto !important;
-}
-.cv-content .docx-render > section > article,
-.cv-content .docx-render > section > header,
-.cv-content .docx-render > section > footer {
-  padding: 0 !important;
-  min-height: 0 !important;
-}
-.cv-content .docx-render table,
-.cv-content table {
-  border-collapse: collapse;
-}
-.cv-content .docx-render td,
-.cv-content .docx-render th,
-.cv-content td,
-.cv-content th {
-  vertical-align: top;
-}
-.cv-content .docx-render ul,
-.cv-content .docx-render ol {
-  margin-left: 18pt;
-  padding-left: 0;
-}
-.cv-content .docx-render p {
-  margin: 0 0 6pt 0;
+  font-style: italic;
 }
 
+/* Print mode untuk CV */
 #cvPaperClone { pointer-events: none; }
 
 @media print {
