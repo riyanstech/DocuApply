@@ -583,7 +583,40 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/dist/browser.js"></script>
+
+<!-- ✅ AI Background Removal — dimuat via ESM dengan multi-CDN fallback -->
+<script type="module">
+  (async function loadBgRemovalAI() {
+    const CDNS = [
+      'https://esm.sh/@imgly/background-removal@1.5.5',
+      'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm',
+      'https://cdn.skypack.dev/@imgly/background-removal@1.5.5',
+    ];
+
+    for (const url of CDNS) {
+      try {
+        console.info('[PhotoStudio] Mencoba load AI dari:', url);
+        const mod = await import(/* @vite-ignore */ url);
+        const fn =
+          mod.removeBackground ||
+          mod.imglyRemoveBackground ||
+          (mod.default && (mod.default.removeBackground || mod.default));
+
+        if (typeof fn === 'function') {
+          window.imglyRemoveBackground = fn;
+          window.dispatchEvent(new CustomEvent('imgy:ready', { detail: { cdn: url } }));
+          console.info('[PhotoStudio] ✅ AI library siap dari:', url);
+          return;
+        }
+      } catch (err) {
+        console.warn('[PhotoStudio] ❌ CDN gagal:', url, err?.message || err);
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('imgy:error'));
+    console.error('[PhotoStudio] Semua CDN gagal. Periksa koneksi internet.');
+  })();
+</script>
 
 <script src="js/utils.js"></script>
 <script src="js/camera.js"></script>
