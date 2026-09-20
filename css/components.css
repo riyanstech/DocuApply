@@ -212,7 +212,7 @@
 .dark .input-iconed { background: #0f172a; border-color: #1e293b; color: #e2e8f0; }
 .dark .input-iconed:focus { border-color: #6366f1; }
 
-/* ============ Thumbnail ============ */
+/* ============ Thumbnail card ============ */
 .thumb-card {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -485,9 +485,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
 #photoBackdrop { z-index: 50; }
 
 @media (max-width: 767px) {
-  #photoSidebar.photo-sidebar.open {
-    z-index: 60 !important;
-  }
+  #photoSidebar.photo-sidebar.open { z-index: 60 !important; }
 }
 
 #navMobile { z-index: 40; }
@@ -496,13 +494,126 @@ header.glass-header { z-index: 30; }
 #cameraModal { z-index: 80; }
 
 /* =====================================================
+   CV BUILDER
+   ===================================================== */
+
+/* Toolbar scroll (no scrollbar) */
+.cv-toolbar-scroll::-webkit-scrollbar { display: none; }
+.cv-toolbar-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Tool buttons */
+.cv-tool-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.cv-tool-btn:hover { background: #f1f5f9; color: #334155; }
+.cv-tool-btn.active { background: #eef2ff; color: #4f46e5; }
+.cv-tool-btn:active { transform: scale(0.92); }
+.dark .cv-tool-btn { color: #94a3b8; }
+.dark .cv-tool-btn:hover { background: #1e293b; color: #e2e8f0; }
+.dark .cv-tool-btn.active { background: #312e81; color: #a5b4fc; }
+
+.cv-tool-select {
+  height: 34px;
+  padding: 0 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  cursor: pointer;
+  outline: none;
+}
+.cv-tool-select:focus { border-color: #6366f1; }
+.dark .cv-tool-select {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.cv-tool-color {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+/* A4 Paper */
+.cv-paper {
+  width: 100%;
+  max-width: 21cm;
+  min-height: 60vh;
+  background: #fff;
+  margin: 0 auto;
+  padding: 1.2rem;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12);
+  border-radius: 4px;
+  color: #1e293b;
+}
+@media (min-width: 768px) {
+  .cv-paper {
+    padding: 1.5cm 2cm;
+    min-height: 29.7cm;
+  }
+}
+
+/* Editable content */
+.cv-content {
+  outline: none;
+  min-height: 50vh;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 11pt;
+  line-height: 1.55;
+  color: #1e293b;
+  word-wrap: break-word;
+}
+.cv-content:empty::before {
+  content: 'Mulai ketik CV Anda di sini...';
+  color: #94a3b8;
+}
+.cv-content h1 { font-size: 20pt; font-weight: 700; margin-bottom: 6pt; line-height: 1.15; }
+.cv-content h2 { font-size: 13pt; font-weight: 700; margin-top: 14pt; margin-bottom: 6pt; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 3pt; text-transform: uppercase; letter-spacing: 0.03em; }
+.cv-content h3 { font-size: 12pt; font-weight: 700; margin-top: 8pt; margin-bottom: 4pt; }
+.cv-content p { margin-bottom: 6pt; }
+.cv-content ul, .cv-content ol { margin-left: 18pt; margin-bottom: 6pt; }
+.cv-content li { margin-bottom: 2pt; }
+.cv-content strong, .cv-content b { font-weight: 700; }
+.cv-content em, .cv-content i { font-style: italic; }
+.cv-content u { text-decoration: underline; }
+.cv-content a { color: #4f46e5; text-decoration: underline; }
+.cv-content table { border-collapse: collapse; width: 100%; margin-bottom: 8pt; }
+.cv-content table td, .cv-content table th { padding: 4pt 6pt; border: 1px solid #e2e8f0; }
+.cv-content img { max-width: 100%; height: auto; }
+.cv-content hr { border: none; border-top: 1px solid #cbd5e1; margin: 10pt 0; }
+
+/* =====================================================
    Responsive
    ===================================================== */
 @media (max-width: 400px) {
   .m-nav-btn { font-size: 9px; }
   .m-nav-btn i { font-size: 16px; }
-  .m-nav-btn { min-height: 50px; }
+  .m-nav-btn { min-height: 50px; padding: 4px 1px; }
   .ps-tab { padding: 8px 10px; font-size: 11px; }
+  .cv-paper { border-radius: 0; box-shadow: none; min-height: 70vh; }
 }
 
 @supports (padding: max(0px)) {
@@ -512,7 +623,7 @@ header.glass-header { z-index: 30; }
   }
 }
 
-button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill {
+button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill, .cv-tool-btn {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -536,6 +647,7 @@ button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill {
   #navMobile { display: grid !important; }
 }
 
+/* ============ Animations ============ */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(6px); }
