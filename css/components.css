@@ -351,7 +351,6 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   max-width: 100%;
   height: auto;
   object-fit: contain;
-  image-rendering: -webkit-optimize-contrast;
 }
 .dark #photoCanvas {
   background-color: #0f172a;
@@ -367,10 +366,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   -webkit-overflow-scrolling: touch;
 }
 
-/* =====================================================
-   Photo Studio — Tabs
-   ===================================================== */
-
+/* ============ Photo Studio Tabs ============ */
 .ps-tab {
   flex-shrink: 0;
   padding: 9px 14px;
@@ -404,10 +400,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
 .ps-tabs-scroll::-webkit-scrollbar { display: none; }
 .ps-tabs-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* =====================================================
-   Mobile Bottom Sheet (Photo Studio)
-   ===================================================== */
-
+/* ============ Photo Studio Mobile Bottom Sheet ============ */
 @media (max-width: 767px) {
   #photoSidebar.photo-sidebar {
     position: fixed;
@@ -453,45 +446,37 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
     border-radius: 0;
     box-shadow: 4px 0 24px rgba(0,0,0,0.02);
     padding-bottom: 0;
+    overflow-y: auto;
   }
   #photoBackdrop { display: none !important; }
   .ps-panel { display: block !important; }
 }
 
-/* =====================================================
-   Mobile Bottom Sheets (Editor, Image→PDF)
-   ===================================================== */
-
+/* ============ Image→PDF Mobile Sheet ============ */
 @media (max-width: 767px) {
-  #editorSettingsSheet,
-  #i2pSheet {
+  #i2pSheet,
+  #editorSettingsSheet {
     transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   }
-  #editorSettingsSheet.open,
-  #i2pSheet.open {
+  #i2pSheet.open,
+  #editorSettingsSheet.open {
     transform: translateY(0) !important;
   }
-  #editorBackdrop.show,
-  #i2pBackdrop.show {
+  #i2pBackdrop.show,
+  #editorBackdrop.show {
     display: block !important;
     opacity: 1;
   }
-  #editorBackdrop,
-  #i2pBackdrop {
+  #i2pBackdrop,
+  #editorBackdrop {
     opacity: 0;
     transition: opacity 0.3s ease;
   }
 }
 
-/* Fixed bottom bar (Editor mobile) */
-.fixed-bottom-bar {
-  position: fixed;
-}
-
 /* =====================================================
-   Responsive Fixes
+   Responsive
    ===================================================== */
-
 @media (max-width: 400px) {
   .m-nav-btn { font-size: 9px; }
   .m-nav-btn i { font-size: 16px; }
@@ -535,11 +520,13 @@ button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill {
   #navMobile { display: grid !important; }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+/* ============ Animations ============ */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
