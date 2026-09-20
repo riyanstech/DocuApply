@@ -72,23 +72,25 @@
 
   <!-- ========== VIEW: PDF EDITOR ========== -->
   <section id="view-editor" class="view flex flex-col md:flex-row overflow-hidden absolute inset-0">
-    <aside class="w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 flex flex-col shrink-0 z-10 overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)] max-h-[46vh] md:max-h-full">
-      <div class="p-3 sm:p-4 md:p-5 flex flex-col gap-3 sm:gap-4 h-full">
-        <div id="dropZone" class="group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 md:p-7 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[100px] md:min-h-[160px]">
-          <div class="w-10 h-10 md:w-14 md:h-14 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-2 md:mb-3 group-hover:scale-110 transition-transform">
-            <i class="fa-solid fa-cloud-arrow-up text-xl md:text-2xl"></i>
+
+    <!-- Desktop Sidebar (hidden on mobile) -->
+    <aside class="hidden md:flex w-80 lg:w-96 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 flex-col shrink-0 z-10 overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+      <div class="p-5 flex flex-col gap-4 h-full">
+        <div id="dropZone" class="group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-7 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[160px]">
+          <div class="w-14 h-14 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
           </div>
-          <h3 class="font-bold text-slate-700 dark:text-slate-200 text-xs md:text-sm mb-0.5">Upload File</h3>
-          <p class="text-[10px] md:text-xs text-slate-400">PDF atau Gambar (JPG/PNG)</p>
+          <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm mb-0.5">Upload File</h3>
+          <p class="text-xs text-slate-400">PDF atau Gambar (JPG/PNG)</p>
           <input type="file" id="fileInput" multiple accept="application/pdf,image/*" class="hidden">
         </div>
 
-        <div class="grid grid-cols-2 gap-2 sm:gap-3">
-          <button data-action="add" class="btn-bounce btn-secondary py-3 sm:py-2.5"><i class="fa-solid fa-plus text-indigo-500"></i> Tambah</button>
-          <button data-action="camera" class="btn-bounce btn-secondary py-3 sm:py-2.5"><i class="fa-solid fa-camera text-teal-500"></i> Foto</button>
+        <div class="grid grid-cols-2 gap-3">
+          <button data-action="add" class="btn-bounce btn-secondary"><i class="fa-solid fa-plus text-indigo-500"></i> Tambah</button>
+          <button data-action="camera" class="btn-bounce btn-secondary"><i class="fa-solid fa-camera text-teal-500"></i> Foto</button>
         </div>
 
-        <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-3 md:p-4 rounded-xl space-y-3">
+        <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-4 rounded-xl space-y-3">
           <label class="flex items-center justify-between cursor-pointer">
             <div class="flex items-center gap-2.5">
               <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400">
@@ -103,7 +105,7 @@
           </label>
           <div id="qualityWrapper" class="pl-11">
             <label class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">Kualitas</label>
-            <select id="qualitySelect" class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 focus:outline-none focus:border-indigo-500 dark:text-slate-200">
+            <select id="qualitySelect" class="input">
               <option value="0.4">Low · ukuran terkecil</option>
               <option value="0.6" selected>Medium · seimbang</option>
               <option value="0.85">High · kualitas terbaik</option>
@@ -111,8 +113,8 @@
           </div>
         </div>
 
-        <div class="mt-auto pt-2 md:pt-4">
-          <button id="mergeBtn" class="btn-bounce w-full btn-primary py-3 md:py-4 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none" disabled>
+        <div class="mt-auto pt-4">
+          <button id="mergeBtn" class="btn-bounce w-full btn-primary py-4 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none" disabled>
             <span>Gabungkan & Unduh PDF</span>
             <i class="fa-solid fa-arrow-right"></i>
           </button>
@@ -120,16 +122,19 @@
       </div>
     </aside>
 
+    <!-- Preview Area -->
     <section class="flex-1 bg-slate-50/50 dark:bg-slate-950/40 overflow-hidden flex flex-col">
-      <div class="shrink-0 px-3 md:px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur flex items-center justify-between gap-2 flex-wrap">
+
+      <!-- Toolbar -->
+      <div class="shrink-0 px-3 md:px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur flex items-center justify-between gap-2">
         <div class="flex items-center gap-1">
-          <button id="undoBtn" class="tool-btn" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
-          <button id="redoBtn" class="tool-btn" title="Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+          <button id="undoBtn" class="tool-btn" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+          <button id="redoBtn" class="tool-btn" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
           <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
           <button id="clearBtn" class="tool-btn" title="Hapus semua"><i class="fa-solid fa-trash"></i></button>
         </div>
-        <div class="flex items-center gap-2 sm:gap-3">
-          <span id="pageCountBadge" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">0 halaman</span>
+        <div class="flex items-center gap-2">
+          <span id="pageCountBadge" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">0 hal</span>
           <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
             <button data-zoom="-1" class="zoom-btn"><i class="fa-solid fa-minus text-[10px]"></i></button>
             <span id="zoomLabel" class="text-[10px] font-bold text-slate-600 dark:text-slate-300 w-8 text-center">100%</span>
@@ -138,79 +143,225 @@
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-3 md:p-5" id="previewContainer">
+      <div class="flex-1 overflow-y-auto p-3 md:p-5 pb-28 md:pb-5" id="previewContainer">
         <div id="emptyState" class="h-full flex flex-col items-center justify-center text-slate-400 select-none py-10">
           <div class="w-16 h-16 md:w-24 md:h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
             <i class="fa-regular fa-folder-open text-3xl md:text-4xl text-slate-300 dark:text-slate-600"></i>
           </div>
           <h3 class="text-sm md:text-lg font-bold text-slate-600 dark:text-slate-300 mb-1">Belum ada file</h3>
-          <p class="text-xs md:text-sm text-slate-400 max-w-xs text-center px-4">Upload PDF atau gambar dari panel untuk mulai mengedit.</p>
+          <p class="text-xs md:text-sm text-slate-400 max-w-xs text-center px-4">Ketuk <strong>Upload</strong> di bawah untuk memulai.</p>
         </div>
-        <div id="gridArea" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 hidden pb-24"></div>
+        <div id="gridArea" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4 hidden"></div>
+      </div>
+
+      <!-- Mobile bottom action bar -->
+      <div class="md:hidden fixed-bottom-bar left-0 right-0 flex gap-2 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-20" style="bottom:0;">
+        <button id="editorUploadBtn" class="pointer-events-auto flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
+          <i class="fa-solid fa-cloud-arrow-up text-indigo-500"></i>
+          <span>Upload</span>
+        </button>
+        <button id="editorCameraBtn" class="pointer-events-auto flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm px-4 py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
+          <i class="fa-solid fa-camera text-teal-500"></i>
+        </button>
+        <button id="editorMergeBtn" class="pointer-events-auto flex items-center justify-center gap-2 flex-1 bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-bold text-sm py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform disabled:opacity-40 disabled:shadow-none" disabled>
+          <i class="fa-solid fa-download"></i>
+          <span>Simpan PDF</span>
+        </button>
       </div>
     </section>
+
+    <!-- Mobile settings bottom sheet -->
+    <div id="editorSettingsSheet" class="md:hidden fixed inset-x-0 bottom-0 top-auto max-h-[60vh] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-50 translate-y-full transition-transform duration-300" style="padding-bottom:env(safe-area-inset-bottom);">
+      <div class="pt-3 pb-1 flex justify-center cursor-grab">
+        <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+      </div>
+      <div class="px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-indigo-500"></i>
+          Pengaturan
+        </h3>
+        <button id="editorSheetClose" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-4">
+        <label class="flex items-center justify-between cursor-pointer py-2">
+          <div class="flex items-center gap-2.5">
+            <div class="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-slate-500">
+              <i class="fa-solid fa-compress"></i>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-slate-700 dark:text-slate-200">Kompresi Otomatis</div>
+              <div class="text-[10px] text-slate-400">Perkecil ukuran file PDF</div>
+            </div>
+          </div>
+          <span class="switch">
+            <input type="checkbox" id="compressionToggleMobile" checked>
+            <span class="slider"></span>
+          </span>
+        </label>
+        <div id="qualityWrapperMobile">
+          <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 block mb-2">Kualitas</label>
+          <select id="qualitySelectMobile" class="input">
+            <option value="0.4">Low · ukuran terkecil</option>
+            <option value="0.6" selected>Medium · seimbang</option>
+            <option value="0.85">High · kualitas terbaik</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backdrop -->
+    <div id="editorBackdrop" class="md:hidden fixed inset-0 bg-black/50 z-40 hidden"></div>
   </section>
 
   <!-- ========== VIEW: IMAGE → PDF ========== -->
-  <section id="view-image2pdf" class="view hidden absolute inset-0 overflow-y-auto p-4 sm:p-8 pb-24">
-    <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-6 sm:mb-8 mt-2">
-        <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100">Image → PDF</h2>
-        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Ubah beberapa gambar menjadi satu file PDF</p>
-      </div>
-      <div id="i2pDrop" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 sm:p-8 flex flex-col items-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all mb-5 sm:mb-6">
-        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3">
-          <i class="fa-solid fa-image text-xl sm:text-2xl"></i>
+  <section id="view-image2pdf" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <div class="shrink-0 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+      <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">Image → PDF</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">Ubah gambar menjadi satu PDF</p>
         </div>
-        <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm mb-1">Pilih atau jatuhkan gambar</h3>
-        <p class="text-[11px] sm:text-xs text-slate-400">JPG, PNG, WEBP · Bisa pilih banyak sekaligus</p>
-        <input type="file" id="i2pInput" multiple accept="image/*" class="hidden">
-      </div>
-      <div id="i2pGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 mb-5 sm:mb-6"></div>
-      <div id="i2pPanel" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 mb-6">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div><label class="label">Ukuran</label><select id="i2pSize" class="input"><option value="fit" selected>Sesuai gambar</option><option value="a4">A4</option><option value="letter">Letter</option></select></div>
-          <div><label class="label">Orientasi</label><select id="i2pOrient" class="input"><option value="auto" selected>Otomatis</option><option value="p">Portrait</option><option value="l">Landscape</option></select></div>
-          <div><label class="label">Margin (pt)</label><input id="i2pMargin" type="number" min="0" max="100" value="20" class="input"></div>
-          <div><label class="label">Kualitas</label><select id="i2pQuality" class="input"><option value="0.6">Medium</option><option value="0.85" selected>High</option><option value="0.95">Max</option></select></div>
-        </div>
-        <button id="i2pConvert" class="btn-bounce w-full btn-primary py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30">
-          <i class="fa-solid fa-file-pdf"></i> Konversi ke PDF
+        <button id="i2pSettingsBtn" class="hidden md:flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300">
+          <i class="fa-solid fa-sliders"></i> Pengaturan
         </button>
       </div>
     </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="max-w-5xl mx-auto p-4 pb-32">
+
+        <!-- Dropzone -->
+        <div id="i2pDrop" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all mb-5 min-h-[140px]">
+          <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3">
+            <i class="fa-solid fa-image text-xl"></i>
+          </div>
+          <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm mb-1">Pilih gambar</h3>
+          <p class="text-[11px] text-slate-400">JPG, PNG, WEBP · Bisa banyak</p>
+          <input type="file" id="i2pInput" multiple accept="image/*" class="hidden">
+        </div>
+
+        <!-- Grid -->
+        <div id="i2pGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 mb-5"></div>
+
+        <!-- Desktop settings panel -->
+        <div id="i2pPanel" class="hidden md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="grid grid-cols-4 gap-3">
+            <div><label class="label">Ukuran</label><select id="i2pSize" class="input"><option value="fit" selected>Sesuai gambar</option><option value="a4">A4</option><option value="letter">Letter</option></select></div>
+            <div><label class="label">Orientasi</label><select id="i2pOrient" class="input"><option value="auto" selected>Otomatis</option><option value="p">Portrait</option><option value="l">Landscape</option></select></div>
+            <div><label class="label">Margin (pt)</label><input id="i2pMargin" type="number" min="0" max="100" value="20" class="input"></div>
+            <div><label class="label">Kualitas</label><select id="i2pQuality" class="input"><option value="0.6">Medium</option><option value="0.85" selected>High</option><option value="0.95">Max</option></select></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky bottom action -->
+    <div class="shrink-0 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-20" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+      <div class="max-w-5xl mx-auto flex gap-2">
+        <button id="i2pSettingsBtnMobile" class="md:hidden flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform">
+          <i class="fa-solid fa-sliders"></i>
+        </button>
+        <button id="i2pConvert" class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-br from-indigo-500 to-violet-600 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform disabled:opacity-40 disabled:shadow-none" disabled>
+          <i class="fa-solid fa-file-pdf"></i>
+          <span>Konversi ke PDF</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile settings sheet -->
+    <div id="i2pSheet" class="md:hidden fixed inset-x-0 bottom-0 max-h-[70vh] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-50 translate-y-full transition-transform duration-300" style="padding-bottom:env(safe-area-inset-bottom);">
+      <div class="pt-3 pb-1 flex justify-center cursor-grab">
+        <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+      </div>
+      <div class="px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Pengaturan PDF</h3>
+        <button id="i2pSheetClose" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-4 overflow-y-auto" style="max-height:calc(70vh - 100px);">
+        <div>
+          <label class="label">Ukuran Halaman</label>
+          <select id="i2pSizeM" class="input">
+            <option value="fit" selected>Sesuai gambar</option>
+            <option value="a4">A4</option>
+            <option value="letter">Letter</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Orientasi</label>
+          <select id="i2pOrientM" class="input">
+            <option value="auto" selected>Otomatis</option>
+            <option value="p">Portrait</option>
+            <option value="l">Landscape</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Margin (pt)</label>
+          <input id="i2pMarginM" type="number" min="0" max="100" value="20" class="input">
+        </div>
+        <div>
+          <label class="label">Kualitas</label>
+          <select id="i2pQualityM" class="input">
+            <option value="0.6">Medium</option>
+            <option value="0.85" selected>High</option>
+            <option value="0.95">Max</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="i2pBackdrop" class="md:hidden fixed inset-0 bg-black/50 z-40 hidden"></div>
   </section>
 
   <!-- ========== VIEW: SPLIT PDF ========== -->
-  <section id="view-split" class="view hidden absolute inset-0 overflow-y-auto p-4 sm:p-8 pb-24">
-    <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-6 sm:mb-8 mt-2">
-        <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100">Split PDF</h2>
-        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Pilih halaman yang ingin diekstrak menjadi PDF baru</p>
+  <section id="view-split" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
+
+    <div class="shrink-0 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+      <div class="max-w-5xl mx-auto">
+        <h2 class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">Split PDF</h2>
+        <p class="text-[11px] text-slate-400 mt-0.5">Pilih halaman untuk diekstrak atau pisah semua</p>
       </div>
-      <div id="splitDrop" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 sm:p-8 flex flex-col items-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all mb-5 sm:mb-6">
-        <div class="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3">
-          <i class="fa-solid fa-file-pdf text-xl sm:text-2xl"></i>
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      <div class="max-w-5xl mx-auto p-4 pb-32">
+        <div id="splitDrop" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all mb-5 min-h-[140px]">
+          <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-3">
+            <i class="fa-solid fa-file-pdf text-xl"></i>
+          </div>
+          <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm mb-1">Pilih file PDF</h3>
+          <p class="text-[11px] text-slate-400">Satu file PDF</p>
+          <input type="file" id="splitInput" accept="application/pdf" class="hidden">
         </div>
-        <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm mb-1">Pilih file PDF</h3>
-        <p class="text-[11px] sm:text-xs text-slate-400">Satu file PDF</p>
-        <input type="file" id="splitInput" accept="application/pdf" class="hidden">
+
+        <div id="splitGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 mb-5"></div>
       </div>
-      <div id="splitGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 mb-5 sm:mb-6"></div>
-      <div id="splitPanel" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
+    </div>
+
+    <!-- Sticky bottom action -->
+    <div id="splitBar" class="hidden shrink-0 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-20" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+      <div class="max-w-5xl mx-auto space-y-3">
         <div class="flex items-center justify-between text-xs">
           <span class="font-semibold text-slate-600 dark:text-slate-300"><span id="splitCount">0</span> halaman terpilih</span>
           <div class="flex gap-3">
-            <button data-split="all" class="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">Pilih semua</button>
-            <button data-split="none" class="text-slate-500 hover:underline font-semibold">Batal</button>
+            <button data-split="all" class="text-indigo-600 dark:text-indigo-400 hover:underline font-bold">Pilih semua</button>
+            <button data-split="none" class="text-slate-500 hover:underline font-bold">Batal</button>
           </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button id="splitExtract" class="btn-bounce btn-primary py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30">
-            <i class="fa-solid fa-file-export"></i> Ekstrak Halaman Terpilih
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button id="splitExtract" class="flex items-center justify-center gap-2 bg-gradient-to-br from-indigo-500 to-violet-600 text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform">
+            <i class="fa-solid fa-file-export"></i>
+            <span>Ekstrak Terpilih</span>
           </button>
-          <button id="splitEvery" class="btn-bounce btn-secondary py-3.5 rounded-xl font-bold text-sm">
-            <i class="fa-solid fa-layer-group"></i> Pisah Semua Per Halaman
+          <button id="splitEvery" class="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3.5 rounded-2xl font-bold text-sm shadow-sm active:scale-95 transition-transform">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Pisah Semua</span>
           </button>
         </div>
       </div>
@@ -220,9 +371,8 @@
   <!-- ========== VIEW: PHOTO STUDIO ========== -->
   <section id="view-photo" class="view hidden absolute inset-0 flex flex-col md:flex-row overflow-hidden">
 
-    <!-- ========== CANVAS AREA ========== -->
+    <!-- CANVAS AREA -->
     <section class="order-1 md:order-2 flex-1 min-h-0 flex flex-col bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-950 dark:to-slate-900 relative overflow-hidden">
-
       <div class="shrink-0 px-3 py-2 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 z-10">
         <span id="photoStatus" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate pr-2">Belum ada foto</span>
         <span id="photoDimensions" class="text-[10px] font-semibold text-slate-400 shrink-0"></span>
@@ -243,7 +393,6 @@
         </div>
       </div>
 
-      <!-- Mobile floating buttons -->
       <div class="md:hidden absolute bottom-3 left-3 right-3 flex gap-2 z-20 pointer-events-none">
         <button id="mobileUploadBtn" class="pointer-events-auto flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-xl shadow-black/10 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
           <i class="fa-solid fa-cloud-arrow-up text-indigo-500"></i>
@@ -255,15 +404,11 @@
       </div>
     </section>
 
-    <!-- ========== SIDEBAR / BOTTOM SHEET ========== -->
+    <!-- SIDEBAR / SHEET -->
     <aside id="photoSidebar" class="photo-sidebar order-2 md:order-1 w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 md:border-r border-slate-200/60 dark:border-slate-800 flex flex-col shrink-0 z-50 md:z-10 overflow-hidden md:overflow-y-auto">
-
-      <!-- Drag handle (mobile) -->
       <div class="md:hidden shrink-0 pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing" id="sheetHandle">
         <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
       </div>
-
-      <!-- Sheet header (mobile) -->
       <div class="md:hidden shrink-0 px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
         <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <i class="fa-solid fa-sliders text-indigo-500"></i>
@@ -274,30 +419,16 @@
         </button>
       </div>
 
-      <!-- Mobile tabs -->
       <div class="md:hidden shrink-0 px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 flex gap-1 overflow-x-auto ps-tabs-scroll">
-        <button data-ps-tab="main" class="ps-tab active">
-          <i class="fa-solid fa-house"></i> Utama
-        </button>
-        <button data-ps-tab="ai" class="ps-tab">
-          <i class="fa-solid fa-microchip"></i> AI
-        </button>
-        <button data-ps-tab="brush" class="ps-tab">
-          <i class="fa-solid fa-eraser"></i> Kuas
-        </button>
-        <button data-ps-tab="bg" class="ps-tab">
-          <i class="fa-solid fa-palette"></i> BG
-        </button>
-        <button data-ps-tab="output" class="ps-tab">
-          <i class="fa-solid fa-download"></i> Simpan
-        </button>
+        <button data-ps-tab="main" class="ps-tab active"><i class="fa-solid fa-house"></i> Utama</button>
+        <button data-ps-tab="ai" class="ps-tab"><i class="fa-solid fa-microchip"></i> AI</button>
+        <button data-ps-tab="brush" class="ps-tab"><i class="fa-solid fa-eraser"></i> Kuas</button>
+        <button data-ps-tab="bg" class="ps-tab"><i class="fa-solid fa-palette"></i> BG</button>
+        <button data-ps-tab="output" class="ps-tab"><i class="fa-solid fa-download"></i> Simpan</button>
       </div>
 
-      <!-- Scrollable content -->
       <div class="flex-1 overflow-y-auto">
         <div class="p-3 sm:p-4 md:p-5 flex flex-col gap-3 sm:gap-4 pb-6">
-
-          <!-- Desktop dropzone -->
           <div id="photoDrop" class="hidden md:flex group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[110px]">
             <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
               <i class="fa-solid fa-user-tie text-lg"></i>
@@ -307,13 +438,11 @@
             <input type="file" id="photoInput" accept="image/*" class="hidden">
           </div>
 
-          <!-- Hidden mobile file input -->
           <input type="file" id="photoInputMobile" accept="image/*" class="hidden">
 
-          <!-- ====== PANEL: MAIN ====== -->
           <div data-ps-panel="main" class="ps-panel md:block space-y-3">
             <div class="grid grid-cols-2 gap-3">
-              <button id="photoRemoveBtn" class="btn-bounce w-full bg-gradient-to-br from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none" disabled>
+              <button id="photoRemoveBtn" class="btn-bounce w-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none" disabled>
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                 <span>Hapus BG</span>
               </button>
@@ -338,7 +467,7 @@
                 <i class="fa-solid fa-lightbulb text-xs"></i>
               </div>
               <div class="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
-                Setelah hapus BG, atur <strong>Perluas Subjek</strong> dan <strong>Haluskan Tepi</strong> di tab <strong>AI</strong> untuk hasil terbaik.
+                Setelah hapus BG, atur <strong>Perluas Subjek</strong> & <strong>Haluskan Tepi</strong> di tab AI.
               </div>
             </div>
 
@@ -347,14 +476,13 @@
                 <i class="fa-solid fa-microchip text-xs"></i>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">AI Background Removal</div>
+                <div class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">AI Removal</div>
                 <div class="text-[10px] text-slate-400">Model Akurat (ISNet)</div>
               </div>
               <span id="photoAiStatus" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 shrink-0">memuat…</span>
             </div>
           </div>
 
-          <!-- ====== PANEL: AI ====== -->
           <div data-ps-panel="ai" class="ps-panel hidden md:block space-y-3">
             <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-3.5 rounded-2xl space-y-3.5">
               <div class="flex items-center gap-2">
@@ -386,7 +514,6 @@
                 <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Isi Lubang Otomatis</span>
                 <span class="switch"><input type="checkbox" id="photoFillHoles" checked><span class="slider"></span></span>
               </label>
-
               <label class="flex items-center justify-between cursor-pointer py-1">
                 <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Bersihkan Halo</span>
                 <span class="switch"><input type="checkbox" id="photoDecontam" checked><span class="slider"></span></span>
@@ -394,7 +521,6 @@
             </div>
           </div>
 
-          <!-- ====== PANEL: BRUSH ====== -->
           <div data-ps-panel="brush" class="ps-panel hidden md:block space-y-3">
             <div id="photoBrushPanel" class="space-y-3.5">
               <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
@@ -405,7 +531,6 @@
                   <i class="fa-solid fa-brush"></i> Restore
                 </button>
               </div>
-
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ukuran Kuas</label>
@@ -413,22 +538,19 @@
                 </div>
                 <input type="range" id="photoBrushSize" min="5" max="200" value="40" class="w-full">
               </div>
-
               <button id="photoUndoBtn" class="btn-bounce w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3.5 rounded-2xl font-semibold text-xs shadow-sm flex items-center justify-center gap-2 disabled:opacity-40" disabled>
                 <i class="fa-solid fa-rotate-left text-xs"></i>
                 <span>Undo Sapuan</span>
               </button>
-
               <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 flex items-start gap-2.5">
                 <i class="fa-solid fa-hand-pointer text-indigo-500 mt-0.5"></i>
                 <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Ketuk & geser langsung pada foto untuk mengedit tepi.
+                  Ketuk & geser pada foto untuk edit tepi.
                 </p>
               </div>
             </div>
           </div>
 
-          <!-- ====== PANEL: BG ====== -->
           <div data-ps-panel="bg" class="ps-panel hidden md:block space-y-3">
             <div>
               <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 block mb-2 ml-1">Jenis Background</label>
@@ -459,11 +581,11 @@
               <div>
                 <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 block mb-2">Pilih Warna</label>
                 <div class="flex gap-2 flex-wrap mb-3">
-                  <button data-preset="#ffffff" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#ffffff" title="Putih"></button>
-                  <button data-preset="#2563eb" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#2563eb" title="Biru"></button>
-                  <button data-preset="#dc2626" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#dc2626" title="Merah"></button>
-                  <button data-preset="#16a34a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#16a34a" title="Hijau"></button>
-                  <button data-preset="#0f172a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#0f172a" title="Hitam"></button>
+                  <button data-preset="#ffffff" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#ffffff"></button>
+                  <button data-preset="#2563eb" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#2563eb"></button>
+                  <button data-preset="#dc2626" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#dc2626"></button>
+                  <button data-preset="#16a34a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#16a34a"></button>
+                  <button data-preset="#0f172a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#0f172a"></button>
                 </div>
                 <input type="color" id="photoColor" value="#ffffff" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer bg-transparent">
               </div>
@@ -489,7 +611,6 @@
             </div>
           </div>
 
-          <!-- ====== PANEL: OUTPUT ====== -->
           <div data-ps-panel="output" class="ps-panel hidden md:block space-y-3">
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -509,67 +630,77 @@
                 </select>
               </div>
             </div>
-
             <div class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-3 flex items-start gap-2.5">
               <div class="bg-emerald-100 dark:bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 shrink-0">
                 <i class="fa-solid fa-circle-info text-xs"></i>
               </div>
               <p class="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
-                Gunakan <strong>PNG</strong> untuk background transparan, <strong>JPG</strong> untuk ukuran file lebih kecil.
+                <strong>PNG</strong> untuk transparan, <strong>JPG</strong> untuk ukuran kecil.
               </p>
             </div>
-
-            <button id="photoDownload" class="btn-bounce w-full bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none" disabled>
+            <button id="photoDownload" class="btn-bounce w-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none" disabled>
               <i class="fa-solid fa-download"></i>
               <span>Download Foto</span>
             </button>
           </div>
-
         </div>
       </div>
     </aside>
 
-    <!-- Backdrop for mobile sheet -->
     <div id="photoBackdrop" class="md:hidden fixed inset-0 bg-black/50 z-40 hidden"></div>
   </section>
 
   <!-- ========== VIEW: EMAIL ========== -->
   <section id="view-email" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
-    <div id="emailTemplatesList" class="flex-1 overflow-y-auto p-4 sm:p-8 w-full max-w-5xl mx-auto pb-24">
-      <div class="text-center mb-6 sm:mb-8 mt-2">
-        <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Template Email Profesional</h2>
-        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Pilih template yang sesuai dengan kebutuhan lamaran Anda</p>
-      </div>
-      <div id="templateGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5"></div>
-      <div id="savedTemplatesSection" class="hidden mt-8 sm:mt-10">
-        <div class="flex items-center gap-3 mb-4">
-          <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm sm:text-base">Template Tersimpan</h3>
-          <div class="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
+
+    <!-- Step 1: Template List -->
+    <div id="emailTemplatesList" class="flex-1 overflow-y-auto">
+      <div class="max-w-5xl mx-auto p-4 pb-24">
+        <div class="text-center mb-6 mt-2">
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Template Email</h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Pilih template sesuai kebutuhan lamaran</p>
         </div>
-        <div id="savedTemplateGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"></div>
+
+        <div id="templateGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5"></div>
+
+        <div id="savedTemplatesSection" class="hidden mt-8">
+          <div class="flex items-center gap-3 mb-4">
+            <h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm">Template Tersimpan</h3>
+            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
+          </div>
+          <div id="savedTemplateGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
+        </div>
       </div>
     </div>
 
-    <div id="emailComposeForm" class="hidden flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden h-full">
-      <div class="flex items-center gap-3 p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
-        <button id="emailBack" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 transition-colors shrink-0">
+    <!-- Step 2: Compose Form -->
+    <div id="emailComposeForm" class="hidden flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
+
+      <!-- Sticky header -->
+      <div class="shrink-0 flex items-center gap-3 p-3 sm:p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <button id="emailBack" class="w-10 h-10 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 shrink-0 active:scale-95 transition-transform">
           <i class="fa-solid fa-arrow-left"></i>
         </button>
         <div class="flex-1 min-w-0">
-          <h2 class="font-bold text-slate-800 dark:text-slate-100 text-base sm:text-lg truncate">Edit Email</h2>
-          <p class="text-[11px] sm:text-xs text-slate-400">Sesuaikan data sebelum dikirim</p>
+          <h2 class="font-bold text-slate-800 dark:text-slate-100 text-base truncate">Edit Email</h2>
+          <p class="text-[11px] text-slate-400">Sesuaikan data sebelum dikirim</p>
         </div>
-        <button id="emailCopy" class="tool-btn" title="Copy isi email"><i class="fa-solid fa-copy"></i></button>
+        <button id="emailCopy" class="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0 active:scale-95 transition-transform" title="Copy isi email">
+          <i class="fa-solid fa-copy"></i>
+        </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-5 bg-slate-50/50 dark:bg-slate-950/40">
-        <div class="max-w-3xl mx-auto space-y-4 sm:space-y-5">
+      <!-- Scrollable body -->
+      <div class="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/40">
+        <div class="max-w-3xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-5 pb-24">
+
+          <!-- Placeholder autofill -->
           <details class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-            <summary class="cursor-pointer p-3 sm:p-4 font-semibold text-sm text-slate-700 dark:text-slate-200 flex items-center justify-between">
+            <summary class="cursor-pointer p-3.5 font-semibold text-sm text-slate-700 dark:text-slate-200 flex items-center justify-between">
               <span><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i> Isi Cepat Placeholder</span>
               <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
             </summary>
-            <div class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-100 dark:border-slate-800">
+            <div class="p-3.5 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-100 dark:border-slate-800">
               <div><label class="label">Nama Lengkap</label><input id="ph-name" class="input" placeholder="Budi Santoso" data-ph="[Nama Lengkap]"></div>
               <div><label class="label">Nomor Telepon</label><input id="ph-phone" class="input" placeholder="0812..." data-ph="[Nomor Telepon]"></div>
               <div><label class="label">Posisi</label><input id="ph-position" class="input" placeholder="Frontend Developer" data-ph="[Posisi yang Dilamar]"></div>
@@ -577,14 +708,14 @@
               <div><label class="label">Sumber Info</label><input id="ph-source" class="input" placeholder="LinkedIn" data-ph="[Sumber Info]"></div>
               <div><label class="label">Universitas</label><input id="ph-univ" class="input" placeholder="Universitas Indonesia" data-ph="[Nama Universitas/Sekolah]"></div>
             </div>
-            <div class="px-3 sm:px-4 pb-3 sm:pb-4">
+            <div class="px-3.5 pb-3.5">
               <button id="phApply" class="btn-bounce w-full btn-primary py-3 rounded-xl font-bold text-xs">
                 <i class="fa-solid fa-check"></i> Terapkan ke Email
               </button>
             </div>
           </details>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 gap-4">
             <div class="space-y-2">
               <label class="label">Kepada (Email HRD)</label>
               <div class="input-group">
@@ -604,30 +735,38 @@
           <div class="space-y-2">
             <label class="label">Isi Email</label>
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
-              <textarea id="emailBody" class="w-full p-3 sm:p-4 text-sm text-slate-700 dark:text-slate-200 bg-transparent leading-relaxed resize-none h-[320px] sm:h-[380px] focus:outline-none" placeholder="Tulis isi email..."></textarea>
+              <textarea id="emailBody" class="w-full p-3.5 text-sm text-slate-700 dark:text-slate-200 bg-transparent leading-relaxed resize-none h-[400px] focus:outline-none" placeholder="Tulis isi email..."></textarea>
             </div>
           </div>
 
-          <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-xl p-3 sm:p-4 flex items-start gap-3">
+          <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-xl p-3.5 flex items-start gap-3">
             <div class="bg-blue-100 dark:bg-blue-500/20 p-1.5 rounded-full text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
               <i class="fa-solid fa-paperclip text-xs"></i>
             </div>
             <div>
               <h4 class="text-sm font-bold text-blue-900 dark:text-blue-300">Ingat Lampiran!</h4>
-              <p class="text-[11px] sm:text-xs text-blue-700 dark:text-blue-400 mt-0.5 leading-relaxed">
-                Setelah tombol "Kirim Email" ditekan, aplikasi email Anda akan terbuka. Jangan lupa <strong>melampirkan file PDF/CV secara manual</strong> di sana.
+              <p class="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5 leading-relaxed">
+                Setelah tombol "Kirim" ditekan, aplikasi email akan terbuka. Jangan lupa <strong>melampirkan CV/PDF secara manual</strong>.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="p-3 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-        <div class="max-w-3xl mx-auto grid grid-cols-3 gap-2 sm:gap-3">
-          <button id="emailSave" class="btn-bounce btn-secondary py-3.5 rounded-xl font-semibold text-xs"><i class="fa-solid fa-bookmark"></i> Simpan</button>
-          <button id="emailCopyText" class="btn-bounce btn-secondary py-3.5 rounded-xl font-semibold text-xs"><i class="fa-solid fa-copy"></i> Copy</button>
-          <button id="emailSend" class="btn-bounce bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-xs">
-            Kirim <i class="fa-solid fa-paper-plane text-[10px]"></i>
+      <!-- Sticky footer -->
+      <div class="shrink-0 p-3 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+        <div class="max-w-3xl mx-auto grid grid-cols-3 gap-2">
+          <button id="emailSave" class="btn-bounce bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
+            <i class="fa-solid fa-bookmark"></i>
+            <span class="hidden sm:inline">Simpan</span>
+          </button>
+          <button id="emailCopyText" class="btn-bounce bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
+            <i class="fa-solid fa-copy"></i>
+            <span class="hidden sm:inline">Copy</span>
+          </button>
+          <button id="emailSend" class="btn-bounce bg-gradient-to-br from-indigo-500 to-violet-600 text-white py-3.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform">
+            <span>Kirim</span>
+            <i class="fa-solid fa-paper-plane text-[10px]"></i>
           </button>
         </div>
       </div>
@@ -649,7 +788,9 @@
 <div id="cameraModal" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 hidden flex-col">
   <div class="flex justify-between items-center p-4 sm:p-6 text-white">
     <h2 class="text-base sm:text-lg font-bold">Ambil Foto Dokumen</h2>
-    <button id="cameraClose" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+    <button id="cameraClose" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition active:scale-95">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   </div>
   <div class="flex-1 relative flex items-center justify-center overflow-hidden p-4">
     <div class="relative w-full max-w-lg aspect-[3/4] rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10">
@@ -658,7 +799,7 @@
     </div>
   </div>
   <div class="p-6 sm:p-8 flex justify-center pb-12">
-    <button id="cameraCapture" class="w-20 h-20 rounded-full bg-white border-4 border-slate-200 shadow-2xl hover:scale-105 transition-transform flex items-center justify-center group">
+    <button id="cameraCapture" class="w-20 h-20 rounded-full bg-white border-4 border-slate-200 shadow-2xl hover:scale-105 transition-transform flex items-center justify-center group active:scale-95">
       <div class="w-16 h-16 rounded-full border-[3px] border-slate-900 group-hover:bg-slate-100 transition-colors"></div>
     </button>
   </div>
@@ -688,7 +829,7 @@
         if (typeof fn === 'function') {
           window.imglyRemoveBackground = fn;
           window.dispatchEvent(new CustomEvent('imgy:ready', { detail: { cdn: url } }));
-          console.info('[PhotoStudio] ✅ AI library siap dari:', url);
+          console.info('[PhotoStudio] ✅ AI siap dari:', url);
           return;
         }
       } catch (err) {
