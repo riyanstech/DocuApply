@@ -1,0 +1,406 @@
+{
+  "lastUpdated": "2025-01",
+  "disclaimer": "Data email & link dikumpulkan dari sumber publik. Selalu verifikasi dari website resmi perusahaan sebelum melamar.",
+  "categories": [
+    { "id": "all", "name": "Semua", "icon": "fa-globe" },
+    { "id": "textile", "name": "Textile", "icon": "fa-shirt" },
+    { "id": "garment", "name": "Garment", "icon": "fa-scissors" },
+    { "id": "food", "name": "Makanan & Minuman", "icon": "fa-utensils" },
+    { "id": "furniture", "name": "Furniture", "icon": "fa-couch" },
+    { "id": "manufaktur", "name": "Manufaktur", "icon": "fa-industry" },
+    { "id": "retail", "name": "Retail", "icon": "fa-store" },
+    { "id": "farmasi", "name": "Farmasi", "icon": "fa-pills" },
+    { "id": "fmcg", "name": "FMCG", "icon": "fa-cart-shopping" }
+  ],
+  "companies": [
+    {
+      "id": "sinar-continental",
+      "name": "PT. Sinar Continental",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrd2@ptsinar.com", "subject": "Lamaran Pekerjaan_Admin Produksi" }
+      ]
+    },
+    {
+      "id": "oriental-textile",
+      "name": "PT. Oriental Textile Indonesia",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "pencelupan.tekstil@gmail.com", "subject": "Lamaran Pekerjaan_PPC" }
+      ]
+    },
+    {
+      "id": "sinar-pangjaya-mulia",
+      "name": "PT. Sinar Pangjaya Mulia",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "recruitment.pangjaya@gmail.com", "subject": "Staff Proses Produksi" }
+      ]
+    },
+    {
+      "id": "johar-agra-andalan",
+      "name": "PT. Johar Agra Andalan",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrdjaa@gmail.com", "subject": "Admin" }
+      ]
+    },
+    {
+      "id": "berdikari-metal",
+      "name": "PT. Berdikari Metal Engineering",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "recruitment@berdikari.co.id", "subject": "Lamaran Pekerjaan_" }
+      ]
+    },
+    {
+      "id": "perdana-firsta-garment",
+      "name": "PT. Perdana Firsta Garment",
+      "category": "garment",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "pfg@firstagarment.com", "subject": "Lamaran Pekerjaan_" },
+        { "type": "email", "value": "recruitment@firstagarment.co.id", "subject": "Lamaran Pekerjaan_" }
+      ]
+    },
+    {
+      "id": "kartika-sinar-mulia",
+      "name": "PT. Kartika Sinar Mulia",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrd@ksmknitting.com", "subject": "Lamaran Pekerjaan" }
+      ]
+    },
+    {
+      "id": "kwangduk-worldwide",
+      "name": "PT. Kwangduk Worldwide",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrd@ksmknitting.com", "subject": "Staff Admin Produksi" }
+      ]
+    },
+    {
+      "id": "sipatatex",
+      "name": "PT. Sipatatex",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "sipatatexhrd@gmail.com", "subject": "Lamaran Pekerjaan_Nama" }
+      ]
+    },
+    {
+      "id": "sansan-saudaratex",
+      "name": "PT. Sansan Saudaratex",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "recruitment@ptsansan.co.id", "subject": "Lamaran Pekerjaan_Non Jahit" }
+      ]
+    },
+    {
+      "id": "kalibaru",
+      "name": "PT. Kalibaru",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hr.kalibaru@gmail.com", "subject": "Lamaran Pekerjaan_Nama" }
+      ]
+    },
+    {
+      "id": "nice-indonesia",
+      "name": "PT. Nice Indonesia",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "pt.nice.recruitment@gmail.com", "subject": "Lamaran Pekerjaan_Nama Lengkap" }
+      ]
+    },
+    {
+      "id": "jerdytex",
+      "name": "PT. Jerdytex",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrd@jerdytex.co.id", "subject": "Nama_Operator Produksi" }
+      ]
+    },
+    {
+      "id": "cipta-aneka-pangan",
+      "name": "PT. Cipta Aneka Pangan Prima",
+      "category": "food",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "ptcapprecruitment@gmail.com", "subject": "Lamaran_OP" }
+      ]
+    },
+    {
+      "id": "intermoda-kusuma",
+      "name": "PT. Intermoda Kusuma",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "factory@intermodakusuma.com", "subject": "Lamaran Pekerjaan_Nama" }
+      ]
+    },
+    {
+      "id": "laju-karya-mandiri",
+      "name": "PT. Laju Karya Mandiri",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "recruitmentptlkm@gmail.com", "subject": "Nama_OP" }
+      ]
+    },
+    {
+      "id": "lotus-lingga-pratama",
+      "name": "PT. Lotus Lingga Pratama",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "personalia@llpgold.com", "subject": "Nama_OP" }
+      ]
+    },
+    {
+      "id": "alfa-polimer",
+      "name": "PT. Alfa Polimer Indonesia",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "recruitment@alfa-polimer.com", "subject": "Operator Produksi" }
+      ]
+    },
+    {
+      "id": "taka-global",
+      "name": "PT. Taka Global",
+      "category": "garment",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrd.takaglobalutama@gmail.com", "subject": "Nama_Operator Jahit" }
+      ]
+    },
+    {
+      "id": "johar-jagra-andalan",
+      "name": "PT. Johar Jagra Andalan",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrdjaa@gmail.com", "subject": "Lamaran Pekerjaan_Nama" }
+      ]
+    },
+    {
+      "id": "lingga-kanaka-jaya",
+      "name": "PT. Lingga Kanaka Jaya",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "lkjjlpteam@gmail.com", "subject": "Operator Produksi" }
+      ]
+    },
+    {
+      "id": "alkindo-naratama",
+      "name": "PT. Alkindo Naratama Tbk",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "recruitment@alkindo.co.id", "subject": "Operator Produksi_Nama" },
+        { "type": "email", "value": "aknfactory@gmail.com", "subject": "Operator Produksi_Nama" }
+      ]
+    },
+    {
+      "id": "chitose-internasional",
+      "name": "PT. Chitose Internasional Tbk",
+      "category": "furniture",
+      "location": "Cimahi",
+      "apply": [
+        { "type": "email", "value": "ask@chitose-indonesia.com", "subject": "Lamaran Pekerjaan_Nama" }
+      ]
+    },
+    {
+      "id": "yolita-jaya",
+      "name": "PT. Yolita Jaya Indonesia",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrdyolita@gmail.com", "subject": "Nama_OP" }
+      ]
+    },
+    {
+      "id": "dialogue-grup",
+      "name": "PT. Dialogue Grup",
+      "category": "furniture",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrd@dialogue.co.id", "subject": "Operator Produksi" }
+      ]
+    },
+    {
+      "id": "laju-makmur-sentosa",
+      "name": "PT. Laju Makmur Sentosa",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrdlmsentosa@yahoo.com", "subject": "Operator Produksi" }
+      ]
+    },
+    {
+      "id": "fuji-seiki",
+      "name": "PT. Fuji Seiki",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hr@fid.fujiseiki.com", "subject": "Operator Produksi" }
+      ]
+    },
+    {
+      "id": "karyautama-putra-mandiri",
+      "name": "PT. Karyautama Putra Mandiri",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "recruitment@ytutamaputra.com", "subject": "Nama_OP" }
+      ]
+    },
+    {
+      "id": "sanic-offset",
+      "name": "CV. Sanic Offset",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "offsetsanic@gmail.com", "subject": "Lamaran Pekerjaan_Nama" }
+      ]
+    },
+    {
+      "id": "harapan-baru",
+      "name": "CV. Harapan Baru",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "recruitment.hrdhb@gmail.com", "subject": "Operator Produksi" }
+      ]
+    },
+    {
+      "id": "saku-mas-jaya",
+      "name": "PT. Saku Mas Jaya",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hr.sakumas@gmail.com", "subject": "Nama_OP" }
+      ]
+    },
+    {
+      "id": "plastin-eka-prakarsa",
+      "name": "PT. Plastin Eka Prakarsa",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrd.plastin@gmail.com", "subject": "Operator Produksi" }
+      ]
+    },
+    {
+      "id": "tirta-amarta-bottling",
+      "name": "PT. Tirta Amarta Bottling",
+      "category": "food",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "hrd.tabcompany@gmail.com", "subject": "Nama_OP" }
+      ]
+    },
+    {
+      "id": "amidis-tirta-mulia",
+      "name": "PT. Amidis Tirta Mulia",
+      "category": "food",
+      "location": "Bandung",
+      "apply": [
+        { "type": "email", "value": "amidistirtamulyarecruitment@gmail.com", "subject": "Operator Produksi" }
+      ]
+    },
+    {
+      "id": "ateja",
+      "name": "Ateja",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "link", "value": "https://career.ateja.co.id/", "subject": "Apply via career portal" }
+      ]
+    },
+    {
+      "id": "graha-seribusatujaya",
+      "name": "PT. Graha Seribusatujaya",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "link", "value": "http://jobs.gsg.co.id:81/", "subject": "Apply via web career" }
+      ]
+    },
+    {
+      "id": "medion-farma",
+      "name": "PT. Medion Farma Jaya",
+      "category": "farmasi",
+      "location": "Bandung",
+      "apply": [
+        { "type": "link", "value": "https://www.medion.co.id/karir/", "subject": "Apply via portal karir" }
+      ]
+    },
+    {
+      "id": "indomaret",
+      "name": "Indomaret",
+      "category": "retail",
+      "location": "Nasional",
+      "apply": [
+        { "type": "link", "value": "https://career.indomaretgroup.com/jobs/staff", "subject": "Staff" }
+      ]
+    },
+    {
+      "id": "alfamart-bdg-1",
+      "name": "Alfamart - Cabang Bandung 1",
+      "category": "retail",
+      "location": "Bandung",
+      "apply": [
+        { "type": "link", "value": "http://bit.ly/PelamarAlfaBandung1", "subject": "Pelamar Alfa Bandung 1" }
+      ]
+    },
+    {
+      "id": "alfamart-bdg-2",
+      "name": "Alfamart - Cabang Bandung 2 / Cimahi",
+      "category": "retail",
+      "location": "Cimahi",
+      "apply": [
+        { "type": "link", "value": "http://bit.ly/satbdg2_cimahi_area", "subject": "Pelamar Alfa Bandung 2 / Cimahi" }
+      ]
+    },
+    {
+      "id": "stanli",
+      "name": "PT. Stanli",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        { "type": "link", "value": "https://bit.ly/OperatorStanli", "subject": "Operator" }
+      ]
+    },
+    {
+      "id": "gistex-textile",
+      "name": "PT. Gistex Textile",
+      "category": "textile",
+      "location": "Bandung",
+      "apply": [
+        { "type": "link", "value": "https://www.gistexgroup.com/pages/index.php?hal=career", "subject": "Apply via web career" }
+      ]
+    },
+    {
+      "id": "indofood",
+      "name": "Indofood",
+      "category": "fmcg",
+      "location": "Nasional",
+      "apply": [
+        { "type": "link", "value": "https://e-recruitment.indofood.com/", "subject": "Apply via e-recruitment" }
+      ]
+    }
+  ]
+}
