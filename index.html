@@ -54,8 +54,9 @@
     <button data-tab="editor"    class="nav-btn"><i class="fa-solid fa-file-pdf"></i><span>Editor</span></button>
     <button data-tab="image2pdf" class="nav-btn"><i class="fa-solid fa-image"></i><span>Image → PDF</span></button>
     <button data-tab="split"     class="nav-btn"><i class="fa-solid fa-scissors"></i><span>Split</span></button>
-    <button data-tab="photo"     class="nav-btn"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Photo Studio</span></button>
-    <button data-tab="cv"        class="nav-btn"><i class="fa-solid fa-id-card"></i><span>CV Builder</span></button>
+    <button data-tab="photo"     class="nav-btn"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Photo</span></button>
+    <button data-tab="cv"        class="nav-btn"><i class="fa-solid fa-id-card"></i><span>CV</span></button>
+    <button data-tab="companies" class="nav-btn"><i class="fa-solid fa-building"></i><span>Perusahaan</span></button>
     <button data-tab="email"     class="nav-btn"><i class="fa-regular fa-envelope"></i><span>Email</span></button>
   </nav>
 
@@ -503,7 +504,7 @@
         </button>
       </div>
 
-      <!-- TOOLBAR — Grouped -->
+      <!-- TOOLBAR -->
       <div class="cv-toolbar-wrap">
         <div class="cv-toolbar">
 
@@ -630,6 +631,67 @@
     </div>
   </section>
 
+  <!-- COMPANIES DIRECTORY -->
+  <section id="view-companies" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
+    <div id="companiesList" class="flex-1 min-h-0 overflow-y-auto">
+      <div class="max-w-5xl mx-auto p-4 pb-24">
+
+        <div class="text-center mb-5 mt-2">
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Direktori Perusahaan</h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Kumpulan email & link karir perusahaan</p>
+          <div class="inline-flex items-center gap-3 mt-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <span class="flex items-center gap-1">
+              <i class="fa-solid fa-building text-indigo-500"></i>
+              <span id="companiesStatsTotal">0</span> perusahaan
+            </span>
+            <span class="w-px h-3 bg-slate-300 dark:bg-slate-700"></span>
+            <span class="flex items-center gap-1">
+              <i class="fa-solid fa-filter text-indigo-500"></i>
+              <span id="companiesStatsShown">0</span> ditampilkan
+            </span>
+          </div>
+        </div>
+
+        <div class="sticky top-0 z-20 -mx-4 px-4 py-3 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 mb-4" style="margin-top:-1px;">
+          <div class="flex gap-2 max-w-5xl mx-auto">
+            <div class="relative flex-1">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+              <input type="text" id="companiesSearch" placeholder="Cari perusahaan, email, atau kota..."
+                     class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-9 pr-9 text-sm focus:outline-none focus:border-indigo-500 dark:text-slate-200 transition-colors">
+              <button id="companiesSearchClear" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400">
+                <i class="fa-solid fa-xmark text-xs"></i>
+              </button>
+            </div>
+            <button id="companiesFavoritesToggle" class="cp-fav-toggle" title="Hanya favorit">
+              <i class="fa-solid fa-star"></i>
+              <span id="companiesFavoritesCount" class="cp-fav-count hidden">0</span>
+            </button>
+          </div>
+
+          <div id="companiesCategoryBar" class="cp-cat-bar mt-3 flex gap-1.5 overflow-x-auto pb-1"></div>
+        </div>
+
+        <div id="companiesDisclaimer" class="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-3 mb-4 text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed"></div>
+
+        <div id="companiesLoading" class="text-center py-12">
+          <div class="loader !w-7 !h-7 !border-slate-300 !border-t-indigo-500 mx-auto"></div>
+          <p class="text-sm text-slate-400 mt-3">Memuat data perusahaan...</p>
+        </div>
+
+        <div id="companiesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
+
+        <div id="companiesEmpty" class="hidden text-center py-16">
+          <div class="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-magnifying-glass text-3xl text-slate-300 dark:text-slate-600"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-600 dark:text-slate-300 mb-1">Tidak ada hasil</h3>
+          <p class="text-xs text-slate-400 max-w-md mx-auto">Coba ubah kata kunci atau pilih kategori lain.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   <!-- EMAIL -->
   <section id="view-email" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
     <div id="emailTemplatesList" class="flex-1 min-h-0 overflow-y-auto">
@@ -741,12 +803,14 @@
 
 </main>
 
-<nav id="navMobile" class="lg:hidden shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 grid grid-cols-6 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
+<!-- MOBILE NAV -->
+<nav id="navMobile" class="lg:hidden shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 grid grid-cols-7 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
   <button data-tab="editor"    class="m-nav-btn py-2"><i class="fa-solid fa-file-pdf"></i><span>Editor</span></button>
   <button data-tab="image2pdf" class="m-nav-btn py-2"><i class="fa-solid fa-image"></i><span>Image</span></button>
   <button data-tab="split"     class="m-nav-btn py-2"><i class="fa-solid fa-scissors"></i><span>Split</span></button>
   <button data-tab="photo"     class="m-nav-btn py-2"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Photo</span></button>
   <button data-tab="cv"        class="m-nav-btn py-2"><i class="fa-solid fa-id-card"></i><span>CV</span></button>
+  <button data-tab="companies" class="m-nav-btn py-2"><i class="fa-solid fa-building"></i><span>PT</span></button>
   <button data-tab="email"     class="m-nav-btn py-2"><i class="fa-regular fa-envelope"></i><span>Email</span></button>
 </nav>
 
@@ -782,7 +846,7 @@
             <span class="cv-choice-badge bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">100% Identik</span>
           </div>
           <p class="cv-choice-option-desc">
-            File asli diunduh → buka di Microsoft Word / Google Docs → edit sendiri. Hasil 100% sesuai template asli.
+            File asli diunduh → buka di Microsoft Word / Google Docs → edit sendiri.
           </p>
         </div>
         <i class="fa-solid fa-arrow-right text-slate-300 dark:text-slate-600 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"></i>
@@ -797,7 +861,7 @@
             <span class="cv-choice-badge bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">Cepat & Praktis</span>
           </div>
           <p class="cv-choice-option-desc">
-            Edit langsung di sini → unduh sebagai PDF atau DOCX. Cocok kalau tidak ada Microsoft Word.
+            Edit langsung di sini → unduh sebagai PDF atau DOCX asli.
           </p>
         </div>
         <i class="fa-solid fa-arrow-right text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all"></i>
@@ -806,7 +870,7 @@
     <div class="px-4 pb-4 sm:pb-5">
       <p class="text-[10px] text-slate-400 text-center leading-relaxed">
         <i class="fa-solid fa-circle-info mr-1"></i>
-        File template di server tidak akan terpengaruh apapun pilihan Anda
+        File template di server tidak akan terpengaruh
       </p>
     </div>
   </div>
@@ -875,6 +939,7 @@
 <script src="js/email.js"></script>
 <script src="js/photostudio.js"></script>
 <script src="js/cv-builder.js"></script>
+<script src="js/companies.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
