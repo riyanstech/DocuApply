@@ -220,241 +220,317 @@
   <!-- ========== VIEW: PHOTO STUDIO ========== -->
   <section id="view-photo" class="view hidden absolute inset-0 flex flex-col md:flex-row overflow-hidden">
 
-    <!-- ===== STAGE ===== -->
-    <section class="order-1 md:order-2 shrink-0 md:shrink md:flex-1 md:min-h-0 h-[40vh] sm:h-[42vh] md:h-auto bg-slate-50/50 dark:bg-slate-950/40 overflow-hidden flex flex-col border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-800">
-      <div class="shrink-0 px-3 md:px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur flex items-center justify-between">
-        <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate pr-2" id="photoStatus">Belum ada foto</span>
-        <span class="text-[10px] font-semibold text-slate-400 shrink-0" id="photoDimensions"></span>
+    <!-- ========== CANVAS AREA ========== -->
+    <section class="order-1 md:order-2 flex-1 min-h-0 flex flex-col bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-950 dark:to-slate-900 relative overflow-hidden">
+
+      <div class="shrink-0 px-3 py-2 flex items-center justify-between bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 z-10">
+        <span id="photoStatus" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate pr-2">Belum ada foto</span>
+        <span id="photoDimensions" class="text-[10px] font-semibold text-slate-400 shrink-0"></span>
       </div>
 
-      <div class="flex-1 overflow-auto p-2 sm:p-4 md:p-8 flex items-center justify-center relative" id="photoStageWrap">
-        <div id="photoEmpty" class="flex flex-col items-center justify-center text-slate-400 select-none py-6 px-4">
-          <div class="w-14 h-14 sm:w-20 sm:h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
-            <i class="fa-solid fa-image-portrait text-2xl sm:text-4xl text-slate-300 dark:text-slate-600"></i>
+      <div class="flex-1 overflow-auto flex items-center justify-center p-2 sm:p-6 md:p-8 relative" id="photoStageWrap">
+        <div id="photoEmpty" class="flex flex-col items-center justify-center text-slate-400 select-none py-6 px-4 text-center">
+          <div class="w-16 h-16 sm:w-24 sm:h-24 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-slate-200/50 dark:shadow-none">
+            <i class="fa-solid fa-image-portrait text-3xl sm:text-4xl text-slate-300 dark:text-slate-600"></i>
           </div>
           <h3 class="text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300 mb-1">Belum ada foto</h3>
-          <p class="text-[11px] sm:text-xs text-slate-400 max-w-xs text-center">Upload foto formal untuk mulai menghapus dan mengganti background.</p>
+          <p class="text-[11px] sm:text-xs text-slate-400 max-w-xs">Ketuk tombol <strong>Upload</strong> di bawah untuk memulai</p>
         </div>
 
         <div id="photoStage" class="hidden relative">
-          <canvas id="photoCanvas" class="block rounded-xl sm:rounded-2xl shadow-xl ring-1 ring-slate-900/5 touch-none cursor-crosshair max-w-full" style="max-height:100%;"></canvas>
+          <canvas id="photoCanvas" class="block rounded-xl sm:rounded-2xl shadow-2xl ring-1 ring-slate-900/5 touch-none cursor-crosshair max-w-full"></canvas>
           <div id="brushCursor" class="pointer-events-none absolute rounded-full border-2 border-indigo-500/80 bg-indigo-500/10 hidden" style="transform:translate(-50%,-50%);display:none;"></div>
         </div>
       </div>
+
+      <!-- Mobile floating buttons -->
+      <div class="md:hidden absolute bottom-3 left-3 right-3 flex gap-2 z-20 pointer-events-none">
+        <button id="mobileUploadBtn" class="pointer-events-auto flex items-center justify-center gap-2 flex-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm py-3.5 rounded-2xl shadow-xl shadow-black/10 border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
+          <i class="fa-solid fa-cloud-arrow-up text-indigo-500"></i>
+          <span>Upload Foto</span>
+        </button>
+        <button id="mobileSettingsBtn" class="pointer-events-auto w-14 h-14 flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl shadow-xl shadow-indigo-500/30 active:scale-95 transition-transform">
+          <i class="fa-solid fa-sliders text-lg"></i>
+        </button>
+      </div>
     </section>
 
-    <!-- ===== SIDEBAR ===== -->
-    <aside class="order-2 md:order-1 w-full md:w-80 lg:w-96 flex-1 md:flex-none min-h-0 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 flex flex-col shrink-0 z-10 overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-      <div class="p-3 sm:p-4 md:p-5 flex flex-col gap-3 sm:gap-4 pb-6">
+    <!-- ========== SIDEBAR / BOTTOM SHEET ========== -->
+    <aside id="photoSidebar" class="photo-sidebar order-2 md:order-1 w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 md:border-r border-slate-200/60 dark:border-slate-800 flex flex-col shrink-0 z-50 md:z-10 overflow-hidden md:overflow-y-auto">
 
-        <!-- Dropzone -->
-        <div id="photoDrop" class="group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[92px] sm:min-h-[110px]">
-          <div class="w-9 h-9 sm:w-10 sm:h-10 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-            <i class="fa-solid fa-user-tie text-base sm:text-lg"></i>
-          </div>
-          <h3 class="font-bold text-slate-700 dark:text-slate-200 text-xs mb-0.5">Upload Foto</h3>
-          <p class="text-[10px] text-slate-400">JPG / PNG · Wajah jelas</p>
-          <input type="file" id="photoInput" accept="image/*" class="hidden">
-        </div>
+      <!-- Drag handle (mobile) -->
+      <div class="md:hidden shrink-0 pt-3 pb-1 flex justify-center cursor-grab active:cursor-grabbing" id="sheetHandle">
+        <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+      </div>
 
-        <!-- AI Panel -->
-        <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-3 rounded-xl space-y-3">
-          <div class="flex items-center gap-2">
-            <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-indigo-500">
-              <i class="fa-solid fa-microchip text-xs"></i>
+      <!-- Sheet header (mobile) -->
+      <div class="md:hidden shrink-0 px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-indigo-500"></i>
+          Pengaturan
+        </h3>
+        <button id="mobileCloseBtn" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 active:scale-95 transition-transform">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Mobile tabs -->
+      <div class="md:hidden shrink-0 px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 flex gap-1 overflow-x-auto ps-tabs-scroll">
+        <button data-ps-tab="main" class="ps-tab active">
+          <i class="fa-solid fa-house"></i> Utama
+        </button>
+        <button data-ps-tab="ai" class="ps-tab">
+          <i class="fa-solid fa-microchip"></i> AI
+        </button>
+        <button data-ps-tab="brush" class="ps-tab">
+          <i class="fa-solid fa-eraser"></i> Kuas
+        </button>
+        <button data-ps-tab="bg" class="ps-tab">
+          <i class="fa-solid fa-palette"></i> BG
+        </button>
+        <button data-ps-tab="output" class="ps-tab">
+          <i class="fa-solid fa-download"></i> Simpan
+        </button>
+      </div>
+
+      <!-- Scrollable content -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="p-3 sm:p-4 md:p-5 flex flex-col gap-3 sm:gap-4 pb-6">
+
+          <!-- Desktop dropzone -->
+          <div id="photoDrop" class="hidden md:flex group border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/5 transition-all min-h-[110px]">
+            <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-user-tie text-lg"></i>
             </div>
-            <span class="font-semibold text-xs text-slate-600 dark:text-slate-300">Pengaturan AI</span>
-            <span id="photoAiStatus" class="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300">memuat…</span>
+            <h3 class="font-bold text-slate-700 dark:text-slate-200 text-xs mb-0.5">Upload Foto</h3>
+            <p class="text-[10px] text-slate-400">JPG / PNG · Wajah jelas</p>
+            <input type="file" id="photoInput" accept="image/*" class="hidden">
           </div>
 
-          <!-- Fixed model badge -->
-          <div class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
-            <i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
-            <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Model: <span class="text-indigo-600 dark:text-indigo-400">Akurat (ISNet)</span></span>
-            <span class="ml-auto text-[9px] font-bold text-slate-400" title="Ukuran model besar, tapi hasil terbaik">~170MB</span>
-          </div>
+          <!-- Hidden mobile file input -->
+          <input type="file" id="photoInputMobile" accept="image/*" class="hidden">
 
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="label !mb-0 !ml-0">Perluas Subjek</label>
-              <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300"><span id="photoExpandVal">3</span>px</span>
+          <!-- ====== PANEL: MAIN ====== -->
+          <div data-ps-panel="main" class="ps-panel md:block space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <button id="photoRemoveBtn" class="btn-bounce w-full bg-gradient-to-br from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none" disabled>
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Hapus BG</span>
+              </button>
+              <button id="photoResetBtn" class="btn-bounce w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-4 rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                <i class="fa-solid fa-arrow-rotate-left text-amber-500"></i>
+                <span>Reset</span>
+              </button>
             </div>
-            <input type="range" id="photoExpand" min="0" max="10" value="3" class="w-full">
-            <p class="text-[10px] text-slate-400 mt-0.5">Naikkan jika badan/rambut terpotong</p>
-          </div>
 
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="label !mb-0 !ml-0">Haluskan Tepi</label>
-              <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300"><span id="photoSmoothVal">3</span></span>
-            </div>
-            <input type="range" id="photoSmooth" min="0" max="8" value="3" step="0.5" class="w-full">
-            <p class="text-[10px] text-slate-400 mt-0.5">Tinggi = tepi lebih halus, tapi sedikit buram</p>
-          </div>
-
-          <label class="flex items-center justify-between cursor-pointer">
-            <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Isi Lubang Otomatis</span>
-            <span class="switch">
-              <input type="checkbox" id="photoFillHoles" checked>
-              <span class="slider"></span>
-            </span>
-          </label>
-
-          <label class="flex items-center justify-between cursor-pointer">
-            <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Bersihkan Halo</span>
-            <span class="switch">
-              <input type="checkbox" id="photoDecontam" checked>
-              <span class="slider"></span>
-            </span>
-          </label>
-        </div>
-
-        <!-- Action buttons -->
-        <div class="grid grid-cols-2 gap-2 sm:gap-3">
-          <button id="photoRemoveBtn" class="btn-bounce btn-secondary py-3 sm:py-2.5" disabled>
-            <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
-            <span class="text-xs">Hapus BG</span>
-          </button>
-          <button id="photoResetBtn" class="btn-bounce btn-secondary py-3 sm:py-2.5" disabled>
-            <i class="fa-solid fa-arrow-rotate-left text-amber-500"></i>
-            <span class="text-xs">Reset Brush</span>
-          </button>
-        </div>
-
-        <!-- Progress -->
-        <div id="photoProgress" class="hidden bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
-          <div class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-            <div class="loader !w-3 !h-3 !border-slate-300 !border-t-indigo-500"></div>
-            <span id="photoProgressText">Memproses...</span>
-          </div>
-          <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div id="photoProgressBar" class="h-full bg-indigo-500 rounded-full transition-all" style="width:0%"></div>
-          </div>
-        </div>
-
-        <!-- Brush panel -->
-        <div id="photoBrushPanel" class="hidden space-y-3">
-          <div class="flex items-center gap-2">
-            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Kuas Manual</span>
-            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
-          </div>
-
-          <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
-            <button data-brush-mode="erase" class="brush-mode-btn active flex-1 py-2.5 rounded-lg text-xs font-semibold">
-              <i class="fa-solid fa-eraser"></i> Eraser
-            </button>
-            <button data-brush-mode="restore" class="brush-mode-btn flex-1 py-2.5 rounded-lg text-xs font-semibold">
-              <i class="fa-solid fa-brush"></i> Restore
-            </button>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="label !mb-0 !ml-0">Ukuran Kuas</label>
-              <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300"><span id="photoBrushSizeVal">40</span>px</span>
-            </div>
-            <input type="range" id="photoBrushSize" min="5" max="200" value="40" class="w-full">
-          </div>
-
-          <button id="photoUndoBtn" class="btn-bounce btn-secondary w-full py-3 sm:py-2.5" disabled>
-            <i class="fa-solid fa-rotate-left text-xs"></i>
-            <span class="text-xs">Undo Sapuan</span>
-          </button>
-        </div>
-
-        <!-- Background options -->
-        <div class="space-y-3">
-          <div class="flex items-center gap-2">
-            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ganti Background</span>
-            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
-          </div>
-
-          <div class="grid grid-cols-5 gap-2">
-            <button data-bg-type="transparent" class="bg-pill active" title="Transparan">
-              <span class="w-full h-full block rounded-md" style="background-image:linear-gradient(45deg,#e2e8f0 25%,transparent 25%,transparent 75%,#e2e8f0 75%),linear-gradient(45deg,#e2e8f0 25%,#fff 25%,#fff 75%,#e2e8f0 75%);background-size:10px 10px;background-position:0 0,5px 5px;"></span>
-            </button>
-            <button data-bg-type="color" class="bg-pill" title="Warna Solid">
-              <span class="w-full h-full block rounded-md" style="background:#ffffff;border:1px solid #e2e8f0;"></span>
-            </button>
-            <button data-bg-type="gradient" class="bg-pill" title="Gradient">
-              <span class="w-full h-full block rounded-md" style="background:linear-gradient(135deg,#dbeafe,#93c5fd);"></span>
-            </button>
-            <button data-bg-type="image" class="bg-pill" title="Upload Gambar">
-              <span class="w-full h-full flex items-center justify-center rounded-md bg-slate-200 dark:bg-slate-700 text-slate-500">
-                <i class="fa-solid fa-image text-[10px]"></i>
-              </span>
-            </button>
-            <button data-bg-type="blur" class="bg-pill" title="Blur Original">
-              <span class="w-full h-full flex items-center justify-center rounded-md bg-purple-100 dark:bg-purple-500/20 text-purple-600">
-                <i class="fa-solid fa-droplet text-[10px]"></i>
-              </span>
-            </button>
-          </div>
-
-          <div id="photoColorOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 space-y-2">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-              <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Warna Latar</label>
-              <div class="flex gap-1.5">
-                <button data-preset="#ffffff" class="w-7 h-7 rounded-md border-2 border-slate-200" style="background:#ffffff" title="Putih"></button>
-                <button data-preset="#2563eb" class="w-7 h-7 rounded-md border-2 border-slate-200" style="background:#2563eb" title="Biru"></button>
-                <button data-preset="#dc2626" class="w-7 h-7 rounded-md border-2 border-slate-200" style="background:#dc2626" title="Merah"></button>
-                <button data-preset="#16a34a" class="w-7 h-7 rounded-md border-2 border-slate-200" style="background:#16a34a" title="Hijau"></button>
-                <button data-preset="#0f172a" class="w-7 h-7 rounded-md border-2 border-slate-200" style="background:#0f172a" title="Hitam"></button>
+            <div id="photoProgress" class="hidden bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/30 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center gap-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                <div class="loader !w-3 !h-3 !border-indigo-200 !border-t-indigo-500"></div>
+                <span id="photoProgressText">Memproses...</span>
+              </div>
+              <div class="h-1.5 bg-indigo-100 dark:bg-indigo-500/20 rounded-full overflow-hidden">
+                <div id="photoProgressBar" class="h-full bg-indigo-500 rounded-full transition-all" style="width:0%"></div>
               </div>
             </div>
-            <input type="color" id="photoColor" value="#ffffff" class="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer bg-transparent">
-          </div>
 
-          <div id="photoGradientOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 space-y-2">
-            <div class="grid grid-cols-2 gap-2">
-              <div><label class="label">Warna 1</label><input type="color" id="photoGrad1" value="#dbeafe" class="w-full h-9 rounded-lg border border-slate-200 cursor-pointer bg-transparent"></div>
-              <div><label class="label">Warna 2</label><input type="color" id="photoGrad2" value="#93c5fd" class="w-full h-9 rounded-lg border border-slate-200 cursor-pointer bg-transparent"></div>
+            <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-2xl p-3 flex items-start gap-2.5">
+              <div class="bg-blue-100 dark:bg-blue-500/20 p-1.5 rounded-lg text-blue-600 dark:text-blue-400 shrink-0">
+                <i class="fa-solid fa-lightbulb text-xs"></i>
+              </div>
+              <div class="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed">
+                Setelah hapus BG, atur <strong>Perluas Subjek</strong> dan <strong>Haluskan Tepi</strong> di tab <strong>AI</strong> untuk hasil terbaik.
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+              <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-indigo-500">
+                <i class="fa-solid fa-microchip text-xs"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">AI Background Removal</div>
+                <div class="text-[10px] text-slate-400">Model Akurat (ISNet)</div>
+              </div>
+              <span id="photoAiStatus" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 shrink-0">memuat…</span>
             </div>
           </div>
 
-          <div id="photoImageOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
-            <input type="file" id="photoBgImage" accept="image/*" class="hidden">
-            <button id="photoBgImageBtn" class="btn-bounce btn-secondary w-full !py-2.5">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Pilih Gambar Background
+          <!-- ====== PANEL: AI ====== -->
+          <div data-ps-panel="ai" class="ps-panel hidden md:block space-y-3">
+            <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-3.5 rounded-2xl space-y-3.5">
+              <div class="flex items-center gap-2">
+                <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-indigo-500">
+                  <i class="fa-solid fa-microchip text-xs"></i>
+                </div>
+                <span class="font-semibold text-xs text-slate-600 dark:text-slate-300">Pengaturan AI</span>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Perluas Subjek</label>
+                  <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400"><span id="photoExpandVal">3</span>px</span>
+                </div>
+                <input type="range" id="photoExpand" min="0" max="10" value="3" class="w-full">
+                <p class="text-[10px] text-slate-400 mt-1">Naikkan jika badan/rambut terpotong</p>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Haluskan Tepi</label>
+                  <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400"><span id="photoSmoothVal">3</span></span>
+                </div>
+                <input type="range" id="photoSmooth" min="0" max="8" value="3" step="0.5" class="w-full">
+                <p class="text-[10px] text-slate-400 mt-1">Tinggi = tepi lebih halus</p>
+              </div>
+
+              <label class="flex items-center justify-between cursor-pointer py-1">
+                <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Isi Lubang Otomatis</span>
+                <span class="switch"><input type="checkbox" id="photoFillHoles" checked><span class="slider"></span></span>
+              </label>
+
+              <label class="flex items-center justify-between cursor-pointer py-1">
+                <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Bersihkan Halo</span>
+                <span class="switch"><input type="checkbox" id="photoDecontam" checked><span class="slider"></span></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ====== PANEL: BRUSH ====== -->
+          <div data-ps-panel="brush" class="ps-panel hidden md:block space-y-3">
+            <div id="photoBrushPanel" class="space-y-3.5">
+              <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
+                <button data-brush-mode="erase" class="brush-mode-btn active flex-1 py-3 rounded-lg text-xs font-semibold">
+                  <i class="fa-solid fa-eraser"></i> Eraser
+                </button>
+                <button data-brush-mode="restore" class="brush-mode-btn flex-1 py-3 rounded-lg text-xs font-semibold">
+                  <i class="fa-solid fa-brush"></i> Restore
+                </button>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ukuran Kuas</label>
+                  <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400"><span id="photoBrushSizeVal">40</span>px</span>
+                </div>
+                <input type="range" id="photoBrushSize" min="5" max="200" value="40" class="w-full">
+              </div>
+
+              <button id="photoUndoBtn" class="btn-bounce w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3.5 rounded-2xl font-semibold text-xs shadow-sm flex items-center justify-center gap-2 disabled:opacity-40" disabled>
+                <i class="fa-solid fa-rotate-left text-xs"></i>
+                <span>Undo Sapuan</span>
+              </button>
+
+              <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 flex items-start gap-2.5">
+                <i class="fa-solid fa-hand-pointer text-indigo-500 mt-0.5"></i>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Ketuk & geser langsung pada foto untuk mengedit tepi.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ====== PANEL: BG ====== -->
+          <div data-ps-panel="bg" class="ps-panel hidden md:block space-y-3">
+            <div>
+              <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 block mb-2 ml-1">Jenis Background</label>
+              <div class="grid grid-cols-5 gap-2">
+                <button data-bg-type="transparent" class="bg-pill active" title="Transparan">
+                  <span class="w-full h-full block rounded-md" style="background-image:linear-gradient(45deg,#e2e8f0 25%,transparent 25%,transparent 75%,#e2e8f0 75%),linear-gradient(45deg,#e2e8f0 25%,#fff 25%,#fff 75%,#e2e8f0 75%);background-size:10px 10px;background-position:0 0,5px 5px;"></span>
+                </button>
+                <button data-bg-type="color" class="bg-pill" title="Warna">
+                  <span class="w-full h-full block rounded-md" style="background:#ffffff;border:1px solid #e2e8f0;"></span>
+                </button>
+                <button data-bg-type="gradient" class="bg-pill" title="Gradient">
+                  <span class="w-full h-full block rounded-md" style="background:linear-gradient(135deg,#dbeafe,#93c5fd);"></span>
+                </button>
+                <button data-bg-type="image" class="bg-pill" title="Gambar">
+                  <span class="w-full h-full flex items-center justify-center rounded-md bg-slate-200 dark:bg-slate-700 text-slate-500">
+                    <i class="fa-solid fa-image text-[11px]"></i>
+                  </span>
+                </button>
+                <button data-bg-type="blur" class="bg-pill" title="Blur">
+                  <span class="w-full h-full flex items-center justify-center rounded-md bg-purple-100 dark:bg-purple-500/20 text-purple-600">
+                    <i class="fa-solid fa-droplet text-[11px]"></i>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div id="photoColorOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3.5 space-y-3">
+              <div>
+                <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 block mb-2">Pilih Warna</label>
+                <div class="flex gap-2 flex-wrap mb-3">
+                  <button data-preset="#ffffff" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#ffffff" title="Putih"></button>
+                  <button data-preset="#2563eb" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#2563eb" title="Biru"></button>
+                  <button data-preset="#dc2626" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#dc2626" title="Merah"></button>
+                  <button data-preset="#16a34a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#16a34a" title="Hijau"></button>
+                  <button data-preset="#0f172a" class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 active:scale-90 transition-transform" style="background:#0f172a" title="Hitam"></button>
+                </div>
+                <input type="color" id="photoColor" value="#ffffff" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer bg-transparent">
+              </div>
+            </div>
+
+            <div id="photoGradientOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3.5 space-y-2">
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="label">Warna 1</label><input type="color" id="photoGrad1" value="#dbeafe" class="w-full h-11 rounded-xl border border-slate-200 cursor-pointer bg-transparent"></div>
+                <div><label class="label">Warna 2</label><input type="color" id="photoGrad2" value="#93c5fd" class="w-full h-11 rounded-xl border border-slate-200 cursor-pointer bg-transparent"></div>
+              </div>
+            </div>
+
+            <div id="photoImageOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3">
+              <input type="file" id="photoBgImage" accept="image/*" class="hidden">
+              <button id="photoBgImageBtn" class="btn-bounce w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-3.5 rounded-xl font-semibold text-xs shadow-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Pilih Gambar Background
+              </button>
+            </div>
+
+            <div id="photoBlurOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3.5">
+              <label class="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 block mb-2">Intensitas Blur</label>
+              <input type="range" id="photoBlurRadius" min="5" max="60" value="24" class="w-full">
+            </div>
+          </div>
+
+          <!-- ====== PANEL: OUTPUT ====== -->
+          <div data-ps-panel="output" class="ps-panel hidden md:block space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="label">Ukuran</label>
+                <select id="photoSize" class="input !py-3 !text-sm">
+                  <option value="original" selected>Original</option>
+                  <option value="2x3">Pas Foto 2×3</option>
+                  <option value="3x4">Pas Foto 3×4</option>
+                  <option value="4x6">Pas Foto 4×6</option>
+                </select>
+              </div>
+              <div>
+                <label class="label">Format</label>
+                <select id="photoFormat" class="input !py-3 !text-sm">
+                  <option value="png" selected>PNG (HQ)</option>
+                  <option value="jpg">JPG</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-3 flex items-start gap-2.5">
+              <div class="bg-emerald-100 dark:bg-emerald-500/20 p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 shrink-0">
+                <i class="fa-solid fa-circle-info text-xs"></i>
+              </div>
+              <p class="text-[11px] text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                Gunakan <strong>PNG</strong> untuk background transparan, <strong>JPG</strong> untuk ukuran file lebih kecil.
+              </p>
+            </div>
+
+            <button id="photoDownload" class="btn-bounce w-full bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none" disabled>
+              <i class="fa-solid fa-download"></i>
+              <span>Download Foto</span>
             </button>
           </div>
 
-          <div id="photoBlurOptions" class="hidden bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
-            <label class="label">Intensitas Blur</label>
-            <input type="range" id="photoBlurRadius" min="5" max="60" value="24" class="w-full">
-          </div>
-        </div>
-
-        <!-- Output -->
-        <div class="mt-auto pt-2 space-y-3">
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="label">Ukuran</label>
-              <select id="photoSize" class="input !py-2.5 !text-xs">
-                <option value="original" selected>Original</option>
-                <option value="2x3">Pas Foto 2×3</option>
-                <option value="3x4">Pas Foto 3×4</option>
-                <option value="4x6">Pas Foto 4×6</option>
-              </select>
-            </div>
-            <div>
-              <label class="label">Format</label>
-              <select id="photoFormat" class="input !py-2.5 !text-xs">
-                <option value="png" selected>PNG (HQ)</option>
-                <option value="jpg">JPG</option>
-              </select>
-            </div>
-          </div>
-
-          <button id="photoDownload" class="btn-bounce w-full btn-primary py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/30" disabled>
-            <i class="fa-solid fa-download"></i>
-            <span>Download Foto</span>
-          </button>
         </div>
       </div>
     </aside>
+
+    <!-- Backdrop for mobile sheet -->
+    <div id="photoBackdrop" class="md:hidden fixed inset-0 bg-black/50 z-40 hidden"></div>
   </section>
 
   <!-- ========== VIEW: EMAIL ========== -->
