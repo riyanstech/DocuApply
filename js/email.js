@@ -1,5 +1,6 @@
 /* =====================================================
-   DocuApply — Email Templates
+   DocuApply — Email Templates v2
+   - Support override template dari Admin Dashboard
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -53,12 +54,28 @@ DA.email = (function () {
     renderBuiltin();
     renderSaved();
     bindEvents();
+
+    // Re-render saat admin update
+    window.addEventListener('emailTemplates:updated', renderBuiltin);
+  }
+
+  function getTemplates() {
+    const override = DA.storage.get('emailTemplatesOverride');
+    if (override && Array.isArray(override) && override.length) {
+      // Merge: gabungkan override dengan built-in (kalau ada id yang sama, override menang)
+      const map = new Map();
+      BUILT_IN.forEach((t) => map.set(t.id, t));
+      override.forEach((t) => map.set(t.id, { ...map.get(t.id), ...t }));
+      return Array.from(map.values());
+    }
+    return BUILT_IN;
   }
 
   function renderBuiltin() {
     if (!els.grid) return;
+    const templates = getTemplates();
     els.grid.innerHTML = '';
-    BUILT_IN.forEach((t) => els.grid.appendChild(cardEl(t, false)));
+    templates.forEach((t) => els.grid.appendChild(cardEl(t, false)));
   }
 
   function renderSaved() {
@@ -119,8 +136,14 @@ DA.email = (function () {
   }
 
   function useTemplate(t) {
-    if (els.subject) els.subject.value = t.subject || '';
-    if (els.body) els.body.value = t.body || '';
+    // Ambil dari override dulu (kalau ada subject/body di override)
+    const override = DA.storage.get('emailTemplatesOverride');
+    const overrideItem = override?.find((x) => x.id === t.id);
+    const final = overrideItem ? { ...t, ...overrideItem } : t;
+
+    if (els.subject) els.subject.value = final.subject || '';
+    if (els.body) els.body.value = final.body || '';
+
     els.list?.classList.add('hidden');
     els.form?.classList.remove('hidden');
     els.form?.classList.add('flex');
@@ -149,6 +172,7 @@ DA.email = (function () {
       name: name.trim().slice(0, 60),
       desc: 'Disimpan ' + new Date().toLocaleDateString('id-ID'),
       color: 'slate',
+      icon: 'fa-bookmark',
       subject: els.subject?.value || '',
       body: els.body?.value || '',
     });
