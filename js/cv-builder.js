@@ -1,9 +1,8 @@
 /* =====================================================
-   DocuApply — CV Builder
-   - Load templates .docx dari /cv-templates/
-   - Fetch dari server → parse jadi HTML (mammoth.js)
-   - Edit di browser user (contenteditable)
-   - Download hasil sebagai PDF / DOCX
+   DocuApply — CV Builder v2
+   - docx-preview untuk render .docx lebih akurat
+   - PDF export pakai html2canvas + jsPDF (clone visible)
+   - DOCX export pakai Blob HTML (mime application/msword)
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -45,7 +44,7 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     LOAD TEMPLATES MANIFEST
+     LOAD MANIFEST
      ============================================ */
   async function loadTemplates() {
     try {
@@ -125,22 +124,49 @@ DA.cvBuilder = (function () {
       if (!res.ok) throw new Error(`Gagal unduh file (${res.status})`);
       const arrayBuffer = await res.arrayBuffer();
 
-      if (typeof mammoth === 'undefined') {
-        throw new Error('Library mammoth.js tidak termuat. Refresh halaman.');
+      // Cek library tersedia
+      if (typeof docx === 'undefined' || typeof docx.renderAsync !== 'function') {
+        throw new Error('Library docx-preview tidak termuat. Refresh halaman lalu coba lagi.');
       }
 
-      const result = await mammoth.convertToHtml({ arrayBuffer });
-      const html = (result.value || '').trim();
+      // Render pakai docx-preview ke container tersembunyi
+      const container = document.createElement('div');
+      container.style.cssText = 'position:absolute;left:-99999px;top:0;width:21cm;background:#fff;';
 
-      if (!html) {
+      await docx.renderAsync(arrayBuffer, container, null, {
+        className: 'docx-render',
+        inWrapper: false,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        ignoreFonts: false,
+        breakPages: true,
+        useBase64URL: true,
+        experimental: true,
+        renderHeaders: true,
+        renderFooters: true,
+      });
+
+      // Ambil HTML hasil render
+      let html = container.innerHTML;
+
+      // Bersihkan: buang style width/height fixed yang bikin kaku
+      html = html.replace(/<section[^>]*class="docx[^"]*"[^>]*>/g, '<div class="docx-section">');
+      html = html.replace(/<\/section>/g, '</div>');
+      // Buang style inline yang bisa merusak tampilan editable
+      html = html.replace(/ style="[^"]*position:\s*absolute[^"]*"/gi, '');
+      html = html.replace(/ style="[^"]*page-break[^"]*"/gi, '');
+
+      // Set ke contenteditable
+      els.content.innerHTML = html;
+
+      // Jika kosong setelah dibersihkan
+      if (!els.content.textContent.trim() && !els.content.querySelector('img,table')) {
         els.content.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:2rem;font-family:sans-serif;">Template kosong. Silakan tulis CV Anda di sini.</p>';
-      } else {
-        els.content.innerHTML = html;
       }
 
       originalHtml = els.content.innerHTML;
 
-      // Cek draft tersimpan
+      // Info draft tersimpan
       const draftKey = 'cv_draft_' + template.id;
       const saved = DA.storage.get(draftKey);
       if (saved && saved.html && saved.html !== originalHtml) {
@@ -165,7 +191,6 @@ DA.cvBuilder = (function () {
   }
 
   function closeEditor() {
-    // Auto-save draft
     if (currentTemplate && els.content) {
       const currentHtml = els.content.innerHTML;
       if (currentHtml && currentHtml !== originalHtml) {
@@ -273,32 +298,36 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     EXPORT DOCX
+     EXPORT DOCX — pakai Blob HTML (mime application/msword)
+     Word / LibreOffice bisa buka langsung.
      ============================================ */
   function downloadDocx() {
     if (!els.content) return;
     try {
-      if (typeof htmlDocx === 'undefined') {
-        DA.toast.error('Library html-docx-js tidak termuat. Refresh halaman.');
-        return;
-      }
-
       const htmlContent = els.content.innerHTML;
+
+      // Bersihkan tag docx-preview jika ada
+      const cleanContent = htmlContent
+        .replace(/class="docx-[^"]*"/g, '')
+        .replace(/<div class="docx-section">/g, '<div>')
+        .replace(/ style="[^"]*position:[^"]*"/gi, '');
+
       const styles = `
-        @page { size: A4; margin: 1.5cm 2cm; }
-        body { font-family: Georgia, 'Times New Roman', serif; font-size: 11pt; line-height: 1.5; color: #1e293b; }
-        h1 { font-size: 20pt; font-weight: bold; margin-bottom: 6pt; }
+        @page WordSection1 { size: 21cm 29.7cm; margin: 1.5cm 2cm 1.5cm 2cm; }
+        div.WordSection1 { page: WordSection1; }
+        body { font-family: Georgia, 'Times New Roman', serif; font-size: 11pt; line-height: 1.55; color: #1e293b; }
+        h1 { font-size: 20pt; font-weight: bold; margin-bottom: 6pt; line-height: 1.15; }
         h2 { font-size: 13pt; font-weight: bold; margin-top: 14pt; margin-bottom: 6pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; text-transform: uppercase; letter-spacing: 0.5pt; }
         h3 { font-size: 12pt; font-weight: bold; margin-top: 8pt; margin-bottom: 4pt; }
-        p { margin-bottom: 6pt; }
-        ul, ol { margin-left: 18pt; margin-bottom: 8pt; }
+        p { margin-bottom: 6pt; margin-top: 0; }
+        ul, ol { margin-left: 18pt; margin-bottom: 8pt; padding-left: 0; }
         li { margin-bottom: 2pt; }
         strong, b { font-weight: bold; }
         em, i { font-style: italic; }
         u { text-decoration: underline; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 8pt; }
-        td, th { padding: 4pt 6pt; border: 1pt solid #cbd5e1; }
-        a { color: #4f46e5; }
+        td, th { padding: 4pt 6pt; border: 1pt solid #cbd5e1; vertical-align: top; }
+        a { color: #4f46e5; text-decoration: underline; }
       `;
 
       const fullHtml = `<!DOCTYPE html>
@@ -308,15 +337,31 @@ DA.cvBuilder = (function () {
 <head>
 <meta charset="utf-8">
 <title>CV</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
 <style>${styles}</style>
 </head>
-<body>${htmlContent}</body>
+<body>
+<div class="WordSection1">
+${cleanContent}
+</div>
+</body>
 </html>`;
 
-      const blob = htmlDocx.asBlob(fullHtml);
-      const name = (currentTemplate?.name || 'CV').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now() + '.docx';
+      // Prefix BOM agar Word detect UTF-8
+      const blob = new Blob(['\ufeff', fullHtml], {
+        type: 'application/msword'
+      });
+      const name = (currentTemplate?.name || 'CV').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now() + '.doc';
       downloadBlob(blob, name);
-      DA.toast.success('CV berhasil diunduh sebagai DOCX');
+      DA.toast.success('CV diunduh sebagai .doc — buka di Word, bisa Save As .docx');
     } catch (err) {
       console.error('[CV] DOCX export error:', err);
       DA.toast.error('Gagal export DOCX: ' + err.message);
@@ -324,46 +369,84 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     EXPORT PDF
+     EXPORT PDF — html2canvas + jsPDF (clone visible)
      ============================================ */
   async function downloadPdf() {
     if (!els.paper) return;
+    if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+      DA.toast.error('Library PDF tidak termuat. Refresh halaman.');
+      return;
+    }
+
+    DA.toast.info('Menyiapkan PDF...', 2000);
+
+    // Clone paper, taruh di viewport (di atas layar user) supaya html2canvas bisa capture
+    const clone = els.paper.cloneNode(true);
+    clone.id = 'cvPaperClone';
+    clone.style.cssText = `
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 794px;
+      min-height: 1123px;
+      background: #ffffff;
+      color: #1e293b;
+      padding: 57px 76px;
+      box-shadow: none;
+      border-radius: 0;
+      z-index: 99999;
+      margin: 0;
+      transform: none;
+    `;
+
+    // Sembunyikan dulu clone, tampilkan cuma 1 frame untuk capture
+    clone.style.visibility = 'hidden';
+    document.body.appendChild(clone);
+
     try {
-      if (typeof html2pdf === 'undefined') {
-        DA.toast.error('Library html2pdf tidak termuat. Refresh halaman.');
-        return;
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Pastikan editor tidak "nyangkut" di dalam hidden container
+      // (dengan meng-clone, kita bypass semua constraint parent)
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: 794,
+        windowHeight: clone.scrollHeight,
+        width: 794,
+        height: clone.scrollHeight,
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pdfW = pdf.internal.pageSize.getWidth();   // 210mm
+      const pdfH = pdf.internal.pageSize.getHeight();  // 297mm
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgWmm = pdfW;
+      const imgHmm = (canvas.height * imgWmm) / canvas.width;
+
+      // Multi-page jika konten lebih panjang dari 1 halaman
+      let y = 0;
+      let pageNum = 0;
+      while (y < imgHmm) {
+        if (pageNum > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, -y, imgWmm, imgHmm, undefined, 'FAST');
+        y += pdfH;
+        pageNum++;
       }
 
-      DA.toast.info('Menyiapkan PDF...', 1500);
-
-      const paper = els.paper;
-      const oldStyle = paper.getAttribute('style') || '';
-      const oldClass = paper.className;
-
-      // Force A4 rendering
-      paper.setAttribute('style',
-        'width: 21cm; min-height: 29.7cm; padding: 1.5cm 2cm; background: #ffffff; color: #1e293b; position: absolute; left: -9999px; top: 0; z-index: -1;'
-      );
-      paper.className = 'cv-paper';
-
-      await new Promise((r) => setTimeout(r, 150));
-
-      await html2pdf().set({
-        margin: 0,
-        filename: (currentTemplate?.name || 'CV').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now() + '.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', windowWidth: 794 },
-        jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] },
-      }).from(paper).save();
-
-      paper.setAttribute('style', oldStyle);
-      paper.className = oldClass;
-
+      const name = (currentTemplate?.name || 'CV').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now() + '.pdf';
+      pdf.save(name);
       DA.toast.success('CV berhasil diunduh sebagai PDF');
     } catch (err) {
       console.error('[CV] PDF export error:', err);
       DA.toast.error('Gagal export PDF: ' + err.message);
+    } finally {
+      clone.remove();
     }
   }
 
