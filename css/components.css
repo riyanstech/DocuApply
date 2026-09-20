@@ -28,7 +28,7 @@
   gap: 0.5rem;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: all 0.2s var(--ease);
-  min-height: 40px;
+  min-height: 42px;
 }
 .btn-secondary:hover:not(:disabled) { border-color: #a5b4fc; background: #f8fafc; }
 .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -40,8 +40,8 @@
 .dark .btn-secondary:hover:not(:disabled) { background: #1e293b; border-color: #334155; }
 
 .tool-btn {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -49,15 +49,18 @@
   font-size: 0.8rem;
   color: #64748b;
   transition: all 0.2s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .tool-btn:hover:not(:disabled) { background: #f1f5f9; color: #334155; }
 .tool-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.tool-btn:active:not(:disabled) { transform: scale(0.94); }
 .dark .tool-btn { color: #94a3b8; }
 .dark .tool-btn:hover:not(:disabled) { background: #1e293b; color: #e2e8f0; }
 
 .zoom-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
@@ -66,6 +69,7 @@
   transition: background 0.15s;
 }
 .zoom-btn:hover { background: #fff; }
+.zoom-btn:active { transform: scale(0.92); }
 .dark .zoom-btn { color: #94a3b8; }
 .dark .zoom-btn:hover { background: #0f172a; }
 
@@ -102,14 +106,14 @@
   color: #94a3b8;
   transition: color 0.2s, background 0.2s;
   border-radius: 8px;
-  min-height: 52px;
+  min-height: 54px;
   padding: 6px 2px;
   background: transparent;
   border: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-.m-nav-btn i { font-size: 17px; }
+.m-nav-btn i { font-size: 18px; }
 .m-nav-btn:active { background: rgba(99, 102, 241, 0.08); }
 .m-nav-btn.active { color: #4f46e5; }
 .dark .m-nav-btn.active { color: #a5b4fc; }
@@ -118,8 +122,8 @@
 .switch {
   position: relative;
   display: inline-block;
-  width: 40px;
-  height: 22px;
+  width: 42px;
+  height: 24px;
   flex-shrink: 0;
 }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -134,8 +138,8 @@
 .switch .slider::before {
   content: '';
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   left: 3px;
   top: 3px;
   background: #fff;
@@ -155,7 +159,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #64748b;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
   margin-left: 0.15rem;
 }
 .dark .label { color: #94a3b8; }
@@ -165,12 +169,12 @@
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
-  padding: 0.7rem 0.85rem;
-  font-size: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.875rem;
   color: #334155;
   transition: all 0.2s var(--ease);
   outline: none;
-  min-height: 42px;
+  min-height: 46px;
 }
 .input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
 .dark .input { background: #0f172a; border-color: #1e293b; color: #e2e8f0; }
@@ -194,12 +198,12 @@
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
-  padding: 0.8rem 1rem 0.8rem 2.5rem;
-  font-size: 0.85rem;
+  padding: 0.85rem 1rem 0.85rem 2.5rem;
+  font-size: 0.875rem;
   color: #334155;
   transition: all 0.2s var(--ease);
   outline: none;
-  min-height: 44px;
+  min-height: 48px;
 }
 .input-iconed:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
 .dark .input-iconed { background: #0f172a; border-color: #1e293b; color: #e2e8f0; }
@@ -219,6 +223,7 @@
   cursor: move;
   transition: all 0.2s var(--ease);
   animation: popIn 0.25s var(--ease);
+  -webkit-tap-highlight-color: transparent;
 }
 .thumb-card:hover { border-color: #c7d2fe; }
 .dark .thumb-card { background: #0f172a; border-color: #1e293b; }
@@ -242,8 +247,8 @@
 }
 
 .thumb-action {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -251,10 +256,13 @@
   background: #fff;
   color: #64748b;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .thumb-action:hover { transform: scale(1.1); }
+.thumb-action:active { transform: scale(0.92); }
 .thumb-action.danger { color: #ef4444; }
 .thumb-action.danger:hover { background: #fef2f2; }
 .thumb-action.primary { color: #6366f1; }
@@ -264,7 +272,7 @@
 .dark .thumb-action.primary { color: #a5b4fc; }
 
 /* =====================================================
-   PHOTO STUDIO — Common
+   PHOTO STUDIO
    ===================================================== */
 
 .bg-pill {
@@ -280,6 +288,7 @@
   touch-action: manipulation;
 }
 .bg-pill:hover { transform: translateY(-1px); }
+.bg-pill:active { transform: scale(0.94); }
 .bg-pill.active {
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
@@ -292,7 +301,7 @@
   gap: 0.35rem;
   color: #64748b;
   transition: all 0.2s var(--ease);
-  min-height: 40px;
+  min-height: 42px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -312,7 +321,6 @@
   color: #a5b4fc;
 }
 
-/* Color input */
 input[type="color"] {
   -webkit-appearance: none;
   appearance: none;
@@ -325,7 +333,6 @@ input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
 input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
 input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
 
-/* Canvas stage */
 #photoStage {
   display: inline-block;
   position: relative;
@@ -361,7 +368,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
 }
 
 /* =====================================================
-   PHOTO STUDIO — Tabs (Mobile)
+   Photo Studio — Tabs
    ===================================================== */
 
 .ps-tab {
@@ -381,7 +388,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  min-height: 40px;
+  min-height: 42px;
 }
 .ps-tab:hover { color: #334155; background: #f1f5f9; }
 .ps-tab.active {
@@ -398,7 +405,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
 .ps-tabs-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* =====================================================
-   PHOTO STUDIO — Mobile Bottom Sheet
+   Mobile Bottom Sheet (Photo Studio)
    ===================================================== */
 
 @media (max-width: 767px) {
@@ -426,7 +433,6 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   #photoSidebar.photo-sidebar.open {
     transform: translateY(0);
   }
-
   #photoBackdrop {
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -435,13 +441,10 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
     display: block !important;
     opacity: 1;
   }
-
-  /* Panel visibility — mobile: only active */
   .ps-panel:not(.active) { display: none; }
   .ps-panel.active { display: block; animation: fadeInUp 0.25s ease; }
 }
 
-/* Desktop: sidebar normal, all panels visible */
 @media (min-width: 768px) {
   #photoSidebar.photo-sidebar {
     position: relative;
@@ -455,28 +458,48 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   .ps-panel { display: block !important; }
 }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* =====================================================
+   Mobile Bottom Sheets (Editor, Image→PDF)
+   ===================================================== */
+
+@media (max-width: 767px) {
+  #editorSettingsSheet,
+  #i2pSheet {
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  #editorSettingsSheet.open,
+  #i2pSheet.open {
+    transform: translateY(0) !important;
+  }
+  #editorBackdrop.show,
+  #i2pBackdrop.show {
+    display: block !important;
+    opacity: 1;
+  }
+  #editorBackdrop,
+  #i2pBackdrop {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+}
+
+/* Fixed bottom bar (Editor mobile) */
+.fixed-bottom-bar {
+  position: fixed;
 }
 
 /* =====================================================
-   RESPONSIVE FIXES
+   Responsive Fixes
    ===================================================== */
 
-/* Small phones */
 @media (max-width: 400px) {
   .m-nav-btn { font-size: 9px; }
-  .m-nav-btn i { font-size: 15px; }
-  .m-nav-btn { min-height: 48px; }
-  .btn-secondary { font-size: 0.7rem; padding: 0.55rem 0.6rem; }
-  .input { font-size: 0.8rem; }
-  .label { font-size: 0.65rem; }
+  .m-nav-btn i { font-size: 16px; }
+  .m-nav-btn { min-height: 50px; }
   .ps-tab { padding: 8px 10px; font-size: 11px; }
   .ps-tab i { font-size: 10px; }
 }
 
-/* iOS safe area for bottom nav */
 @supports (padding: max(0px)) {
   #navMobile {
     padding-left: env(safe-area-inset-left);
@@ -484,34 +507,29 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   }
 }
 
-/* Prevent double-tap zoom on buttons */
-button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab {
+button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Mobile: hide brush cursor (only for touch devices) */
 @media (hover: none) {
   #brushCursor { display: none !important; }
 }
 
-/* Bigger touch targets on mobile for slider & pills */
 @media (max-width: 767px) {
-  input[type="range"] { height: 6px; }
+  input[type="range"] { height: 8px; }
   input[type="range"]::-webkit-slider-thumb {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
   }
   input[type="range"]::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
   }
-  .bg-pill { min-height: 48px; }
-  .brush-mode-btn { min-height: 44px; }
-  .ps-tab { min-height: 40px; }
+  .bg-pill { min-height: 50px; }
+  .brush-mode-btn { min-height: 46px; }
 }
 
-/* Tablet: 768px - 1023px */
 @media (min-width: 768px) and (max-width: 1023px) {
   #navDesktop { display: none !important; }
   #navMobile { display: grid !important; }
@@ -520,4 +538,8 @@ button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
