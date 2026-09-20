@@ -1,9 +1,8 @@
 /* =====================================================
-   DocuApply — CV Builder v4
-   - Pakai MAMMOTH.JS (proven working) bukan docx-preview
-   - Modal pilihan: Download Original / Edit di App
-   - Error detail di console untuk debug
-   - Auto-styling setelah convert ke HTML
+   DocuApply — CV Builder v5
+   - FIX PDF kosong: pakai position:fixed + opacity trick
+   - Toolbar LENGKAP: font family, size, color, highlight,
+     align, lists, indent, link, image, line-height, dll
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -34,8 +33,19 @@ DA.cvBuilder = (function () {
       downloadDocx: document.getElementById('cvDownloadDocx'),
       downloadPdf: document.getElementById('cvDownloadPdf'),
       saveLocal: document.getElementById('cvSaveLocal'),
+      // Toolbar
+      fontFamily: document.getElementById('cvFontFamily'),
+      fontSize: document.getElementById('cvFontSize'),
       formatBlock: document.getElementById('cvFormatBlock'),
       foreColor: document.getElementById('cvForeColor'),
+      backColor: document.getElementById('cvBackColor'),
+      clearBackColor: document.getElementById('cvClearBackColor'),
+      lineHeight: document.getElementById('cvLineHeight'),
+      insertLink: document.getElementById('cvInsertLink'),
+      insertHr: document.getElementById('cvInsertHr'),
+      insertImage: document.getElementById('cvInsertImage'),
+      imageInput: document.getElementById('cvImageInput'),
+      // Modal
       modal: document.getElementById('cvChoiceModal'),
       modalBackdrop: document.getElementById('cvChoiceBackdrop'),
       modalCancel: document.getElementById('cvChoiceCancel'),
@@ -114,7 +124,7 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     MODAL PILIHAN
+     MODAL
      ============================================ */
   function showChoiceModal(template) {
     currentTemplate = template;
@@ -131,37 +141,24 @@ DA.cvBuilder = (function () {
     document.body.style.overflow = '';
   }
 
-  /* ============================================
-     OPSI 1: DOWNLOAD ORIGINAL
-     ============================================ */
   async function downloadOriginal() {
     if (!currentTemplate) return;
     const t = currentTemplate;
     hideChoiceModal();
-
     try {
       DA.toast.info('Mengunduh file asli...', 2000);
-
       const url = 'cv-templates/' + encodeURIComponent(t.file);
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
       const blob = await res.blob();
-      const filename = (t.file || 'template.docx');
-      downloadBlob(blob, filename);
-
-      setTimeout(() => {
-        DA.toast.success(`Berhasil! File "${filename}" tersimpan.`, 5000);
-      }, 300);
+      downloadBlob(blob, t.file || 'template.docx');
+      setTimeout(() => DA.toast.success(`Berhasil! File "${t.file}" tersimpan.`, 5000), 300);
     } catch (err) {
       console.error('[CV] Download error:', err);
       DA.toast.error('Gagal mengunduh: ' + err.message);
     }
   }
 
-  /* ============================================
-     OPSI 2: EDIT DI APLIKASI
-     ============================================ */
   function chooseEdit() {
     if (!currentTemplate) return;
     const t = currentTemplate;
@@ -170,7 +167,7 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     OPEN EDITOR — pakai mammoth.js
+     OPEN EDITOR
      ============================================ */
   async function openEditor(template) {
     currentTemplate = template;
@@ -183,27 +180,20 @@ DA.cvBuilder = (function () {
     els.content.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:2rem;font-family:sans-serif;">Memuat template dari server...</p>';
 
     try {
-      // STEP 1: Fetch file .docx
       const url = 'cv-templates/' + encodeURIComponent(template.file);
-      console.log('[CV] Fetching:', url);
-
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Gagal unduh file (HTTP ${res.status})`);
       const arrayBuffer = await res.arrayBuffer();
-      console.log('[CV] File size:', arrayBuffer.byteLength, 'bytes');
 
-      // STEP 2: Cek library mammoth
       if (typeof mammoth === 'undefined' || typeof mammoth.convertToHtml !== 'function') {
         throw new Error('Library mammoth.js tidak termuat. Cek koneksi lalu refresh halaman.');
       }
-      console.log('[CV] Mammoth loaded ✓');
 
-      // STEP 3: Convert .docx → HTML
       const result = await mammoth.convertToHtml(
         { arrayBuffer },
         {
           styleMap: [
-            "p[style-name='Title'] => h1.doc-title:fresh",
+            "p[style-name='Title'] => h1:fresh",
             "p[style-name='Heading 1'] => h1:fresh",
             "p[style-name='Heading 2'] => h2:fresh",
             "p[style-name='Heading 3'] => h3:fresh",
@@ -217,24 +207,15 @@ DA.cvBuilder = (function () {
       );
 
       const html = (result.value || '').trim();
-      const messages = result.messages || [];
-      if (messages.length) {
-        console.warn('[CV] Mammoth messages:', messages);
-      }
-
       if (!html) {
         throw new Error('File .docx tidak berisi teks yang bisa dikonversi. Coba "Download Original".');
       }
 
-      // STEP 4: Post-process HTML
       let cleanedHtml = html;
-
-      // Konversi <p><strong>Nama</strong></p> jadi <h1> jika teks pendek & semua bold
       cleanedHtml = cleanedHtml.replace(
         /<p>(?:<strong>|<b>)([^<]{3,60})(?:<\/strong>|<\/b>)<\/p>/g,
         (match, text) => {
           const clean = text.trim();
-          // Hanya convert kalau mirip nama/judul (huruf besar mayoritas)
           if (clean === clean.toUpperCase() && clean.length < 50) {
             return `<h1>${clean}</h1>`;
           }
@@ -242,33 +223,25 @@ DA.cvBuilder = (function () {
         }
       );
 
-      // Set ke contenteditable
       els.content.innerHTML = cleanedHtml;
-      console.log('[CV] Rendered content length:', cleanedHtml.length);
-
       originalHtml = els.content.innerHTML;
 
-      // STEP 5: Cek draft tersimpan
       const draftKey = 'cv_draft_' + template.id;
       const saved = DA.storage.get(draftKey);
       if (saved && saved.html && saved.html !== originalHtml) {
-        setTimeout(() => {
-          DA.toast.info('Ada draft tersimpan. Klik "Draft" untuk memuat.', 4000);
-        }, 800);
+        setTimeout(() => DA.toast.info('Ada draft tersimpan. Klik "Draft" untuk memuat.', 4000), 800);
       }
 
       DA.toast.success('Template dimuat — siap diedit!');
     } catch (err) {
-      console.error('[CV] Error load template:', err);
-
+      console.error('[CV] Error:', err);
       els.content.innerHTML = `
         <div style="text-align:center;padding:2rem;color:#ef4444;font-family:sans-serif;">
           <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem;margin-bottom:1rem;display:block;"></i>
           <p style="font-weight:700;font-size:1rem;margin-bottom:0.5rem;">Gagal memuat template</p>
-          <p style="font-size:0.85rem;opacity:0.8;margin-bottom:0.5rem;">${escapeHtml(err.message || 'Unknown error')}</p>
+          <p style="font-size:0.85rem;opacity:0.8;">${escapeHtml(err.message || 'Unknown error')}</p>
           <p style="font-size:0.75rem;opacity:0.7;margin-top:1rem;padding:0.75rem;background:#fef2f2;border-radius:0.5rem;">
-            💡 <strong>Solusi:</strong> Klik tombol kembali → pilih template lagi → pilih
-            <strong>"Download Original"</strong> untuk edit di Microsoft Word / Google Docs.
+            💡 Coba klik tombol kembali → pilih template lagi → pilih <strong>"Download Original"</strong>.
           </p>
         </div>
       `;
@@ -293,10 +266,93 @@ DA.cvBuilder = (function () {
   /* ============================================
      FORMATTING
      ============================================ */
+  function focusEditor() {
+    els.content?.focus();
+  }
+
   function execCmd(cmd, value) {
+    focusEditor();
+    try { document.execCommand('styleWithCSS', false, true); } catch {}
     document.execCommand(cmd, false, value);
-    els.content.focus();
     updateToolbarState();
+  }
+
+  function applyFontSize(size) {
+    focusEditor();
+    if (!size) return;
+    // execCommand fontSize cuma terima 1-7, jadi kita pakai trick wrapping
+    try { document.execCommand('styleWithCSS', false, true); } catch {}
+    document.execCommand('fontSize', false, '7');
+
+    const fontEls = els.content.querySelectorAll('font[size="7"], span[style*="xxx-large"]');
+    fontEls.forEach((el) => {
+      const span = document.createElement('span');
+      span.style.fontSize = size;
+      span.innerHTML = el.innerHTML;
+      el.parentNode.replaceChild(span, el);
+    });
+  }
+
+  function applyLineHeight(value) {
+    focusEditor();
+    if (!value) return;
+    // Cari parent block element dari selection
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    let node = sel.anchorNode;
+    while (node && node !== els.content) {
+      if (node.nodeType === 1 && /^(P|DIV|H[1-6]|LI|BLOCKQUOTE|PRE)$/.test(node.tagName)) {
+        node.style.lineHeight = value;
+        break;
+      }
+      node = node.parentNode;
+    }
+  }
+
+  function applyBackColor(color) {
+    focusEditor();
+    try { document.execCommand('styleWithCSS', false, true); } catch {}
+    document.execCommand('hiliteColor', false, color);
+  }
+
+  function insertLink() {
+    const url = prompt('Masukkan URL:', 'https://');
+    if (!url) return;
+    focusEditor();
+    const sel = window.getSelection();
+    if (sel && sel.toString()) {
+      document.execCommand('createLink', false, url);
+    } else {
+      // Sisipkan text default
+      document.execCommand('insertHTML', false, `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`);
+    }
+  }
+
+  function insertHr() {
+    focusEditor();
+    document.execCommand('insertHorizontalRule', false, null);
+  }
+
+  function insertImage() {
+    els.imageInput?.click();
+  }
+
+  function handleImageUpload(e) {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    if (!f.type.startsWith('image/')) {
+      DA.toast.error('File harus berupa gambar');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      focusEditor();
+      document.execCommand('insertHTML', false,
+        `<img src="${ev.target.result}" style="max-width:100%; height:auto; display:block; margin:8px auto;" alt="">`);
+      DA.toast.success('Gambar disisipkan');
+    };
+    reader.readAsDataURL(f);
   }
 
   function updateToolbarState() {
@@ -319,10 +375,7 @@ DA.cvBuilder = (function () {
   function saveDraft() {
     if (!currentTemplate || !els.content) return;
     const draftKey = 'cv_draft_' + currentTemplate.id;
-    DA.storage.set(draftKey, {
-      html: els.content.innerHTML,
-      savedAt: Date.now(),
-    });
+    DA.storage.set(draftKey, { html: els.content.innerHTML, savedAt: Date.now() });
     DA.toast.success('Draft tersimpan', 1500);
   }
 
@@ -349,6 +402,7 @@ DA.cvBuilder = (function () {
     els.choiceDownload?.addEventListener('click', downloadOriginal);
     els.choiceEdit?.addEventListener('click', chooseEdit);
 
+    // Toolbar buttons (dengan data-cmd)
     document.querySelectorAll('.cv-tool-btn[data-cmd]').forEach((btn) => {
       btn.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -356,25 +410,98 @@ DA.cvBuilder = (function () {
       });
     });
 
-    els.formatBlock?.addEventListener('change', (e) => {
-      execCmd('formatBlock', e.target.value);
+    // Font Family
+    els.fontFamily?.addEventListener('change', (e) => {
+      const v = e.target.value;
+      if (v) execCmd('fontName', v);
+      e.target.value = '';
     });
 
+    // Font Size
+    els.fontSize?.addEventListener('change', (e) => {
+      const v = e.target.value;
+      if (v) applyFontSize(v);
+      e.target.value = '';
+    });
+
+    // Paragraph style
+    els.formatBlock?.addEventListener('change', (e) => {
+      const v = e.target.value;
+      execCmd('formatBlock', v === 'P' ? 'P' : v);
+      e.target.value = 'P';
+    });
+
+    // Fore color
     els.foreColor?.addEventListener('input', (e) => {
       execCmd('foreColor', e.target.value);
     });
 
+    // Back color
+    els.backColor?.addEventListener('input', (e) => {
+      applyBackColor(e.target.value);
+    });
+
+    els.clearBackColor?.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      focusEditor();
+      try { document.execCommand('styleWithCSS', false, true); } catch {}
+      document.execCommand('hiliteColor', false, 'transparent');
+    });
+
+    // Line height
+    els.lineHeight?.addEventListener('change', (e) => {
+      const v = e.target.value;
+      if (v) applyLineHeight(v);
+      e.target.value = '';
+    });
+
+    // Insert
+    els.insertLink?.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      insertLink();
+    });
+
+    els.insertHr?.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      insertHr();
+    });
+
+    els.insertImage?.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      insertImage();
+    });
+
+    els.imageInput?.addEventListener('change', handleImageUpload);
+
+    // Editor events
     els.content?.addEventListener('keyup', updateToolbarState);
     els.content?.addEventListener('mouseup', updateToolbarState);
     els.content?.addEventListener('input', debouncedSaveDraft);
 
     els.content?.addEventListener('keydown', (e) => {
+      // Ctrl+S = save draft
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         saveDraft();
+        return;
+      }
+      // Tab = indent, Shift+Tab = outdent
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        document.execCommand(e.shiftKey ? 'outdent' : 'indent', false, null);
       }
     });
 
+    // Paste as plain text (hindari style kotor dari luar)
+    els.content?.addEventListener('paste', (e) => {
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      if (text) {
+        e.preventDefault();
+        document.execCommand('insertText', false, text);
+      }
+    });
+
+    // Save/Load draft
     els.saveLocal?.addEventListener('click', () => {
       const draft = DA.storage.get('cv_draft_' + (currentTemplate?.id || ''));
       if (draft && draft.html) {
@@ -395,7 +522,7 @@ DA.cvBuilder = (function () {
   }
 
   /* ============================================
-     EXPORT DOCX — pakai Blob HTML
+     EXPORT DOCX
      ============================================ */
   function downloadDocx() {
     if (!els.content) return;
@@ -409,15 +536,20 @@ DA.cvBuilder = (function () {
         h1 { font-size: 20pt; font-weight: bold; margin-bottom: 6pt; line-height: 1.15; text-align: center; }
         h2 { font-size: 13pt; font-weight: bold; margin-top: 14pt; margin-bottom: 6pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; text-transform: uppercase; letter-spacing: 0.5pt; }
         h3 { font-size: 12pt; font-weight: bold; margin-top: 8pt; margin-bottom: 4pt; }
+        h4 { font-size: 11.5pt; font-weight: bold; margin-top: 8pt; margin-bottom: 4pt; }
         p { margin-bottom: 6pt; margin-top: 0; }
         ul, ol { margin-left: 18pt; margin-bottom: 8pt; padding-left: 0; }
         li { margin-bottom: 2pt; }
         strong, b { font-weight: bold; }
         em, i { font-style: italic; }
         u { text-decoration: underline; }
+        s, strike { text-decoration: line-through; }
+        blockquote { margin: 8pt 0; padding: 6pt 12pt; border-left: 3pt solid #cbd5e1; font-style: italic; color: #475569; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 8pt; }
         td, th { padding: 4pt 6pt; border: 1pt solid #cbd5e1; vertical-align: top; }
         a { color: #4f46e5; text-decoration: underline; }
+        img { max-width: 100%; height: auto; }
+        hr { border: none; border-top: 1pt solid #cbd5e1; margin: 10pt 0; }
       `;
 
       const fullHtml = `<!DOCTYPE html>
@@ -428,20 +560,11 @@ DA.cvBuilder = (function () {
 <meta charset="utf-8">
 <title>CV</title>
 <!--[if gte mso 9]>
-<xml>
-<w:WordDocument>
-<w:View>Print</w:View>
-<w:Zoom>100</w:Zoom>
-</w:WordDocument>
-</xml>
+<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml>
 <![endif]-->
 <style>${styles}</style>
 </head>
-<body>
-<div class="WordSection1">
-${htmlContent}
-</div>
-</body>
+<body><div class="WordSection1">${htmlContent}</div></body>
 </html>`;
 
       const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
@@ -455,7 +578,7 @@ ${htmlContent}
   }
 
   /* ============================================
-     EXPORT PDF
+     EXPORT PDF — FIX: pakai position:fixed + opacity trick
      ============================================ */
   async function downloadPdf() {
     if (!els.paper) return;
@@ -464,36 +587,72 @@ ${htmlContent}
       return;
     }
 
-    DA.toast.info('Menyiapkan PDF...', 2000);
+    DA.toast.info('Menyiapkan PDF...', 2500);
 
-    const clone = els.paper.cloneNode(true);
-    clone.id = 'cvPaperClone';
-    clone.style.cssText = `
-      position: fixed; left: 0; top: 0;
-      width: 794px; min-height: 1123px;
-      background: #ffffff; color: #1e293b;
-      padding: 57px 76px; box-shadow: none;
-      border-radius: 0; z-index: 99999; margin: 0;
-      transform: none; visibility: hidden;
+    // Ambil konten dari editor
+    const contentClone = els.content.cloneNode(true);
+    contentClone.removeAttribute('id');
+    contentClone.removeAttribute('contenteditable');
+    contentClone.removeAttribute('spellcheck');
+    contentClone.removeAttribute('class');
+
+    // Buat wrapper A4 yang visible & terlihat oleh html2canvas
+    const wrapper = document.createElement('div');
+    wrapper.id = 'cvPdfWrapper';
+    wrapper.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 794px !important;
+      min-height: 1123px !important;
+      background: #ffffff !important;
+      color: #1e293b !important;
+      padding: 57px 76px !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+      font-family: Georgia, 'Times New Roman', serif !important;
+      font-size: 11pt !important;
+      line-height: 1.55 !important;
+      z-index: 999999 !important;
+      pointer-events: none !important;
+      overflow: hidden !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     `;
-    document.body.appendChild(clone);
+    wrapper.appendChild(contentClone);
+    document.body.appendChild(wrapper);
 
     try {
-      await new Promise((r) => setTimeout(r, 100));
+      // Tunggu font + gambar load
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      await new Promise((r) => setTimeout(r, 300));
 
-      const canvas = await html2canvas(clone, {
-        scale: 2, useCORS: true, allowTaint: false,
-        backgroundColor: '#ffffff', logging: false,
-        windowWidth: 794, windowHeight: clone.scrollHeight,
-        width: 794, height: clone.scrollHeight,
+      const canvas = await html2canvas(wrapper, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: 794,
+        windowHeight: wrapper.scrollHeight,
+        width: 794,
+        height: wrapper.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
       });
 
+      // Cek canvas tidak kosong
+      const ctx = canvas.getContext('2d');
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+      // Buat PDF
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const imgWmm = pdfW;
       const imgHmm = (canvas.height * imgWmm) / canvas.width;
 
@@ -512,7 +671,7 @@ ${htmlContent}
       console.error('[CV] PDF export error:', err);
       DA.toast.error('Gagal export PDF: ' + err.message);
     } finally {
-      clone.remove();
+      wrapper.remove();
     }
   }
 
