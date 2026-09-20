@@ -1,7 +1,10 @@
 /* =====================================================
-   DocuApply — Photo Studio
-   Auto background removal + manual brush + bg replacement
-   AI Library: @imgly/background-removal (via ESM CDN)
+   DocuApply — Photo Studio v2
+   Improvements:
+   - Model AI selector (fast/balanced/accurate)
+   - Post-processing: fill holes + dilate + feather
+   - Preload AI saat idle untuk kecepatan
+   - Auto warning kalau cutout terlalu kecil
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -42,6 +45,9 @@ DA.photoStudio = (function () {
     hasCutout: false,
     aiReady: false,
     aiFailed: false,
+    model: 'isnet_fp16',
+    expand: 3,
+    fillHoles: true,
   };
 
   let els = {};
@@ -82,28 +88,62 @@ DA.photoStudio = (function () {
       sizeSel: document.getElementById('photoSize'),
       formatSel: document.getElementById('photoFormat'),
       downloadBtn: document.getElementById('photoDownload'),
+      aiStatus: document.getElementById('photoAiStatus'),
+      modelSel: document.getElementById('photoModel'),
+      expand: document.getElementById('photoExpand'),
+      expandVal: document.getElementById('photoExpandVal'),
+      fillHoles: document.getElementById('photoFillHoles'),
     };
 
     if (!els.canvas) return;
 
-    /* ===== AI library ready/error listeners ===== */
+    /* ===== AI ready/error ===== */
     window.addEventListener('imgy:ready', () => {
       S.aiReady = true;
       S.aiFailed = false;
+      updateAIStatusBadge();
       updateUI();
-      console.info('[PhotoStudio] AI siap digunakan');
+      console.info('[PhotoStudio] AI siap');
+      /* Preload model pilihan agar klik pertama cepat */
+      preloadModel();
     });
     window.addEventListener('imgy:error', () => {
       S.aiReady = false;
       S.aiFailed = true;
+      updateAIStatusBadge();
       updateUI();
-      DA.toast.warn('AI Background Removal gagal dimuat. Cek koneksi internet.', 5000);
+      DA.toast.warn('AI gagal dimuat. Cek koneksi internet lalu refresh.', 5000);
+    });
+    if (typeof window.imglyRemoveBackground === 'function') {
+      S.aiReady = true;
+      updateAIStatusBadge();
+    }
+
+    /* ===== Settings ===== */
+    els.modelSel.addEventListener('change', () => {
+      S.model = els.modelSel.value;
+      DA.storage.set('photoModel', S.model);
+      preloadModel();
+    });
+    const savedModel = DA.storage.get('photoModel');
+    if (savedModel) {
+      S.model = savedModel;
+      els.modelSel.value = savedModel;
+    }
+
+    els.expand.addEventListener('input', (e) => {
+      S.expand = Number(e.target.value);
+      els.expandVal.textContent = S.expand;
+      /* Re-apply expand ke baseMask tanpa panggil AI lagi */
+      if (S.hasCutout && S.aiOutputMask) {
+        applyPostProcess();
+      }
     });
 
-    /* Kalau library sudah ready duluan (race condition) */
-    if (typeof (window.imglyRemoveBackground) === 'function') {
-      S.aiReady = true;
-    }
+    els.fillHoles.addEventListener('change', () => {
+      S.fillHoles = els.fillHoles.checked;
+      if (S.hasCutout && S.aiOutputMask) applyPostProcess();
+    });
 
     /* ===== Dropzone ===== */
     bindDropZone(els.drop, els.input, onFile);
@@ -134,18 +174,11 @@ DA.photoStudio = (function () {
       })
     );
 
-    els.bgColor.addEventListener('input', (e) => {
-      S.bg.color = e.target.value; rebuildBg(); scheduleRender();
-    });
-    els.bgGrad1.addEventListener('input', (e) => {
-      S.bg.g1 = e.target.value; rebuildBg(); scheduleRender();
-    });
-    els.bgGrad2.addEventListener('input', (e) => {
-      S.bg.g2 = e.target.value; rebuildBg(); scheduleRender();
-    });
-    els.blurRadius.addEventListener('input', (e) => {
-      S.bg.blur = Number(e.target.value); rebuildBg(); scheduleRender();
-    });
+    els.bgColor.addEventListener('input', (e) => { S.bg.color = e.target.value; rebuildBg(); scheduleRender(); });
+    els.bgGrad1.addEventListener('input', (e) => { S.bg.g1 = e.target.value; rebuildBg(); scheduleRender(); });
+    els.bgGrad2.addEventListener('input', (e) => { S.bg.g2 = e.target.value; rebuildBg(); scheduleRender(); });
+    els.blurRadius.addEventListener('input', (e) => { S.bg.blur = Number(e.target.value); rebuildBg(); scheduleRender(); });
+
     els.bgImgBtn.addEventListener('click', () => els.bgImgInput.click());
     els.bgImgInput.addEventListener('change', (e) => {
       const f = e.target.files?.[0];
@@ -171,24 +204,72 @@ DA.photoStudio = (function () {
     c.addEventListener('pointerup', onPointerUp);
     c.addEventListener('pointercancel', onPointerUp);
     c.addEventListener('pointerleave', () => { els.cursor.classList.add('hidden'); });
-    c.addEventListener('pointerenter', () => {
-      if (S.hasCutout) els.cursor.classList.remove('hidden');
-    });
+    c.addEventListener('pointerenter', () => { if (S.hasCutout) els.cursor.classList.remove('hidden'); });
 
-    /* Re-render canvas on theme toggle (biar checker pattern sinkron) */
     const themeBtn = document.getElementById('themeToggle');
     themeBtn?.addEventListener('click', () => scheduleRender());
 
     updateUI();
+    updateAIStatusBadge();
 
-    /* Timeout: kalau AI 20 detik tidak ready, tampilkan warning */
+    /* ===== Auto preload saat idle ===== */
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => { if (S.aiReady) preloadModel(); }, { timeout: 5000 });
+    } else {
+      setTimeout(() => { if (S.aiReady) preloadModel(); }, 3000);
+    }
+
+    /* ===== Timeout warning ===== */
     setTimeout(() => {
       if (!S.aiReady && !S.aiFailed) {
         S.aiFailed = true;
+        updateAIStatusBadge();
         updateUI();
-        DA.toast.warn('AI lambat dimuat. Coba refresh halaman.', 5000);
       }
-    }, 20000);
+    }, 25000);
+  }
+
+  /* ============================================
+     AI STATUS BADGE
+     ============================================ */
+  function updateAIStatusBadge() {
+    if (!els.aiStatus) return;
+    if (S.aiReady) {
+      els.aiStatus.textContent = 'siap';
+      els.aiStatus.className = 'ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300';
+    } else if (S.aiFailed) {
+      els.aiStatus.textContent = 'gagal';
+      els.aiStatus.className = 'ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300';
+    } else {
+      els.aiStatus.textContent = 'memuat…';
+      els.aiStatus.className = 'ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300';
+    }
+  }
+
+  /* ============================================
+     PRELOAD MODEL (silent warm-up)
+     ============================================ */
+  function preloadModel() {
+    if (!S.aiReady || !S.file) return;
+    // Buat gambar kecil dummy & jalankan inference singkat agar model masuk cache
+    try {
+      const dummy = document.createElement('canvas');
+      dummy.width = 64;
+      dummy.height = 64;
+      const ctx = dummy.getContext('2d');
+      ctx.fillStyle = '#333';
+      ctx.fillRect(0, 0, 64, 64);
+
+      dummy.toBlob((blob) => {
+        if (!blob) return;
+        const remover = window.imglyRemoveBackground;
+        if (typeof remover !== 'function') return;
+        // Panggil tanpa progres, jangan tampilkan UI
+        remover(blob, { model: S.model, output: { format: 'image/png' } })
+          .then(() => console.info('[PhotoStudio] Model preloaded:', S.model))
+          .catch(() => {});
+      }, 'image/png');
+    } catch {}
   }
 
   /* ============================================
@@ -207,6 +288,8 @@ DA.photoStudio = (function () {
       const img = await loadImage(url);
       prepareOriginal(img);
       DA.toast.success('Foto dimuat. Klik "Hapus BG" untuk mulai.');
+      /* Preload model sekarang karena user mungkin segera klik */
+      if (S.aiReady) preloadModel();
     } catch (e) {
       DA.toast.error('Gagal memuat gambar: ' + e.message);
     } finally {
@@ -222,6 +305,7 @@ DA.photoStudio = (function () {
     S.imageData = canvas.getContext('2d').getImageData(0, 0, w, h);
     S.baseMask = null;
     S.mask = null;
+    S.aiOutputMask = null;
     S.bgData = null;
     S.hasCutout = false;
     S.history = [];
@@ -243,28 +327,22 @@ DA.photoStudio = (function () {
      ============================================ */
   async function removeBg() {
     if (!S.file) return;
-
-    const remover =
-      window.imglyRemoveBackground ||
-      window.removeBackground;
-
+    const remover = window.imglyRemoveBackground;
     if (typeof remover !== 'function') {
-      if (S.aiFailed) {
-        DA.toast.error('AI gagal dimuat. Refresh halaman dan cek koneksi internet.');
-      } else {
-        DA.toast.warn('AI masih dimuat... tunggu sebentar lalu coba lagi.');
-      }
+      DA.toast.error(S.aiFailed ? 'AI gagal dimuat. Refresh halaman.' : 'AI masih dimuat...');
       return;
     }
 
     setBusy(true);
     els.progress.classList.remove('hidden');
-    setProgress(2, 'Menyiapkan model AI...');
+    setProgress(2, 'Menyiapkan AI...');
     els.status.textContent = 'Menghapus background...';
+    const t0 = performance.now();
 
     try {
       const blob = await remover(S.file, {
-        output: { format: 'image/png', quality: 0.8 },
+        model: S.model,
+        output: { format: 'image/png', quality: 0.9 },
         progress: (key, current, total) => {
           if (!total) return;
           const pct = Math.round((current / total) * 100);
@@ -289,25 +367,162 @@ DA.photoStudio = (function () {
       ctx.drawImage(img, 0, 0, S.W, S.H);
       const data = ctx.getImageData(0, 0, S.W, S.H).data;
 
-      const mask = new Uint8ClampedArray(S.W * S.H);
-      for (let i = 0; i < mask.length; i++) mask[i] = data[i * 4 + 3];
+      /* Simpan raw output AI sebagai aiOutputMask */
+      const aiMask = new Uint8ClampedArray(S.W * S.H);
+      for (let i = 0; i < aiMask.length; i++) aiMask[i] = data[i * 4 + 3];
+      S.aiOutputMask = aiMask;
 
-      S.baseMask = new Uint8ClampedArray(mask);
-      S.mask = mask;
+      /* Apply post-processing untuk hasil lebih rapi */
+      applyPostProcess();
       S.hasCutout = true;
       S.history = [];
 
       rebuildBg();
       render();
       updateUI();
-      els.status.textContent = 'Cutout siap — rapikan dengan kuas jika perlu';
-      DA.toast.success('Background berhasil dihapus!');
+
+      /* Cek apakah cutout terlalu kecil */
+      checkCutoutQuality();
+
+      const dt = ((performance.now() - t0) / 1000).toFixed(1);
+      els.status.textContent = `Cutout siap (${dt}s) — rapikan dengan kuas jika perlu`;
+      DA.toast.success(`Background dihapus dalam ${dt}s`);
     } catch (err) {
       console.error('[PhotoStudio] removeBg error:', err);
-      DA.toast.error('Gagal menghapus background: ' + (err?.message || 'unknown error'));
+      DA.toast.error('Gagal: ' + (err?.message || 'unknown error'));
     } finally {
       setBusy(false);
       setTimeout(() => els.progress.classList.add('hidden'), 400);
+    }
+  }
+
+  /* ============================================
+     MASK POST-PROCESSING
+     - fill holes (flood fill dari border)
+     - dilate (perluas subjek)
+     - feather (haluskan edge)
+     ============================================ */
+  function applyPostProcess() {
+    if (!S.aiOutputMask) return;
+    let m = new Uint8ClampedArray(S.aiOutputMask);
+
+    if (S.fillHoles) m = fillHoles(m, S.W, S.H);
+    if (S.expand > 0) m = dilate(m, S.W, S.H, S.expand);
+    m = feather(m, S.W, S.H, 1);
+
+    S.baseMask = new Uint8ClampedArray(m);
+    S.mask = new Uint8ClampedArray(m);
+    scheduleRender();
+    updateUI();
+  }
+
+  /**
+   * Flood fill dari border untuk identifikasi BACKGROUND asli.
+   * Pixel transparan (mask<128) yang TIDAK tersambung ke border = lubang di subjek → isi foreground.
+   */
+  function fillHoles(mask, W, H) {
+    const visited = new Uint8Array(W * H);
+    const stack = [];
+
+    /* Push border pixels yang transparan */
+    for (let x = 0; x < W; x++) {
+      if (mask[x] < 128 && !visited[x]) { visited[x] = 1; stack.push(x); }
+      const b = (H - 1) * W + x;
+      if (mask[b] < 128 && !visited[b]) { visited[b] = 1; stack.push(b); }
+    }
+    for (let y = 0; y < H; y++) {
+      const l = y * W;
+      if (mask[l] < 128 && !visited[l]) { visited[l] = 1; stack.push(l); }
+      const r = y * W + W - 1;
+      if (mask[r] < 128 && !visited[r]) { visited[r] = 1; stack.push(r); }
+    }
+
+    /* BFS */
+    while (stack.length) {
+      const i = stack.pop();
+      const x = i % W;
+      const y = (i - x) / W;
+      if (x > 0)     { const n = i - 1; if (!visited[n] && mask[n] < 128) { visited[n] = 1; stack.push(n); } }
+      if (x < W - 1) { const n = i + 1; if (!visited[n] && mask[n] < 128) { visited[n] = 1; stack.push(n); } }
+      if (y > 0)     { const n = i - W; if (!visited[n] && mask[n] < 128) { visited[n] = 1; stack.push(n); } }
+      if (y < H - 1) { const n = i + W; if (!visited[n] && mask[n] < 128) { visited[n] = 1; stack.push(n); } }
+    }
+
+    const out = new Uint8ClampedArray(mask);
+    for (let i = 0; i < mask.length; i++) {
+      if (mask[i] < 128 && !visited[i]) out[i] = 255;   /* isi lubang */
+    }
+    return out;
+  }
+
+  /**
+   * Dilate: expand foreground sebanyak r pixel (circular structuring element).
+   */
+  function dilate(mask, W, H, r) {
+    const out = new Uint8ClampedArray(mask);
+    const r2 = r * r;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (mask[i] < 128) continue;
+        const v = mask[i];
+        for (let dy = -r; dy <= r; dy++) {
+          const ny = y + dy;
+          if (ny < 0 || ny >= H) continue;
+          const dy2 = dy * dy;
+          for (let dx = -r; dx <= r; dx++) {
+            if (dx * dx + dy2 > r2) continue;
+            const nx = x + dx;
+            if (nx < 0 || nx >= W) continue;
+            const ni = ny * W + nx;
+            if (out[ni] < v) out[ni] = v;
+          }
+        }
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Feather: box blur 3x3 ringan hanya di edge (alpha antara 0-255).
+   */
+  function feather(mask, W, H, radius) {
+    const out = new Uint8ClampedArray(mask);
+    const rad = Math.max(1, radius);
+    const size = rad * 2 + 1;
+    const area = size * size;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        /* Hanya blur kalau bukan full opaque/transparent */
+        if (mask[i] === 0 || mask[i] === 255) continue;
+        let sum = 0, cnt = 0;
+        for (let dy = -rad; dy <= rad; dy++) {
+          const ny = y + dy;
+          if (ny < 0 || ny >= H) continue;
+          for (let dx = -rad; dx <= rad; dx++) {
+            const nx = x + dx;
+            if (nx < 0 || nx >= W) continue;
+            sum += mask[ny * W + nx];
+            cnt++;
+          }
+        }
+        out[i] = sum / cnt;
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Warning kalau cutout hanya sebagian kecil gambar.
+   */
+  function checkCutoutQuality() {
+    if (!S.mask) return;
+    let fg = 0;
+    for (let i = 0; i < S.mask.length; i++) if (S.mask[i] > 128) fg++;
+    const ratio = fg / S.mask.length;
+    if (ratio < 0.15) {
+      DA.toast.warn('Subjek terdeteksi kecil. Coba naikkan "Perluas Subjek" atau pakai model "Akurat".', 6000);
     }
   }
 
@@ -317,10 +532,7 @@ DA.photoStudio = (function () {
   function scheduleRender() {
     if (rafPending) return;
     rafPending = true;
-    requestAnimationFrame(() => {
-      rafPending = false;
-      render();
-    });
+    requestAnimationFrame(() => { rafPending = false; render(); });
   }
 
   function render() {
@@ -335,7 +547,7 @@ DA.photoStudio = (function () {
     }
 
     const out = ctx.createImageData(W, H);
-    const outData = out.data;
+    const o = out.data;
     const src = imageData.data;
     const bg = S.bgData;
     const isTransparent = S.bg.type === 'transparent' || !bg;
@@ -343,19 +555,19 @@ DA.photoStudio = (function () {
     if (isTransparent) {
       for (let i = 0; i < W * H; i++) {
         const a = mask[i];
-        outData[i * 4]     = src[i * 4];
-        outData[i * 4 + 1] = src[i * 4 + 1];
-        outData[i * 4 + 2] = src[i * 4 + 2];
-        outData[i * 4 + 3] = a;
+        o[i * 4]     = src[i * 4];
+        o[i * 4 + 1] = src[i * 4 + 1];
+        o[i * 4 + 2] = src[i * 4 + 2];
+        o[i * 4 + 3] = a;
       }
     } else {
       for (let i = 0; i < W * H; i++) {
         const a = mask[i] / 255;
         const ia = 1 - a;
-        outData[i * 4]     = src[i * 4]     * a + bg[i * 4]     * ia;
-        outData[i * 4 + 1] = src[i * 4 + 1] * a + bg[i * 4 + 1] * ia;
-        outData[i * 4 + 2] = src[i * 4 + 2] * a + bg[i * 4 + 2] * ia;
-        outData[i * 4 + 3] = 255;
+        o[i * 4]     = src[i * 4]     * a + bg[i * 4]     * ia;
+        o[i * 4 + 1] = src[i * 4 + 1] * a + bg[i * 4 + 1] * ia;
+        o[i * 4 + 2] = src[i * 4 + 2] * a + bg[i * 4 + 2] * ia;
+        o[i * 4 + 3] = 255;
       }
     }
     ctx.putImageData(out, 0, 0);
@@ -365,7 +577,6 @@ DA.photoStudio = (function () {
     if (!S.W || !S.H) return;
     const { W, H } = S;
     const bg = S.bg;
-
     if (bg.type === 'transparent') { S.bgData = null; return; }
 
     const c = document.createElement('canvas');
@@ -373,14 +584,11 @@ DA.photoStudio = (function () {
     const ctx = c.getContext('2d');
 
     if (bg.type === 'color') {
-      ctx.fillStyle = bg.color;
-      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = bg.color; ctx.fillRect(0, 0, W, H);
     } else if (bg.type === 'gradient') {
       const g = ctx.createLinearGradient(0, 0, W, H);
-      g.addColorStop(0, bg.g1);
-      g.addColorStop(1, bg.g2);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
+      g.addColorStop(0, bg.g1); g.addColorStop(1, bg.g2);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     } else if (bg.type === 'image' && bg.img) {
       drawCover(ctx, bg.img, W, H);
     } else if (bg.type === 'blur') {
@@ -392,7 +600,6 @@ DA.photoStudio = (function () {
       S.bgData = null;
       return;
     }
-
     S.bgData = ctx.getImageData(0, 0, W, H).data;
   }
 
@@ -407,14 +614,12 @@ DA.photoStudio = (function () {
     pushHistory();
     applyBrush(e);
   }
-
   function onPointerMove(e) {
     updateCursor(e);
     if (!S.drawing) return;
     e.preventDefault();
     applyBrush(e);
   }
-
   function onPointerUp(e) {
     if (!S.drawing) return;
     S.drawing = false;
@@ -433,8 +638,7 @@ DA.photoStudio = (function () {
 
     for (let py = y0; py <= y1; py++) {
       for (let px = x0; px <= x1; px++) {
-        const dx = px - pos.x;
-        const dy = py - pos.y;
+        const dx = px - pos.x, dy = py - pos.y;
         const d2 = dx * dx + dy * dy;
         if (d2 > r2) continue;
         const dist = Math.sqrt(d2);
@@ -450,9 +654,10 @@ DA.photoStudio = (function () {
 
   function getCanvasPos(e) {
     const r = els.canvas.getBoundingClientRect();
-    const x = (e.clientX - r.left) * (S.W / r.width);
-    const y = (e.clientY - r.top) * (S.H / r.height);
-    return { x, y };
+    return {
+      x: (e.clientX - r.left) * (S.W / r.width),
+      y: (e.clientY - r.top)  * (S.H / r.height),
+    };
   }
 
   function updateCursor(e) {
@@ -484,10 +689,7 @@ DA.photoStudio = (function () {
   }
   function undo() {
     const prev = S.history.pop();
-    if (prev) {
-      S.mask = prev;
-      scheduleRender();
-    }
+    if (prev) { S.mask = prev; scheduleRender(); }
     updateUI();
   }
 
@@ -516,10 +718,7 @@ DA.photoStudio = (function () {
     els.gradOpts.classList.toggle('hidden', type !== 'gradient');
     els.imgOpts.classList.toggle('hidden', type !== 'image');
     els.blurOpts.classList.toggle('hidden', type !== 'blur');
-
-    if (type === 'image' && !S.bg.img) {
-      DA.toast.info('Pilih gambar background terlebih dahulu');
-    }
+    if (type === 'image' && !S.bg.img) DA.toast.info('Pilih gambar background dulu');
     rebuildBg();
     scheduleRender();
   }
@@ -528,27 +727,15 @@ DA.photoStudio = (function () {
      UI STATE
      ============================================ */
   function updateUI() {
-    /* Tombol Hapus BG: hanya aktif kalau ada file DAN AI ready */
     const canRemove = !!S.file && S.aiReady;
     els.removeBtn.disabled = !canRemove;
+    if (!S.aiReady && !S.aiFailed && S.file) els.removeBtn.title = 'AI masih dimuat...';
+    else if (S.aiFailed) els.removeBtn.title = 'AI gagal dimuat';
+    else els.removeBtn.title = 'Hapus background otomatis';
 
-    /* Update label tombol Hapus BG kalau AI belum ready */
-    if (!S.aiReady && !S.aiFailed && S.file) {
-      els.removeBtn.title = 'AI masih dimuat...';
-    } else if (S.aiFailed) {
-      els.removeBtn.title = 'AI gagal dimuat — refresh halaman';
-    } else {
-      els.removeBtn.title = 'Hapus background otomatis';
-    }
-
-    /* Status text */
-    if (!S.file) {
-      els.status.textContent = 'Belum ada foto';
-    } else if (!S.aiReady && !S.aiFailed && !S.hasCutout) {
-      els.status.textContent = 'Foto siap — AI masih dimuat...';
-    } else if (S.aiFailed && !S.hasCutout) {
-      els.status.textContent = 'Foto siap — AI gagal dimuat';
-    }
+    if (!S.file) els.status.textContent = 'Belum ada foto';
+    else if (!S.aiReady && !S.aiFailed && !S.hasCutout) els.status.textContent = 'Foto siap — AI masih dimuat...';
+    else if (S.aiFailed && !S.hasCutout) els.status.textContent = 'Foto siap — AI gagal dimuat';
 
     els.resetBtn.disabled = !S.hasCutout;
     els.undoBtn.disabled = !S.history.length;
@@ -598,24 +785,17 @@ DA.photoStudio = (function () {
       ctx.fillRect(0, 0, outW, outH);
     }
 
-    if (sizeKey === 'original') {
-      ctx.drawImage(tmp, 0, 0, outW, outH);
-    } else {
-      drawCover(ctx, tmp, outW, outH);
-    }
+    if (sizeKey === 'original') ctx.drawImage(tmp, 0, 0, outW, outH);
+    else drawCover(ctx, tmp, outW, outH);
 
     const mime = isJpg ? 'image/jpeg' : 'image/png';
-    out.toBlob(
-      (blob) => {
-        const name = sizeKey === 'original'
-          ? `PhotoStudio_${Date.now()}.${format}`
-          : `PasFoto_${sizeKey}_${Date.now()}.${format}`;
-        downloadBlob(blob, name);
-        DA.toast.success(`Berhasil diunduh (${DA.utils.formatBytes(blob.size)})`);
-      },
-      mime,
-      0.95
-    );
+    out.toBlob((blob) => {
+      const name = sizeKey === 'original'
+        ? `PhotoStudio_${Date.now()}.${format}`
+        : `PasFoto_${sizeKey}_${Date.now()}.${format}`;
+      downloadBlob(blob, name);
+      DA.toast.success(`Berhasil diunduh (${DA.utils.formatBytes(blob.size)})`);
+    }, mime, 0.95);
   }
 
   /* ============================================
@@ -650,16 +830,10 @@ DA.photoStudio = (function () {
   function drawCover(ctx, img, W, H) {
     const iw = img.naturalWidth || img.width;
     const ih = img.naturalHeight || img.height;
-    const ir = iw / ih;
-    const cr = W / H;
+    const ir = iw / ih, cr = W / H;
     let dw, dh, dx, dy;
-    if (ir > cr) {
-      dh = H; dw = H * ir;
-      dx = (W - dw) / 2; dy = 0;
-    } else {
-      dw = W; dh = W / ir;
-      dx = 0; dy = (H - dh) / 2;
-    }
+    if (ir > cr) { dh = H; dw = H * ir; dx = (W - dw) / 2; dy = 0; }
+    else { dw = W; dh = W / ir; dx = 0; dy = (H - dh) / 2; }
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
