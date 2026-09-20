@@ -6,15 +6,14 @@ window.DA = window.DA || {};
 DA.pdfEditor = (function () {
   const { uid, downloadBlob, readAsArrayBuffer, bindDropZone } = DA.utils;
 
-  /* ---------- State ---------- */
-  let pages = [];           // { id, type, src, originalData, pageIndex?, rotation }
+  let pages = [];
   let undoStack = [];
   let redoStack = [];
   let zoom = 1;
   let sortable = null;
   let els = {};
+  let mobileInput = null;
 
-  /* ---------- Init ---------- */
   function init() {
     els = {
       grid: document.getElementById('gridArea'),
@@ -30,43 +29,97 @@ DA.pdfEditor = (function () {
       compression: document.getElementById('compressionToggle'),
       quality: document.getElementById('qualitySelect'),
       qualityWrapper: document.getElementById('qualityWrapper'),
+      // Mobile
+      editorUploadBtn: document.getElementById('editorUploadBtn'),
+      editorCameraBtn: document.getElementById('editorCameraBtn'),
+      editorMergeBtn: document.getElementById('editorMergeBtn'),
+      editorSettingsSheet: document.getElementById('editorSettingsSheet'),
+      editorSheetClose: document.getElementById('editorSheetClose'),
+      editorBackdrop: document.getElementById('editorBackdrop'),
+      compressionMobile: document.getElementById('compressionToggleMobile'),
+      qualityMobile: document.getElementById('qualitySelectMobile'),
+      qualityWrapperMobile: document.getElementById('qualityWrapperMobile'),
     };
 
-    // Dropzone
-    bindDropZone(els.dropZone, els.fileInput, handleFiles);
+    // Desktop dropzone
+    if (els.dropZone && els.fileInput) bindDropZone(els.dropZone, els.fileInput, handleFiles);
 
-    // Toolbar buttons
-    document.querySelector('[data-action="add"]').addEventListener('click', () => els.fileInput.click());
-    document.querySelector('[data-action="camera"]').addEventListener('click', () =>
+    // Desktop buttons
+    document.querySelector('[data-action="add"]')?.addEventListener('click', () => els.fileInput?.click());
+    document.querySelector('[data-action="camera"]')?.addEventListener('click', () =>
       DA.camera.open(addCapturedImage)
     );
-    els.mergeBtn.addEventListener('click', mergeAndDownload);
-    els.undoBtn.addEventListener('click', undo);
-    els.redoBtn.addEventListener('click', redo);
-    els.clearBtn.addEventListener('click', clearAll);
+    els.mergeBtn?.addEventListener('click', mergeAndDownload);
+    els.undoBtn?.addEventListener('click', undo);
+    els.redoBtn?.addEventListener('click', redo);
+    els.clearBtn?.addEventListener('click', clearAll);
 
     // Zoom
     document.querySelectorAll('[data-zoom]').forEach((b) =>
       b.addEventListener('click', () => setZoom(zoom + Number(b.dataset.zoom) * 0.15))
     );
 
-    // Compression toggles quality visibility
-    const syncQuality = () => els.qualityWrapper.style.display = els.compression.checked ? '' : 'none';
-    els.compression.addEventListener('change', syncQuality);
+    // Compression toggle (desktop)
+    const syncQuality = () => {
+      if (els.qualityWrapper) els.qualityWrapper.style.display = els.compression?.checked ? '' : 'none';
+    };
+    els.compression?.addEventListener('change', syncQuality);
     syncQuality();
 
-    // Sortable
-    sortable = Sortable.create(els.grid, {
-      animation: 180,
-      ghostClass: 'opacity-40',
-      onStart: () => snapshot(),
-      onEnd: (evt) => {
-        if (evt.oldIndex === evt.newIndex) return;
-        const item = pages.splice(evt.oldIndex, 1)[0];
-        pages.splice(evt.newIndex, 0, item);
-        requestAnimationFrame(() => renderGrid(true));
-      },
+    // Mobile buttons
+    els.editorUploadBtn?.addEventListener('click', () => els.fileInput?.click());
+    els.editorCameraBtn?.addEventListener('click', () => DA.camera.open(addCapturedImage));
+    els.editorMergeBtn?.addEventListener('click', mergeAndDownload);
+
+    // Mobile sheet open/close
+    els.editorSettingsSheet && (window.openEditorSheet = () => {
+      els.editorSettingsSheet.classList.add('open');
+      els.editorBackdrop?.classList.add('show');
     });
+
+    // Also allow long-press on toolbar? No — just add "Simpan" button for merge.
+    // Sheet is opened by... actually no visible button. We'll auto-open when
+    // user needs settings. But we can also add: tapping "Simpan PDF" opens sheet?
+    // No — Simpan = merge. So settings is opened via a small gear we add on the toolbar.
+
+    els.editorSheetClose?.addEventListener('click', () => {
+      els.editorSettingsSheet.classList.remove('open');
+      els.editorBackdrop?.classList.remove('show');
+    });
+    els.editorBackdrop?.addEventListener('click', () => {
+      els.editorSettingsSheet.classList.remove('open');
+      els.editorBackdrop.classList.remove('show');
+    });
+
+    // Mobile compression sync
+    const syncMobile = () => {
+      if (els.qualityWrapperMobile) els.qualityWrapperMobile.style.display = els.compressionMobile?.checked ? '' : 'none';
+    };
+    els.compressionMobile?.addEventListener('change', syncMobile);
+    syncMobile();
+
+    // Sync desktop ↔ mobile values
+    els.compressionMobile?.addEventListener('change', () => {
+      if (els.compression) els.compression.checked = els.compressionMobile.checked;
+    });
+    els.qualityMobile?.addEventListener('change', () => {
+      if (els.quality) els.quality.value = els.qualityMobile.value;
+    });
+
+    // Sortable
+    if (els.grid) {
+      sortable = Sortable.create(els.grid, {
+        animation: 180,
+        ghostClass: 'opacity-40',
+        onStart: () => snapshot(),
+        onEnd: (evt) => {
+          if (evt.oldIndex === evt.newIndex) return;
+          const item = pages.splice(evt.oldIndex, 1)[0];
+          pages.splice(evt.newIndex, 0, item);
+          requestAnimationFrame(() => renderGrid(true));
+        },
+      });
+    }
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -85,7 +138,6 @@ DA.pdfEditor = (function () {
     updateToolbar();
   }
 
-  /* ---------- Undo / redo ---------- */
   function snapshot() {
     undoStack.push(pages.map((p) => ({ ...p })));
     if (undoStack.length > 40) undoStack.shift();
@@ -110,17 +162,19 @@ DA.pdfEditor = (function () {
   }
 
   function updateToolbar() {
-    els.undoBtn.disabled = !undoStack.length;
-    els.redoBtn.disabled = !redoStack.length;
-    els.pageCountBadge.textContent = `${pages.length} halaman`;
+    if (els.undoBtn) els.undoBtn.disabled = !undoStack.length;
+    if (els.redoBtn) els.redoBtn.disabled = !redoStack.length;
+    if (els.pageCountBadge) els.pageCountBadge.textContent = `${pages.length} halaman`;
+    // Sync mobile merge button
+    const disabled = !pages.length;
+    if (els.mergeBtn) els.mergeBtn.disabled = disabled;
+    if (els.editorMergeBtn) els.editorMergeBtn.disabled = disabled;
   }
 
-  /* ---------- File handling ---------- */
   async function handleFiles(fileList) {
     const files = Array.from(fileList);
     if (!files.length) return;
     snapshot();
-    showBusy(true, 'Memproses file...');
     try {
       for (const file of files) {
         if (file.type === 'application/pdf') await processPDF(file);
@@ -131,8 +185,6 @@ DA.pdfEditor = (function () {
     } catch (err) {
       console.error(err);
       DA.toast.error('Gagal memproses file: ' + err.message);
-    } finally {
-      showBusy(false);
     }
   }
 
@@ -182,18 +234,16 @@ DA.pdfEditor = (function () {
     });
   }
 
-  /* ---------- Render ---------- */
   function renderGrid(syncCount = false) {
+    if (!els.grid || !els.empty) return;
     if (!pages.length) {
       els.empty.classList.remove('hidden');
       els.grid.classList.add('hidden');
-      els.mergeBtn.disabled = true;
-      if (syncCount) updateToolbar();
+      updateToolbar();
       return;
     }
     els.empty.classList.add('hidden');
     els.grid.classList.remove('hidden');
-    els.mergeBtn.disabled = false;
 
     els.grid.innerHTML = '';
     pages.forEach((p, idx) => {
@@ -205,29 +255,21 @@ DA.pdfEditor = (function () {
              class="max-w-full max-h-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
              style="transform: rotate(${p.rotation}deg) scale(${zoom})">
         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none"></div>
-
         <div class="thumb-actions">
           <button class="thumb-action primary" data-act="rot-l" title="Putar kiri"><i class="fa-solid fa-rotate-left"></i></button>
           <button class="thumb-action primary" data-act="rot-r" title="Putar kanan"><i class="fa-solid fa-rotate-right"></i></button>
           <button class="thumb-action" data-act="dup" title="Duplikat"><i class="fa-regular fa-clone"></i></button>
           <button class="thumb-action danger" data-act="del" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
         </div>
-
-        <div class="absolute bottom-2 left-2 bg-slate-800/85 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
-          ${idx + 1}
-        </div>
-        <div class="absolute bottom-2 right-2 bg-white/85 dark:bg-slate-800/85 backdrop-blur-sm text-slate-600 dark:text-slate-300 text-[9px] font-semibold px-1.5 py-0.5 rounded-md uppercase">
-          ${p.type}
-        </div>
+        <div class="absolute bottom-2 left-2 bg-slate-800/85 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-md">${idx + 1}</div>
+        <div class="absolute bottom-2 right-2 bg-white/85 dark:bg-slate-800/85 backdrop-blur-sm text-slate-600 dark:text-slate-300 text-[9px] font-semibold px-1.5 py-0.5 rounded-md uppercase">${p.type}</div>
       `;
-
       card.querySelectorAll('[data-act]').forEach((btn) =>
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           handlePageAction(btn.dataset.act, p.id);
         })
       );
-
       els.grid.appendChild(card);
     });
 
@@ -257,44 +299,44 @@ DA.pdfEditor = (function () {
     DA.toast.info('Semua halaman dihapus');
   }
 
-  /* ---------- Zoom ---------- */
   function setZoom(v) {
     zoom = Math.max(0.5, Math.min(2.5, v));
-    els.zoomLabel.textContent = Math.round(zoom * 100) + '%';
-    els.grid.querySelectorAll('img').forEach((img) => {
+    if (els.zoomLabel) els.zoomLabel.textContent = Math.round(zoom * 100) + '%';
+    els.grid?.querySelectorAll('img').forEach((img) => {
       const match = /rotate\((-?\d+)deg\)/.exec(img.style.transform);
       const r = match ? match[1] : '0';
       img.style.transform = `rotate(${r}deg) scale(${zoom})`;
     });
   }
 
-  /* ---------- Merge & Download ---------- */
   async function mergeAndDownload() {
     if (!pages.length) return;
-    const btn = els.mergeBtn;
-    const original = btn.innerHTML;
-    btn.innerHTML = `<div class="loader mr-2"></div> Memproses...`;
-    btn.disabled = true;
+    const btns = [els.mergeBtn, els.editorMergeBtn].filter(Boolean);
+    const originals = btns.map((b) => b.innerHTML);
+    btns.forEach((b) => {
+      b.innerHTML = `<div class="loader mr-2" style="border-color:rgba(255,255,255,.3);border-top-color:#fff;"></div> Memproses...`;
+      b.disabled = true;
+    });
 
     try {
       const { PDFDocument, degrees } = PDFLib;
       const outDoc = await PDFDocument.create();
-      const compress = els.compression.checked;
-      const quality = parseFloat(els.quality.value) || 0.6;
+      const compressEl = els.compressionMobile?.checked ?? els.compression?.checked ?? true;
+      const qualityEl = parseFloat(els.qualityMobile?.value ?? els.quality?.value ?? 0.6);
+      const compress = compressEl;
+      const quality = qualityEl || 0.6;
 
       for (const p of pages) {
         if (p.type === 'image') {
           const img = await loadImage(p.originalData);
-          const canvas = rasterize(img, quality);
+          const canvas = rasterize(img);
           const dataUrl = canvas.toDataURL('image/jpeg', quality);
           const embed = await outDoc.embedJpg(dataUrl);
           const page = outDoc.addPage([canvas.width, canvas.height]);
           page.drawImage(embed, { x: 0, y: 0, width: canvas.width, height: canvas.height });
           if (p.rotation) page.setRotation(degrees(p.rotation));
         } else {
-          // PDF source
           if (compress) {
-            // Rasterize for real compression
             const srcDoc = await pdfjsLib.getDocument(p.originalData.slice(0)).promise;
             const pdfPage = await srcDoc.getPage(p.pageIndex + 1);
             const viewport = pdfPage.getViewport({ scale: 1.5 });
@@ -322,19 +364,17 @@ DA.pdfEditor = (function () {
       const bytes = await outDoc.save({ useObjectStreams: true });
       const blob = new Blob([bytes], { type: 'application/pdf' });
       downloadBlob(blob, `DocuApply_${Date.now()}.pdf`);
-      DA.toast.success(`PDF berhasil dibuat (${DA.utils.formatBytes(blob.size)})`);
+      DA.toast.success(`PDF dibuat (${DA.utils.formatBytes(blob.size)})`);
     } catch (err) {
       console.error(err);
       DA.toast.error('Gagal: ' + err.message);
     } finally {
-      btn.innerHTML = original;
-      btn.disabled = false;
+      btns.forEach((b, i) => {
+        b.innerHTML = originals[i];
+        b.disabled = false;
+      });
+      updateToolbar();
     }
-  }
-
-  /* ---------- Internals ---------- */
-  function showBusy(show, msg) {
-    if (show) DA.toast.info(msg || 'Memproses...', 1200);
   }
 
   function loadImage(src) {
@@ -357,7 +397,7 @@ DA.pdfEditor = (function () {
     return c;
   }
 
-  function rasterize(img, quality) {
+  function rasterize(img) {
     const c = document.createElement('canvas');
     c.width = img.naturalWidth;
     c.height = img.naturalHeight;
@@ -368,7 +408,6 @@ DA.pdfEditor = (function () {
     return c;
   }
 
-  /* ---------- Public API ---------- */
   return {
     init,
     getPages: () => pages,
