@@ -460,9 +460,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
     transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     z-index: 60;
   }
-  #i2pSheet.open {
-    transform: translateY(0) !important;
-  }
+  #i2pSheet.open { transform: translateY(0) !important; }
   #i2pBackdrop {
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -475,32 +473,31 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   }
 }
 
-/* ============ Fix: z-index stacking ============ */
+/* ============ Z-index stacking ============ */
 #photoSidebar.photo-sidebar { z-index: 60; }
-
 @media (min-width: 768px) {
   #photoSidebar.photo-sidebar { z-index: 10; }
 }
-
 #photoBackdrop { z-index: 50; }
-
 @media (max-width: 767px) {
   #photoSidebar.photo-sidebar.open { z-index: 60 !important; }
 }
-
 #navMobile { z-index: 40; }
 header.glass-header { z-index: 30; }
 #toastContainer { z-index: 110; }
 #cameraModal { z-index: 80; }
 #cvChoiceModal { z-index: 100; }
+#cvPdfWrapper { z-index: 999999; }
 
 /* =====================================================
    CV BUILDER
    ===================================================== */
 
-/* Toolbar scroll (no scrollbar) */
-.cv-toolbar-scroll::-webkit-scrollbar { display: none; }
-.cv-toolbar-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+.cv-toolbar-scroll::-webkit-scrollbar { height: 4px; }
+.cv-toolbar-scroll::-webkit-scrollbar-track { background: transparent; }
+.cv-toolbar-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.cv-toolbar-scroll { -ms-overflow-style: thin; scrollbar-width: thin; }
+.dark .cv-toolbar-scroll::-webkit-scrollbar-thumb { background: #334155; }
 
 /* Tool buttons */
 .cv-tool-btn {
@@ -527,6 +524,17 @@ header.glass-header { z-index: 30; }
 .dark .cv-tool-btn:hover { background: #1e293b; color: #e2e8f0; }
 .dark .cv-tool-btn.active { background: #312e81; color: #a5b4fc; }
 
+/* Toolbar divider */
+.cv-tool-divider {
+  width: 1px;
+  height: 22px;
+  background: #e2e8f0;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+.dark .cv-tool-divider { background: #334155; }
+
+/* Select */
 .cv-tool-select {
   height: 34px;
   padding: 0 0.6rem;
@@ -534,29 +542,61 @@ header.glass-header { z-index: 30; }
   border: 1px solid #e2e8f0;
   background: white;
   color: #334155;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   flex-shrink: 0;
   cursor: pointer;
   outline: none;
+  min-width: 70px;
 }
 .cv-tool-select:focus { border-color: #6366f1; }
+.cv-tool-select-wide { min-width: 130px; }
 .dark .cv-tool-select {
   background: #0f172a;
   border-color: #1e293b;
   color: #e2e8f0;
 }
 
-.cv-tool-color {
-  width: 34px;
+/* Color group */
+.cv-color-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
   height: 34px;
   border-radius: 8px;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.cv-tool-color {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   border: 1px solid #e2e8f0;
   padding: 2px;
   cursor: pointer;
   flex-shrink: 0;
   background: transparent;
 }
+
+.cv-tool-mini {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+.cv-tool-mini:hover { background: #e2e8f0; color: #334155; }
+.dark .cv-tool-mini { background: #1e293b; color: #94a3b8; }
+.dark .cv-tool-mini:hover { background: #334155; color: #e2e8f0; }
 
 /* A4 Paper */
 .cv-paper {
@@ -587,10 +627,6 @@ header.glass-header { z-index: 30; }
   color: #1e293b;
   word-wrap: break-word;
 }
-
-/* =====================================================
-   CV Content — Styling hasil mammoth.js
-   ===================================================== */
 
 /* Heading dari Word */
 .cv-content h1,
@@ -655,9 +691,7 @@ header.glass-header { z-index: 30; }
   font-size: 11pt;
   line-height: 1.5;
 }
-.cv-content li > p {
-  margin-bottom: 3pt;
-}
+.cv-content li > p { margin-bottom: 3pt; }
 
 /* Blockquote */
 .cv-content blockquote {
@@ -686,7 +720,7 @@ header.glass-header { z-index: 30; }
   font-weight: 700;
 }
 
-/* Horizontal rule */
+/* HR */
 .cv-content hr {
   border: none;
   border-top: 1px solid #cbd5e1;
@@ -699,10 +733,13 @@ header.glass-header { z-index: 30; }
   text-decoration: underline;
 }
 
-/* Bold/italic/underline */
+/* Text formatting */
 .cv-content strong, .cv-content b { font-weight: 700; color: #0f172a; }
 .cv-content em, .cv-content i { font-style: italic; }
 .cv-content u { text-decoration: underline; }
+.cv-content s, .cv-content strike { text-decoration: line-through; }
+.cv-content sup { vertical-align: super; font-size: 0.75em; }
+.cv-content sub { vertical-align: sub; font-size: 0.75em; }
 
 /* Images */
 .cv-content img {
@@ -712,20 +749,26 @@ header.glass-header { z-index: 30; }
   margin: 6pt auto;
 }
 
-/* Reset spacing */
+/* Spacing reset */
 .cv-content > p:first-child { margin-top: 0; }
 .cv-content > p:last-child { margin-bottom: 0; }
 
-/* Placeholder text */
+/* Placeholder */
 .cv-content:empty::before {
   content: 'Mulai ketik CV Anda di sini...';
   color: #94a3b8;
   font-style: italic;
 }
 
-/* Print mode untuk CV */
-#cvPaperClone { pointer-events: none; }
+/* PDF wrapper (clone untuk render) */
+#cvPdfWrapper {
+  /* Semua style di-set inline via JS */
+}
+#cvPdfWrapper * {
+  color-scheme: light;
+}
 
+/* Print mode */
 @media print {
   body > *:not(#cvPaper) { display: none !important; }
   #cvPaper { box-shadow: none; margin: 0; }
@@ -754,18 +797,15 @@ header.glass-header { z-index: 30; }
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
 @keyframes cvSheetSlideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-
 @keyframes cvSheetPop {
   from { opacity: 0; transform: scale(0.95) translateY(12px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Choice option button */
 .cv-choice-option {
   width: 100%;
   display: flex;
@@ -787,9 +827,7 @@ header.glass-header { z-index: 30; }
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
 }
-.cv-choice-option:active {
-  transform: scale(0.98);
-}
+.cv-choice-option:active { transform: scale(0.98); }
 .dark .cv-choice-option {
   background: #0f172a;
   border-color: #1e293b;
@@ -847,6 +885,8 @@ header.glass-header { z-index: 30; }
   .m-nav-btn { min-height: 50px; padding: 4px 1px; }
   .ps-tab { padding: 8px 10px; font-size: 11px; }
   .cv-paper { border-radius: 0; box-shadow: none; min-height: 70vh; }
+  .cv-tool-select { font-size: 0.68rem; min-width: 60px; }
+  .cv-tool-select-wide { min-width: 100px; }
 }
 
 @supports (padding: max(0px)) {
@@ -859,7 +899,7 @@ header.glass-header { z-index: 30; }
   }
 }
 
-button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill, .cv-tool-btn, .cv-choice-option {
+button, .m-nav-btn, .nav-btn, .thumb-action, .ps-tab, .bg-pill, .cv-tool-btn, .cv-choice-option, .cv-tool-mini {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
