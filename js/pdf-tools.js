@@ -17,24 +17,56 @@ DA.imageToPdf = (function () {
       grid: document.getElementById('i2pGrid'),
       panel: document.getElementById('i2pPanel'),
       convert: document.getElementById('i2pConvert'),
+      // Desktop
       size: document.getElementById('i2pSize'),
       orient: document.getElementById('i2pOrient'),
       margin: document.getElementById('i2pMargin'),
       quality: document.getElementById('i2pQuality'),
+      // Mobile
+      sheet: document.getElementById('i2pSheet'),
+      sheetClose: document.getElementById('i2pSheetClose'),
+      backdrop: document.getElementById('i2pBackdrop'),
+      settingsBtn: document.getElementById('i2pSettingsBtn'),
+      settingsBtnM: document.getElementById('i2pSettingsBtnMobile'),
+      sizeM: document.getElementById('i2pSizeM'),
+      orientM: document.getElementById('i2pOrientM'),
+      marginM: document.getElementById('i2pMarginM'),
+      qualityM: document.getElementById('i2pQualityM'),
     };
 
-    bindDropZone(els.drop, els.input, handleFiles);
-    els.convert.addEventListener('click', convert);
+    if (els.drop && els.input) bindDropZone(els.drop, els.input, handleFiles);
+    els.convert?.addEventListener('click', convert);
 
-    sortable = Sortable.create(els.grid, {
-      animation: 180,
-      ghostClass: 'opacity-40',
-      onEnd: (evt) => {
-        const item = images.splice(evt.oldIndex, 1)[0];
-        images.splice(evt.newIndex, 0, item);
-        render();
-      },
-    });
+    // Mobile sheet open/close
+    const openSheet = () => {
+      els.sheet?.classList.add('open');
+      els.backdrop?.classList.add('show');
+    };
+    const closeSheet = () => {
+      els.sheet?.classList.remove('open');
+      els.backdrop?.classList.remove('show');
+    };
+    els.settingsBtnM?.addEventListener('click', openSheet);
+    els.sheetClose?.addEventListener('click', closeSheet);
+    els.backdrop?.addEventListener('click', closeSheet);
+
+    // Sync mobile → desktop saat user ganti di mobile
+    els.sizeM?.addEventListener('change', () => { if (els.size) els.size.value = els.sizeM.value; });
+    els.orientM?.addEventListener('change', () => { if (els.orient) els.orient.value = els.orientM.value; });
+    els.marginM?.addEventListener('input', () => { if (els.margin) els.margin.value = els.marginM.value; });
+    els.qualityM?.addEventListener('change', () => { if (els.quality) els.quality.value = els.qualityM.value; });
+
+    if (els.grid) {
+      sortable = Sortable.create(els.grid, {
+        animation: 180,
+        ghostClass: 'opacity-40',
+        onEnd: (evt) => {
+          const item = images.splice(evt.oldIndex, 1)[0];
+          images.splice(evt.newIndex, 0, item);
+          render();
+        },
+      });
+    }
   }
 
   async function handleFiles(list) {
@@ -49,6 +81,7 @@ DA.imageToPdf = (function () {
   }
 
   function render() {
+    if (!els.grid) return;
     els.grid.innerHTML = '';
     images.forEach((im, i) => {
       const div = document.createElement('div');
@@ -66,8 +99,8 @@ DA.imageToPdf = (function () {
       });
       els.grid.appendChild(div);
     });
-
-    els.panel.classList.toggle('hidden', !images.length);
+    if (els.panel) els.panel.classList.toggle('hidden', !images.length);
+    if (els.convert) els.convert.disabled = !images.length;
   }
 
   const A4 = { p: [595.28, 841.89], l: [841.89, 595.28] };
@@ -82,10 +115,10 @@ DA.imageToPdf = (function () {
     try {
       const { PDFDocument } = PDFLib;
       const doc = await PDFDocument.create();
-      const sizeMode = els.size.value;
-      const orientMode = els.orient.value;
-      const margin = parseFloat(els.margin.value) || 0;
-      const quality = parseFloat(els.quality.value) || 0.85;
+      const sizeMode = els.sizeM?.value || els.size?.value || 'fit';
+      const orientMode = els.orientM?.value || els.orient?.value || 'auto';
+      const margin = parseFloat(els.marginM?.value || els.margin?.value || 20) || 0;
+      const quality = parseFloat(els.qualityM?.value || els.quality?.value || 0.85) || 0.85;
 
       for (const im of images) {
         const img = await loadImage(im.src);
@@ -153,7 +186,7 @@ DA.imageToPdf = (function () {
 
 /* ============ SPLIT PDF ============ */
 DA.splitPdf = (function () {
-  const { uid, downloadBlob, bindDropZone } = DA.utils;
+  const { downloadBlob, bindDropZone } = DA.utils;
   let sourceBuffer = null;
   let sourceDoc = null;
   let selected = new Set();
@@ -165,15 +198,15 @@ DA.splitPdf = (function () {
       drop: document.getElementById('splitDrop'),
       input: document.getElementById('splitInput'),
       grid: document.getElementById('splitGrid'),
-      panel: document.getElementById('splitPanel'),
+      bar: document.getElementById('splitBar'),
       count: document.getElementById('splitCount'),
       extract: document.getElementById('splitExtract'),
       every: document.getElementById('splitEvery'),
     };
 
-    bindDropZone(els.drop, els.input, handleFile);
-    els.extract.addEventListener('click', extractSelected);
-    els.every.addEventListener('click', splitEveryPage);
+    if (els.drop && els.input) bindDropZone(els.drop, els.input, handleFile);
+    els.extract?.addEventListener('click', extractSelected);
+    els.every?.addEventListener('click', splitEveryPage);
 
     document.querySelectorAll('[data-split]').forEach((b) =>
       b.addEventListener('click', () => {
@@ -203,8 +236,9 @@ DA.splitPdf = (function () {
   }
 
   async function renderThumbs() {
+    if (!els.grid) return;
     els.grid.innerHTML = '';
-    els.panel.classList.remove('hidden');
+    els.bar?.classList.remove('hidden');
 
     for (let i = 0; i < numPages; i++) {
       const page = await sourceDoc.getPage(i + 1);
@@ -219,7 +253,7 @@ DA.splitPdf = (function () {
       div.dataset.index = i;
       div.innerHTML = `
         <img src="${canvas.toDataURL('image/jpeg', 0.7)}" class="max-w-full max-h-full object-contain p-1.5" alt="">
-        <div class="absolute top-2 right-2 w-6 h-6 rounded-md border-2 border-slate-300 bg-white/90 flex items-center justify-center text-white text-[10px] shadow check">
+        <div class="absolute top-2 right-2 w-7 h-7 rounded-md border-2 border-slate-300 bg-white/90 flex items-center justify-center text-white text-[10px] shadow check">
           <i class="fa-solid fa-check"></i>
         </div>
         <div class="absolute bottom-2 left-2 bg-slate-800/85 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">${i + 1}</div>
@@ -235,8 +269,8 @@ DA.splitPdf = (function () {
   }
 
   function updateSelectionUI() {
-    els.count.textContent = selected.size;
-    els.grid.querySelectorAll('.thumb-card').forEach((c) => {
+    if (els.count) els.count.textContent = selected.size;
+    els.grid?.querySelectorAll('.thumb-card').forEach((c) => {
       const i = Number(c.dataset.index);
       const check = c.querySelector('.check');
       if (selected.has(i)) {
@@ -263,7 +297,7 @@ DA.splitPdf = (function () {
       copied.forEach((p) => out.addPage(p));
       const bytes = await out.save();
       downloadBlob(new Blob([bytes], { type: 'application/pdf' }), `Extracted_${Date.now()}.pdf`);
-      DA.toast.success(`${indices.length} halaman berhasil diekstrak.`);
+      DA.toast.success(`${indices.length} halaman diekstrak.`);
     } catch (e) {
       console.error(e);
       DA.toast.error('Gagal: ' + e.message);
