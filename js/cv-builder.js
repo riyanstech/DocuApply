@@ -1,8 +1,8 @@
 /* =====================================================
-   DocuApply — CV Builder v5
-   - FIX PDF kosong: pakai position:fixed + opacity trick
-   - Toolbar LENGKAP: font family, size, color, highlight,
-     align, lists, indent, link, image, line-height, dll
+   DocuApply — CV Builder v6
+   - Export DOCX ASLI pakai dolanmiu/docx (Office Open XML)
+   - Fix PDF kosong (position:fixed + visible)
+   - Toolbar grouping & responsive
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -33,7 +33,6 @@ DA.cvBuilder = (function () {
       downloadDocx: document.getElementById('cvDownloadDocx'),
       downloadPdf: document.getElementById('cvDownloadPdf'),
       saveLocal: document.getElementById('cvSaveLocal'),
-      // Toolbar
       fontFamily: document.getElementById('cvFontFamily'),
       fontSize: document.getElementById('cvFontSize'),
       formatBlock: document.getElementById('cvFormatBlock'),
@@ -45,7 +44,6 @@ DA.cvBuilder = (function () {
       insertHr: document.getElementById('cvInsertHr'),
       insertImage: document.getElementById('cvInsertImage'),
       imageInput: document.getElementById('cvImageInput'),
-      // Modal
       modal: document.getElementById('cvChoiceModal'),
       modalBackdrop: document.getElementById('cvChoiceBackdrop'),
       modalCancel: document.getElementById('cvChoiceCancel'),
@@ -280,7 +278,6 @@ DA.cvBuilder = (function () {
   function applyFontSize(size) {
     focusEditor();
     if (!size) return;
-    // execCommand fontSize cuma terima 1-7, jadi kita pakai trick wrapping
     try { document.execCommand('styleWithCSS', false, true); } catch {}
     document.execCommand('fontSize', false, '7');
 
@@ -296,7 +293,6 @@ DA.cvBuilder = (function () {
   function applyLineHeight(value) {
     focusEditor();
     if (!value) return;
-    // Cari parent block element dari selection
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     let node = sel.anchorNode;
@@ -323,7 +319,6 @@ DA.cvBuilder = (function () {
     if (sel && sel.toString()) {
       document.execCommand('createLink', false, url);
     } else {
-      // Sisipkan text default
       document.execCommand('insertHTML', false, `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`);
     }
   }
@@ -402,7 +397,6 @@ DA.cvBuilder = (function () {
     els.choiceDownload?.addEventListener('click', downloadOriginal);
     els.choiceEdit?.addEventListener('click', chooseEdit);
 
-    // Toolbar buttons (dengan data-cmd)
     document.querySelectorAll('.cv-tool-btn[data-cmd]').forEach((btn) => {
       btn.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -410,35 +404,34 @@ DA.cvBuilder = (function () {
       });
     });
 
-    // Font Family
     els.fontFamily?.addEventListener('change', (e) => {
       const v = e.target.value;
       if (v) execCmd('fontName', v);
       e.target.value = '';
     });
 
-    // Font Size
     els.fontSize?.addEventListener('change', (e) => {
       const v = e.target.value;
       if (v) applyFontSize(v);
       e.target.value = '';
     });
 
-    // Paragraph style
     els.formatBlock?.addEventListener('change', (e) => {
       const v = e.target.value;
       execCmd('formatBlock', v === 'P' ? 'P' : v);
       e.target.value = 'P';
     });
 
-    // Fore color
     els.foreColor?.addEventListener('input', (e) => {
       execCmd('foreColor', e.target.value);
+      const bar = document.getElementById('cvForeColorBar');
+      if (bar) bar.style.background = e.target.value;
     });
 
-    // Back color
     els.backColor?.addEventListener('input', (e) => {
       applyBackColor(e.target.value);
+      const bar = document.getElementById('cvBackColorBar');
+      if (bar) bar.style.background = e.target.value;
     });
 
     els.clearBackColor?.addEventListener('mousedown', (e) => {
@@ -448,14 +441,12 @@ DA.cvBuilder = (function () {
       document.execCommand('hiliteColor', false, 'transparent');
     });
 
-    // Line height
     els.lineHeight?.addEventListener('change', (e) => {
       const v = e.target.value;
       if (v) applyLineHeight(v);
       e.target.value = '';
     });
 
-    // Insert
     els.insertLink?.addEventListener('mousedown', (e) => {
       e.preventDefault();
       insertLink();
@@ -473,26 +464,22 @@ DA.cvBuilder = (function () {
 
     els.imageInput?.addEventListener('change', handleImageUpload);
 
-    // Editor events
     els.content?.addEventListener('keyup', updateToolbarState);
     els.content?.addEventListener('mouseup', updateToolbarState);
     els.content?.addEventListener('input', debouncedSaveDraft);
 
     els.content?.addEventListener('keydown', (e) => {
-      // Ctrl+S = save draft
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         saveDraft();
         return;
       }
-      // Tab = indent, Shift+Tab = outdent
       if (e.key === 'Tab') {
         e.preventDefault();
         document.execCommand(e.shiftKey ? 'outdent' : 'indent', false, null);
       }
     });
 
-    // Paste as plain text (hindari style kotor dari luar)
     els.content?.addEventListener('paste', (e) => {
       const text = (e.clipboardData || window.clipboardData).getData('text/plain');
       if (text) {
@@ -501,7 +488,6 @@ DA.cvBuilder = (function () {
       }
     });
 
-    // Save/Load draft
     els.saveLocal?.addEventListener('click', () => {
       const draft = DA.storage.get('cv_draft_' + (currentTemplate?.id || ''));
       if (draft && draft.html) {
@@ -519,66 +505,322 @@ DA.cvBuilder = (function () {
         hideChoiceModal();
       }
     });
-  }
 
-  /* ============================================
-     EXPORT DOCX
-     ============================================ */
-  function downloadDocx() {
-    if (!els.content) return;
-    try {
-      const htmlContent = els.content.innerHTML;
-
-      const styles = `
-        @page WordSection1 { size: 21cm 29.7cm; margin: 1.5cm 2cm 1.5cm 2cm; }
-        div.WordSection1 { page: WordSection1; }
-        body { font-family: Georgia, 'Times New Roman', serif; font-size: 11pt; line-height: 1.55; color: #1e293b; }
-        h1 { font-size: 20pt; font-weight: bold; margin-bottom: 6pt; line-height: 1.15; text-align: center; }
-        h2 { font-size: 13pt; font-weight: bold; margin-top: 14pt; margin-bottom: 6pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 3pt; text-transform: uppercase; letter-spacing: 0.5pt; }
-        h3 { font-size: 12pt; font-weight: bold; margin-top: 8pt; margin-bottom: 4pt; }
-        h4 { font-size: 11.5pt; font-weight: bold; margin-top: 8pt; margin-bottom: 4pt; }
-        p { margin-bottom: 6pt; margin-top: 0; }
-        ul, ol { margin-left: 18pt; margin-bottom: 8pt; padding-left: 0; }
-        li { margin-bottom: 2pt; }
-        strong, b { font-weight: bold; }
-        em, i { font-style: italic; }
-        u { text-decoration: underline; }
-        s, strike { text-decoration: line-through; }
-        blockquote { margin: 8pt 0; padding: 6pt 12pt; border-left: 3pt solid #cbd5e1; font-style: italic; color: #475569; }
-        table { border-collapse: collapse; width: 100%; margin-bottom: 8pt; }
-        td, th { padding: 4pt 6pt; border: 1pt solid #cbd5e1; vertical-align: top; }
-        a { color: #4f46e5; text-decoration: underline; }
-        img { max-width: 100%; height: auto; }
-        hr { border: none; border-top: 1pt solid #cbd5e1; margin: 10pt 0; }
-      `;
-
-      const fullHtml = `<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word"
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta charset="utf-8">
-<title>CV</title>
-<!--[if gte mso 9]>
-<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml>
-<![endif]-->
-<style>${styles}</style>
-</head>
-<body><div class="WordSection1">${htmlContent}</div></body>
-</html>`;
-
-      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
-      const name = (currentTemplate?.name || 'CV').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now() + '.doc';
-      downloadBlob(blob, name);
-      DA.toast.success('CV diunduh sebagai .doc — buka di Word');
-    } catch (err) {
-      console.error('[CV] DOCX export error:', err);
-      DA.toast.error('Gagal export DOCX: ' + err.message);
+    // Scroll hint untuk toolbar
+    const toolbarWrap = document.querySelector('.cv-toolbar-wrap');
+    const toolbar = document.querySelector('.cv-toolbar');
+    if (toolbarWrap && toolbar) {
+      const updateScrollHint = () => {
+        const canRight = toolbar.scrollLeft + toolbar.clientWidth < toolbar.scrollWidth - 2;
+        const canLeft = toolbar.scrollLeft > 2;
+        toolbarWrap.classList.toggle('scrollable-right', canRight);
+        toolbarWrap.classList.toggle('scrollable-left', canLeft);
+      };
+      toolbar.addEventListener('scroll', updateScrollHint, { passive: true });
+      window.addEventListener('resize', updateScrollHint);
+      setTimeout(updateScrollHint, 200);
     }
   }
 
   /* ============================================
-     EXPORT PDF — FIX: pakai position:fixed + opacity trick
+     EXPORT DOCX ASLI (Office Open XML)
+     ============================================ */
+  async function downloadDocx() {
+    if (!els.content) return;
+
+    if (typeof window.docx === 'undefined') {
+      DA.toast.error('Library DOCX tidak termuat. Refresh halaman lalu coba lagi.');
+      return;
+    }
+
+    DA.toast.info('Menyiapkan DOCX...', 2000);
+
+    try {
+      const {
+        Document, Packer, Paragraph, TextRun, HeadingLevel,
+        AlignmentType, UnderlineType, BorderStyle, Table, TableRow,
+        TableCell, WidthType, ExternalHyperlink,
+      } = window.docx;
+
+      const htmlEl = els.content;
+
+      const cssColorToHex = (cssColor) => {
+        if (!cssColor) return null;
+        const s = cssColor.trim();
+        if (s.startsWith('#')) {
+          return s.replace('#', '').padEnd(6, '0').slice(0, 6).toLowerCase();
+        }
+        const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+        if (m) {
+          const r = parseInt(m[1], 10).toString(16).padStart(2, '0');
+          const g = parseInt(m[2], 10).toString(16).padStart(2, '0');
+          const b = parseInt(m[3], 10).toString(16).padStart(2, '0');
+          return (r + g + b).toLowerCase();
+        }
+        return null;
+      };
+
+      const getRuns = (parent, inherited = {}) => {
+        const runs = [];
+        const walk = (node, styles) => {
+          if (node.nodeType === 3) {
+            const text = node.textContent;
+            if (text && text.length) {
+              runs.push(new TextRun({
+                text: text.replace(/\s+/g, ' '),
+                ...styles,
+              }));
+            }
+            return;
+          }
+          if (node.nodeType !== 1) return;
+
+          const tag = node.tagName.toLowerCase();
+          const s = { ...styles };
+
+          if (tag === 'strong' || tag === 'b') s.bold = true;
+          if (tag === 'em' || tag === 'i') s.italics = true;
+          if (tag === 'u') s.underline = { type: UnderlineType.SINGLE };
+          if (tag === 's' || tag === 'strike' || tag === 'del') s.strike = true;
+          if (tag === 'sup') s.superScript = true;
+          if (tag === 'sub') s.subScript = true;
+
+          if (tag === 'br') {
+            runs.push(new TextRun({ break: 1 }));
+            return;
+          }
+
+          if (tag === 'a') {
+            const href = node.getAttribute('href') || '';
+            const innerRuns = [];
+            Array.from(node.childNodes).forEach((c) => {
+              if (c.nodeType === 3) {
+                innerRuns.push(new TextRun({
+                  text: c.textContent,
+                  color: '4f46e5',
+                  underline: { type: UnderlineType.SINGLE },
+                  ...s,
+                }));
+              } else if (c.nodeType === 1) {
+                const innerS = { color: '4f46e5', underline: { type: UnderlineType.SINGLE }, ...s };
+                if (c.tagName === 'STRONG' || c.tagName === 'B') innerS.bold = true;
+                if (c.tagName === 'EM' || c.tagName === 'I') innerS.italics = true;
+                innerRuns.push(new TextRun({ text: c.textContent, ...innerS }));
+              }
+            });
+            if (href && innerRuns.length) {
+              runs.push(new ExternalHyperlink({ children: innerRuns, link: href }));
+            } else if (innerRuns.length) {
+              innerRuns.forEach((r) => runs.push(r));
+            }
+            return;
+          }
+
+          if (node.style) {
+            const st = node.style;
+            const fw = st.fontWeight;
+            if (fw === 'bold' || fw === '700' || fw === '800' || fw === '900') s.bold = true;
+            const fs = st.fontStyle;
+            if (fs === 'italic') s.italics = true;
+            const td = st.textDecoration || st.textDecorationLine || '';
+            if (td.indexOf('underline') >= 0) s.underline = { type: UnderlineType.SINGLE };
+            if (td.indexOf('line-through') >= 0) s.strike = true;
+            if (st.color) {
+              const hex = cssColorToHex(st.color);
+              if (hex) s.color = hex;
+            }
+            if (st.fontSize) {
+              const px = parseFloat(st.fontSize);
+              if (!isNaN(px)) s.size = Math.round(px * 2);
+            }
+            if (st.fontFamily) {
+              s.font = st.fontFamily.replace(/["']/g, '').split(',')[0].trim();
+            }
+          }
+
+          Array.from(node.childNodes).forEach((c) => walk(c, s));
+        };
+        Array.from(parent.childNodes).forEach((c) => walk(c, inherited));
+        return runs;
+      };
+
+      const buildChildren = (parent) => {
+        const out = [];
+        Array.from(parent.childNodes).forEach((node) => {
+          if (node.nodeType === 3) {
+            const txt = node.textContent.replace(/\s+/g, ' ').trim();
+            if (txt) out.push(new Paragraph({ children: [new TextRun(txt)] }));
+            return;
+          }
+          if (node.nodeType !== 1) return;
+          const tag = node.tagName.toLowerCase();
+
+          if (/^h[1-6]$/.test(tag)) {
+            const level = tag.toUpperCase();
+            out.push(new Paragraph({
+              children: getRuns(node),
+              heading: HeadingLevel[level] || HeadingLevel.HEADING_1,
+              alignment: tag === 'h1' ? AlignmentType.CENTER : undefined,
+              spacing: { before: 200, after: 100 },
+            }));
+            return;
+          }
+
+          if (tag === 'p' || tag === 'div') {
+            const runs = getRuns(node);
+            out.push(new Paragraph({
+              children: runs.length ? runs : [new TextRun('')],
+              spacing: { after: 100 },
+            }));
+            return;
+          }
+
+          if (tag === 'ul' || tag === 'ol') {
+            Array.from(node.querySelectorAll(':scope > li')).forEach((li) => {
+              const runs = getRuns(li);
+              const opts = {
+                children: runs.length ? runs : [new TextRun('')],
+                spacing: { after: 40 },
+              };
+              if (tag === 'ul') {
+                opts.bullet = { level: 0 };
+              } else {
+                opts.numbering = { reference: 'cv-num-list', level: 0 };
+              }
+              out.push(new Paragraph(opts));
+            });
+            return;
+          }
+
+          if (tag === 'blockquote') {
+            out.push(new Paragraph({
+              children: getRuns(node),
+              indent: { left: 720 },
+              spacing: { before: 100, after: 100 },
+              border: {
+                left: { style: BorderStyle.SINGLE, size: 12, color: 'cbd5e1', space: 8 },
+              },
+            }));
+            return;
+          }
+
+          if (tag === 'hr') {
+            out.push(new Paragraph({
+              border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'cbd5e1' } },
+              spacing: { before: 100, after: 100 },
+            }));
+            return;
+          }
+
+          if (tag === 'table') {
+            const rows = [];
+            Array.from(node.querySelectorAll('tr')).forEach((tr) => {
+              const cells = [];
+              Array.from(tr.children).forEach((cell) => {
+                const runs = getRuns(cell);
+                cells.push(new TableCell({
+                  children: [new Paragraph({
+                    children: runs.length ? runs : [new TextRun('')],
+                    spacing: { after: 0 },
+                  })],
+                  margins: { top: 80, bottom: 80, left: 120, right: 120 },
+                }));
+              });
+              if (cells.length) rows.push(new TableRow({ children: cells }));
+            });
+            if (rows.length) {
+              out.push(new Table({
+                rows,
+                width: { size: 100, type: WidthType.PERCENTAGE },
+              }));
+              out.push(new Paragraph({ text: '' }));
+            }
+            return;
+          }
+
+          out.push(new Paragraph({ children: getRuns(node) }));
+        });
+        return out;
+      };
+
+      const body = buildChildren(htmlEl);
+      if (!body.length) {
+        body.push(new Paragraph({ children: [new TextRun('(kosong)')] }));
+      }
+
+      const doc = new Document({
+        creator: 'DocuApply',
+        title: currentTemplate?.name || 'CV',
+        description: 'Dibuat dengan DocuApply',
+        styles: {
+          default: {
+            document: {
+              run: { font: 'Georgia', size: 22 },
+              paragraph: { spacing: { line: 320 } },
+            },
+            heading1: {
+              run: { size: 40, bold: true, color: '0f172a', font: 'Georgia' },
+              paragraph: { spacing: { before: 0, after: 200 }, alignment: AlignmentType.CENTER },
+            },
+            heading2: {
+              run: { size: 26, bold: true, color: '0f172a', font: 'Georgia' },
+              paragraph: {
+                spacing: { before: 280, after: 120 },
+                border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'cbd5e1', space: 4 } },
+              },
+            },
+            heading3: {
+              run: { size: 24, bold: true, color: '1e293b', font: 'Georgia' },
+              paragraph: { spacing: { before: 200, after: 80 } },
+            },
+            heading4: {
+              run: { size: 23, bold: true, color: '334155', font: 'Georgia' },
+              paragraph: { spacing: { before: 160, after: 80 } },
+            },
+          },
+        },
+        numbering: {
+          config: [
+            {
+              reference: 'cv-num-list',
+              levels: [
+                {
+                  level: 0,
+                  format: 'decimal',
+                  text: '%1.',
+                  alignment: AlignmentType.START,
+                  style: { paragraph: { indent: { left: 720, hanging: 360 } } },
+                },
+              ],
+            },
+          ],
+        },
+        sections: [
+          {
+            properties: {
+              page: {
+                size: { width: 11906, height: 16838 },
+                margin: { top: 850, right: 1134, bottom: 850, left: 1134 },
+              },
+            },
+            children: body,
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const name = (currentTemplate?.name || 'CV')
+        .replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now() + '.docx';
+      downloadBlob(blob, name);
+      DA.toast.success('CV diunduh sebagai .docx asli — bisa dibuka di mana saja! 🎉');
+    } catch (err) {
+      console.error('[CV] DOCX export error:', err);
+      DA.toast.error('Gagal export DOCX: ' + (err.message || err));
+    }
+  }
+
+  /* ============================================
+     EXPORT PDF
      ============================================ */
   async function downloadPdf() {
     if (!els.paper) return;
@@ -589,14 +831,11 @@ DA.cvBuilder = (function () {
 
     DA.toast.info('Menyiapkan PDF...', 2500);
 
-    // Ambil konten dari editor
     const contentClone = els.content.cloneNode(true);
     contentClone.removeAttribute('id');
     contentClone.removeAttribute('contenteditable');
     contentClone.removeAttribute('spellcheck');
-    contentClone.removeAttribute('class');
 
-    // Buat wrapper A4 yang visible & terlihat oleh html2canvas
     const wrapper = document.createElement('div');
     wrapper.id = 'cvPdfWrapper';
     wrapper.style.cssText = `
@@ -623,7 +862,6 @@ DA.cvBuilder = (function () {
     document.body.appendChild(wrapper);
 
     try {
-      // Tunggu font + gambar load
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
       }
@@ -643,11 +881,8 @@ DA.cvBuilder = (function () {
         scrollY: 0,
       });
 
-      // Cek canvas tidak kosong
-      const ctx = canvas.getContext('2d');
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
-      // Buat PDF
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
       const pdfW = pdf.internal.pageSize.getWidth();
