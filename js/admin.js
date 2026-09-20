@@ -1,10 +1,13 @@
 /* =====================================================
-   DocuApply — Admin Dashboard
-   Manage: CV Templates · Companies · Email Templates
+   DocuApply — Admin Dashboard v2
+   - GitHub API integration (upload .docx, commit JSON)
+   - Semua perubahan auto-commit ke GitHub → Vercel deploy
    ===================================================== */
 window.DA = window.DA || {};
 
 DA.admin = (function () {
+  'use strict';
+
   const { storage, toast } = DA;
   const { downloadBlob, escapeHtml, uid } = DA.utils;
 
@@ -21,32 +24,48 @@ DA.admin = (function () {
       tabs: document.querySelectorAll('[data-admin-tab]'),
       panels: document.querySelectorAll('[data-admin-panel]'),
 
-      // CV tab
+      // CV
       cvList: document.getElementById('adminCvList'),
       cvAddBtn: document.getElementById('adminCvAddBtn'),
-      cvInput: document.getElementById('adminCvInput'),
       cvReset: document.getElementById('adminCvReset'),
+      cvUploadBtn: document.getElementById('adminCvUploadBtn'),
+      cvUploadInput: document.getElementById('adminCvUploadInput'),
 
-      // Companies tab
+      // Companies
       cpList: document.getElementById('adminCompaniesList'),
       cpAddBtn: document.getElementById('adminCompaniesAddBtn'),
       cpReset: document.getElementById('adminCompaniesReset'),
+      cpSaveBtn: document.getElementById('adminCompaniesSaveBtn'),
 
-      // Email tab
+      // Email
       emList: document.getElementById('adminEmailList'),
       emAddBtn: document.getElementById('adminEmailAddBtn'),
       emReset: document.getElementById('adminEmailReset'),
+      emSaveBtn: document.getElementById('adminEmailSaveBtn'),
 
       // Settings
       passOld: document.getElementById('adminPassOld'),
       passNew: document.getElementById('adminPassNew'),
       passChangeBtn: document.getElementById('adminPassChangeBtn'),
+
+      // GitHub config
+      ghOwner: document.getElementById('ghOwner'),
+      ghRepo: document.getElementById('ghRepo'),
+      ghBranch: document.getElementById('ghBranch'),
+      ghToken: document.getElementById('ghToken'),
+      ghTestBtn: document.getElementById('ghTestBtn'),
+      ghSaveBtn: document.getElementById('ghSaveBtn'),
+      ghClearBtn: document.getElementById('ghClearBtn'),
+      ghStatus: document.getElementById('ghStatus'),
+
+      // Backup
       exportBtn: document.getElementById('adminExportBtn'),
       importBtn: document.getElementById('adminImportBtn'),
       importInput: document.getElementById('adminImportInput'),
     };
 
     bindEvents();
+    loadGithubConfig();
   }
 
   /* ============================================
@@ -68,7 +87,7 @@ DA.admin = (function () {
   }
 
   /* ============================================
-     TAB NAVIGATION
+     TABS
      ============================================ */
   function switchTab(name) {
     activeTab = name;
@@ -84,14 +103,98 @@ DA.admin = (function () {
   }
 
   /* ============================================
-     TAB 1: CV TEMPLATES
+     GITHUB CONFIG
+     ============================================ */
+  function loadGithubConfig() {
+    const cfg = DA.github.getConfig();
+    if (!cfg) return;
+    if (els.ghOwner) els.ghOwner.value = cfg.owner || '';
+    if (els.ghRepo) els.ghRepo.value = cfg.repo || '';
+    if (els.ghBranch) els.ghBranch.value = cfg.branch || 'main';
+    if (els.ghToken) els.ghToken.value = cfg.token || '';
+    updateGhStatus();
+  }
+
+  function updateGhStatus() {
+    if (!els.ghStatus) return;
+    const cfg = DA.github.getConfig();
+    if (cfg && cfg.owner && cfg.repo && cfg.token) {
+      els.ghStatus.innerHTML = `
+        <i class="fa-solid fa-circle-check text-emerald-500"></i>
+        <span class="text-emerald-700 dark:text-emerald-400">
+          Terhubung ke <strong>${escapeHtml(cfg.owner)}/${escapeHtml(cfg.repo)}</strong>
+          (<code>${escapeHtml(cfg.branch || 'main')}</code>)
+        </span>`;
+      els.ghStatus.className = 'gh-status gh-status-ok';
+    } else {
+      els.ghStatus.innerHTML = `
+        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+        <span class="text-amber-700 dark:text-amber-400">
+          Belum dikonfigurasi. Isi form di bawah untuk aktifkan sync antar device.
+        </span>`;
+      els.ghStatus.className = 'gh-status gh-status-warn';
+    }
+  }
+
+  async function saveGithubConfig() {
+    const owner = els.ghOwner?.value.trim();
+    const repo = els.ghRepo?.value.trim();
+    const branch = els.ghBranch?.value.trim() || 'main';
+    const token = els.ghToken?.value.trim();
+
+    if (!owner || !repo || !token) {
+      toast.error('Semua field wajib diisi');
+      return;
+    }
+
+    DA.github.setConfig({ owner, repo, branch, token });
+    toast.info('Testing koneksi...', 1500);
+
+    const result = await DA.github.testConnection();
+    if (result.ok) {
+      toast.success('✅ ' + result.msg, 3500);
+      updateGhStatus();
+    } else {
+      toast.error('❌ Gagal: ' + result.msg, 5000);
+      updateGhStatus();
+    }
+  }
+
+  async function testGithub() {
+    const result = await DA.github.testConnection();
+    if (result.ok) {
+      toast.success('✅ ' + result.msg, 3500);
+    } else {
+      toast.error('❌ ' + result.msg, 5000);
+    }
+  }
+
+  function clearGithubConfig() {
+    if (!confirm('Hapus konfigurasi GitHub? Admin tidak bisa upload atau sync lagi.')) return;
+    DA.github.clearConfig();
+    if (els.ghOwner) els.ghOwner.value = '';
+    if (els.ghRepo) els.ghRepo.value = '';
+    if (els.ghBranch) els.ghBranch.value = 'main';
+    if (els.ghToken) els.ghToken.value = '';
+    updateGhStatus();
+    toast.info('Konfigurasi dihapus');
+  }
+
+  /* ============================================
+     GET DATA (GitHub priority, fallback ke server)
      ============================================ */
   async function getCvTemplates() {
-    // Cek override di localStorage
-    const override = storage.get('cvTemplatesOverride');
-    if (override) return override;
-
-    // Fallback: fetch dari server
+    // Coba dari GitHub dulu
+    if (DA.github.isConfigured()) {
+      const raw = await DA.github.getFileContent('cv-templates/templates.json');
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          return Array.isArray(data) ? data : (data.templates || []);
+        } catch {}
+      }
+    }
+    // Fallback: server
     try {
       const res = await fetch('cv-templates/templates.json?t=' + Date.now());
       const data = await res.json();
@@ -101,8 +204,121 @@ DA.admin = (function () {
     }
   }
 
+  async function getCompanies() {
+    if (DA.github.isConfigured()) {
+      const raw = await DA.github.getFileContent('companies/companies.json');
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          return {
+            categories: data.categories || [],
+            companies: data.companies || [],
+            disclaimer: data.disclaimer,
+            lastUpdated: data.lastUpdated,
+          };
+        } catch {}
+      }
+    }
+    try {
+      const res = await fetch('companies/companies.json?t=' + Date.now());
+      const data = await res.json();
+      return {
+        categories: data.categories || [],
+        companies: data.companies || [],
+        disclaimer: data.disclaimer,
+        lastUpdated: data.lastUpdated,
+      };
+    } catch {
+      return { categories: [], companies: [] };
+    }
+  }
+
+  async function getEmailTemplates() {
+    if (DA.github.isConfigured()) {
+      const raw = await DA.github.getFileContent('email-templates/email-templates.json');
+      if (raw) {
+        try { return JSON.parse(raw); } catch {}
+      }
+    }
+    return null;
+  }
+
+  /* ============================================
+     SAVE TO GITHUB
+     ============================================ */
+  async function saveCvTemplates(list) {
+    if (!DA.github.isConfigured()) {
+      toast.warn('GitHub belum dikonfigurasi. Data hanya tersimpan lokal.', 4000);
+      storage.set('cvTemplatesOverride', list);
+      return false;
+    }
+    try {
+      toast.info('Menyimpan ke GitHub...', 2000);
+      await DA.github.uploadFile(
+        'cv-templates/templates.json',
+        JSON.stringify({ templates: list }, null, 2),
+        'chore: update CV templates list from admin dashboard'
+      );
+      toast.success('✅ Tersimpan di GitHub. Vercel akan auto-deploy ~1 menit.', 5000);
+      // Refresh data di halaman publik
+      window.dispatchEvent(new Event('cvTemplates:updated'));
+      return true;
+    } catch (err) {
+      toast.error('Gagal simpan ke GitHub: ' + err.message, 6000);
+      return false;
+    }
+  }
+
+  async function saveCompanies(data) {
+    if (!DA.github.isConfigured()) {
+      toast.warn('GitHub belum dikonfigurasi. Data hanya tersimpan lokal.', 4000);
+      storage.set('companiesOverride', data);
+      return false;
+    }
+    try {
+      toast.info('Menyimpan ke GitHub...', 2000);
+      await DA.github.uploadFile(
+        'companies/companies.json',
+        JSON.stringify(data, null, 2),
+        'chore: update companies data from admin dashboard'
+      );
+      toast.success('✅ Tersimpan di GitHub. Vercel akan auto-deploy ~1 menit.', 5000);
+      window.dispatchEvent(new Event('companies:updated'));
+      return true;
+    } catch (err) {
+      toast.error('Gagal simpan: ' + err.message, 6000);
+      return false;
+    }
+  }
+
+  async function saveEmailTemplates(list) {
+    if (!DA.github.isConfigured()) {
+      toast.warn('GitHub belum dikonfigurasi. Data hanya tersimpan lokal.', 4000);
+      storage.set('emailTemplatesOverride', list);
+      return false;
+    }
+    try {
+      toast.info('Menyimpan ke GitHub...', 2000);
+      await DA.github.uploadFile(
+        'email-templates/email-templates.json',
+        JSON.stringify({ templates: list }, null, 2),
+        'chore: update email templates from admin dashboard'
+      );
+      toast.success('✅ Tersimpan di GitHub.', 5000);
+      window.dispatchEvent(new Event('emailTemplates:updated'));
+      return true;
+    } catch (err) {
+      toast.error('Gagal simpan: ' + err.message, 6000);
+      return false;
+    }
+  }
+
+  /* ============================================
+     TAB: CV TEMPLATES
+     ============================================ */
   async function renderCvList() {
     if (!els.cvList) return;
+    els.cvList.innerHTML = '<div class="admin-empty">Memuat...</div>';
     const list = await getCvTemplates();
 
     if (!list.length) {
@@ -126,7 +342,6 @@ DA.admin = (function () {
       </div>
     `).join('');
 
-    // Bind actions
     els.cvList.querySelectorAll('.admin-row').forEach((row) => {
       const idx = Number(row.dataset.idx);
       row.querySelector('[data-edit]')?.addEventListener('click', () => editCvTemplate(idx));
@@ -151,8 +366,7 @@ DA.admin = (function () {
       icon: 'fa-file-lines',
       color: color.trim(),
     });
-    storage.set('cvTemplatesOverride', list);
-    toast.success('Template ditambahkan. Jangan lupa upload file .docx ke folder cv-templates/');
+    await saveCvTemplates(list);
     renderCvList();
   }
 
@@ -160,7 +374,7 @@ DA.admin = (function () {
     const list = await getCvTemplates();
     const t = list[idx];
     if (!t) return;
-    const name = prompt('Nama template:', t.name);
+    const name = prompt('Nama:', t.name);
     if (name == null) return;
     const file = prompt('Nama file .docx:', t.file);
     if (file == null) return;
@@ -173,48 +387,78 @@ DA.admin = (function () {
     t.file = file.trim() || t.file;
     t.description = description.trim();
     t.color = color.trim() || 'blue';
-    storage.set('cvTemplatesOverride', list);
-    toast.success('Template diupdate');
+    await saveCvTemplates(list);
     renderCvList();
   }
 
   async function deleteCvTemplate(idx) {
     const list = await getCvTemplates();
-    if (!confirm(`Hapus template "${list[idx]?.name}"?`)) return;
+    const t = list[idx];
+    if (!t) return;
+    if (!confirm(`Hapus template "${t.name}"?`)) return;
     list.splice(idx, 1);
-    storage.set('cvTemplatesOverride', list);
-    toast.success('Template dihapus');
+    await saveCvTemplates(list);
     renderCvList();
   }
 
   async function resetCvTemplates() {
-    if (!confirm('Reset ke template default dari server? Semua perubahan akan hilang.')) return;
-    storage.remove('cvTemplatesOverride');
-    toast.success('Template direset ke default');
-    renderCvList();
-  }
-
-  /* ============================================
-     TAB 2: COMPANIES
-     ============================================ */
-  async function getCompanies() {
-    const override = storage.get('companiesOverride');
-    if (override) return override;
-
+    if (!confirm('Reset ke template default dari server? Perubahan tidak bisa dikembalikan.')) return;
     try {
-      const res = await fetch('companies/companies.json?t=' + Date.now());
+      const res = await fetch('cv-templates/templates.json?t=' + Date.now());
       const data = await res.json();
-      return {
-        categories: data.categories || [],
-        companies: data.companies || [],
-      };
-    } catch {
-      return { categories: [], companies: [] };
+      const list = Array.isArray(data) ? data : (data.templates || []);
+      await saveCvTemplates(list);
+      toast.success('Reset berhasil');
+      renderCvList();
+    } catch (err) {
+      toast.error('Gagal reset: ' + err.message);
     }
   }
 
+  async function uploadCvFile(file) {
+    if (!DA.github.isConfigured()) {
+      toast.error('Setup GitHub dulu di tab Pengaturan', 5000);
+      return;
+    }
+    if (!file.name.endsWith('.docx')) {
+      toast.error('File harus .docx');
+      return;
+    }
+
+    try {
+      toast.info(`Mengupload ${file.name}...`, 3000);
+      const path = 'cv-templates/' + file.name;
+      await DA.github.uploadBinaryFile(path, file, `feat: upload ${file.name} via admin dashboard`);
+      toast.success(`✅ ${file.name} berhasil diupload ke GitHub. Vercel deploy ~1 menit.`, 6000);
+
+      // Auto-register di templates.json
+      const existing = await getCvTemplates();
+      if (!existing.find((t) => t.file === file.name)) {
+        if (confirm(`File berhasil diupload. Tambahkan "${file.name}" ke daftar template sekarang?`)) {
+          existing.push({
+            id: uid(),
+            name: file.name.replace('.docx', '').replace(/-/g, ' ').replace(/_/g, ' '),
+            description: 'Template CV dari admin',
+            file: file.name,
+            icon: 'fa-file-lines',
+            color: 'blue',
+          });
+          await saveCvTemplates(existing);
+          renderCvList();
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal upload: ' + err.message, 6000);
+    }
+  }
+
+  /* ============================================
+     TAB: COMPANIES
+     ============================================ */
   async function renderCompaniesList() {
     if (!els.cpList) return;
+    els.cpList.innerHTML = '<div class="admin-empty">Memuat...</div>';
     const data = await getCompanies();
     const list = data.companies || [];
 
@@ -256,7 +500,6 @@ DA.admin = (function () {
     const category = prompt('Kategori (textile/garment/food/manufaktur/furniture/retail/farmasi/fmcg):', 'manufaktur') || 'manufaktur';
     const location = prompt('Kota:', 'Bandung') || 'Bandung';
 
-    // Apply methods — bisa multiple
     const apply = [];
     let addMore = true;
     while (addMore) {
@@ -285,8 +528,7 @@ DA.admin = (function () {
       location: location.trim(),
       apply,
     });
-    storage.set('companiesOverride', data);
-    toast.success('Perusahaan ditambahkan');
+    await saveCompanies(data);
     renderCompaniesList();
   }
 
@@ -305,7 +547,6 @@ DA.admin = (function () {
     c.category = category.trim();
     c.location = location.trim();
 
-    // Edit apply methods — konfirmasi
     if (confirm('Edit metode apply juga?')) {
       const apply = [];
       let addMore = true;
@@ -321,8 +562,7 @@ DA.admin = (function () {
       if (apply.length) c.apply = apply;
     }
 
-    storage.set('companiesOverride', data);
-    toast.success('Perusahaan diupdate');
+    await saveCompanies(data);
     renderCompaniesList();
   }
 
@@ -330,36 +570,41 @@ DA.admin = (function () {
     const data = await getCompanies();
     if (!confirm(`Hapus "${data.companies[idx]?.name}"?`)) return;
     data.companies.splice(idx, 1);
-    storage.set('companiesOverride', data);
-    toast.success('Perusahaan dihapus');
+    await saveCompanies(data);
     renderCompaniesList();
   }
 
   async function resetCompanies() {
     if (!confirm('Reset ke data default dari server?')) return;
-    storage.remove('companiesOverride');
-    toast.success('Data direset ke default');
-    renderCompaniesList();
+    try {
+      const res = await fetch('companies/companies.json?t=' + Date.now());
+      const data = await res.json();
+      await saveCompanies(data);
+      toast.success('Reset berhasil');
+      renderCompaniesList();
+    } catch (err) {
+      toast.error('Gagal reset: ' + err.message);
+    }
+  }
+
+  async function manualSaveCompanies() {
+    const data = await getCompanies();
+    await saveCompanies(data);
   }
 
   /* ============================================
-     TAB 3: EMAIL TEMPLATES
+     TAB: EMAIL TEMPLATES
      ============================================ */
-  function getEmailTemplates() {
-    // Cek built-in default (dari email.js) — kita ambil list statis
-    const defaults = [
-      { id: 'umum', name: 'Umum / Standar', desc: 'Bahasa formal dan sopan', icon: 'fa-briefcase', color: 'blue' },
-      { id: 'fresh', name: 'Fresh Graduate', desc: 'Untuk lulusan baru atau magang', icon: 'fa-graduation-cap', color: 'emerald' },
-      { id: 'english', name: 'English Pro', desc: 'Format bahasa Inggris profesional', icon: 'fa-earth-americas', color: 'purple' },
-    ];
-
-    const override = storage.get('emailTemplatesOverride');
-    return override || defaults;
-  }
-
-  function renderEmailList() {
+  async function renderEmailList() {
     if (!els.emList) return;
-    const list = getEmailTemplates();
+    els.emList.innerHTML = '<div class="admin-empty">Memuat...</div>';
+    const data = await getEmailTemplates();
+    const list = data?.templates || [];
+
+    if (!list.length) {
+      els.emList.innerHTML = '<div class="admin-empty">Belum ada template</div>';
+      return;
+    }
 
     els.emList.innerHTML = list.map((t, i) => `
       <div class="admin-row" data-idx="${i}">
@@ -384,7 +629,7 @@ DA.admin = (function () {
     });
   }
 
-  function addEmailTemplate() {
+  async function addEmailTemplate() {
     const name = prompt('Nama template email:');
     if (!name) return;
     const subject = prompt('Subjek (placeholder pakai [Kurung Siku]):', 'Lamaran Pekerjaan - [Posisi yang Dilamar]');
@@ -392,8 +637,9 @@ DA.admin = (function () {
     const body = prompt('Isi email (bisa multi-baris):', 'Kepada Yth,\nHRD [Nama Perusahaan]\n\nDengan hormat,\n...');
     if (body == null) return;
 
-    const list = getEmailTemplates();
-    list.push({
+    const data = (await getEmailTemplates()) || { templates: [] };
+    data.templates = data.templates || [];
+    data.templates.push({
       id: uid(),
       name: name.trim(),
       desc: 'Template kustom admin',
@@ -402,14 +648,13 @@ DA.admin = (function () {
       subject: subject.trim(),
       body: body.trim(),
     });
-    storage.set('emailTemplatesOverride', list);
-    toast.success('Template email ditambahkan');
+    await saveEmailTemplates(data.templates);
     renderEmailList();
   }
 
-  function editEmailTemplate(idx) {
-    const list = getEmailTemplates();
-    const t = list[idx];
+  async function editEmailTemplate(idx) {
+    const data = (await getEmailTemplates()) || { templates: [] };
+    const t = data.templates[idx];
     if (!t) return;
     const name = prompt('Nama:', t.name);
     if (name == null) return;
@@ -421,25 +666,40 @@ DA.admin = (function () {
     t.name = name.trim() || t.name;
     t.subject = subject.trim();
     t.body = body.trim();
-    storage.set('emailTemplatesOverride', list);
-    toast.success('Template diupdate');
+    await saveEmailTemplates(data.templates);
     renderEmailList();
   }
 
-  function deleteEmailTemplate(idx) {
-    const list = getEmailTemplates();
-    if (!confirm(`Hapus "${list[idx]?.name}"?`)) return;
-    list.splice(idx, 1);
-    storage.set('emailTemplatesOverride', list);
-    toast.success('Template dihapus');
+  async function deleteEmailTemplate(idx) {
+    const data = (await getEmailTemplates()) || { templates: [] };
+    if (!confirm(`Hapus "${data.templates[idx]?.name}"?`)) return;
+    data.templates.splice(idx, 1);
+    await saveEmailTemplates(data.templates);
     renderEmailList();
   }
 
-  function resetEmailTemplates() {
-    if (!confirm('Reset ke template default?')) return;
+  async function resetEmailTemplates() {
+    if (!confirm('Reset template email? Perubahan akan hilang.')) return;
     storage.remove('emailTemplatesOverride');
-    toast.success('Template direset');
+    if (DA.github.isConfigured()) {
+      try {
+        await DA.github.deleteFile(
+          'email-templates/email-templates.json',
+          'chore: reset email templates to default'
+        );
+        toast.success('Reset berhasil. Kembali ke default.');
+      } catch (err) {
+        toast.warn('Reset lokal berhasil. Gagal hapus di GitHub: ' + err.message);
+      }
+    } else {
+      toast.success('Reset lokal berhasil');
+    }
     renderEmailList();
+  }
+
+  async function manualSaveEmails() {
+    const data = (await getEmailTemplates()) || { templates: [] };
+    await saveEmailTemplates(data.templates);
   }
 
   /* ============================================
@@ -462,15 +722,13 @@ DA.admin = (function () {
     const data = {
       exportedAt: new Date().toISOString(),
       appName: 'DocuApply',
-      version: 1,
-      cvTemplates: storage.get('cvTemplatesOverride', null),
-      companies: storage.get('companiesOverride', null),
-      emailTemplates: storage.get('emailTemplatesOverride', null),
+      version: 2,
+      githubConfig: DA.github.getConfig(),
       adminPasswordHash: storage.get('adminPasswordHash', null),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    downloadBlob(blob, `DocuApply_Backup_${Date.now()}.json`);
-    toast.success('Backup diunduh');
+    downloadBlob(blob, `DocuApply_Config_${Date.now()}.json`);
+    toast.success('Config diunduh');
   }
 
   function importData(file) {
@@ -479,15 +737,13 @@ DA.admin = (function () {
       try {
         const data = JSON.parse(e.target.result);
         if (!data.appName || data.appName !== 'DocuApply') {
-          throw new Error('File backup tidak valid');
+          throw new Error('File tidak valid');
         }
-        if (data.cvTemplates) storage.set('cvTemplatesOverride', data.cvTemplates);
-        if (data.companies) storage.set('companiesOverride', data.companies);
-        if (data.emailTemplates) storage.set('emailTemplatesOverride', data.emailTemplates);
+        if (data.githubConfig) DA.github.setConfig(data.githubConfig);
         if (data.adminPasswordHash) storage.set('adminPasswordHash', data.adminPasswordHash);
 
-        toast.success('Data berhasil diimport');
-        renderAll();
+        toast.success('Config berhasil diimport');
+        loadGithubConfig();
       } catch (err) {
         toast.error('Gagal import: ' + err.message);
       }
@@ -511,17 +767,30 @@ DA.admin = (function () {
     // CV
     els.cvAddBtn?.addEventListener('click', addCvTemplate);
     els.cvReset?.addEventListener('click', resetCvTemplates);
+    els.cvUploadBtn?.addEventListener('click', () => els.cvUploadInput?.click());
+    els.cvUploadInput?.addEventListener('change', (e) => {
+      const f = e.target.files?.[0];
+      e.target.value = '';
+      if (f) uploadCvFile(f);
+    });
 
     // Companies
     els.cpAddBtn?.addEventListener('click', addCompany);
     els.cpReset?.addEventListener('click', resetCompanies);
+    els.cpSaveBtn?.addEventListener('click', manualSaveCompanies);
 
     // Email
     els.emAddBtn?.addEventListener('click', addEmailTemplate);
     els.emReset?.addEventListener('click', resetEmailTemplates);
+    els.emSaveBtn?.addEventListener('click', manualSaveEmails);
 
     // Settings
     els.passChangeBtn?.addEventListener('click', changePassword);
+    els.ghTestBtn?.addEventListener('click', testGithub);
+    els.ghSaveBtn?.addEventListener('click', saveGithubConfig);
+    els.ghClearBtn?.addEventListener('click', clearGithubConfig);
+
+    // Backup
     els.exportBtn?.addEventListener('click', exportData);
     els.importBtn?.addEventListener('click', () => els.importInput?.click());
     els.importInput?.addEventListener('change', (e) => {
