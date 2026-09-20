@@ -1,7 +1,7 @@
 /* =====================================================
    DocuApply — Photo Studio
    Auto background removal + manual brush + bg replacement
-   Library: @imgly/background-removal (browser, no API key)
+   AI Library: @imgly/background-removal (via ESM CDN)
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -40,12 +40,16 @@ DA.photoStudio = (function () {
     drawing: false,
     history: [],
     hasCutout: false,
+    aiReady: false,
+    aiFailed: false,
   };
 
   let els = {};
   let rafPending = false;
 
-  /* ---------- Init ---------- */
+  /* ============================================
+     INIT
+     ============================================ */
   function init() {
     els = {
       drop: document.getElementById('photoDrop'),
@@ -80,10 +84,31 @@ DA.photoStudio = (function () {
       downloadBtn: document.getElementById('photoDownload'),
     };
 
-    if (!els.canvas) return; // view tidak ada
+    if (!els.canvas) return;
 
+    /* ===== AI library ready/error listeners ===== */
+    window.addEventListener('imgy:ready', () => {
+      S.aiReady = true;
+      S.aiFailed = false;
+      updateUI();
+      console.info('[PhotoStudio] AI siap digunakan');
+    });
+    window.addEventListener('imgy:error', () => {
+      S.aiReady = false;
+      S.aiFailed = true;
+      updateUI();
+      DA.toast.warn('AI Background Removal gagal dimuat. Cek koneksi internet.', 5000);
+    });
+
+    /* Kalau library sudah ready duluan (race condition) */
+    if (typeof (window.imglyRemoveBackground) === 'function') {
+      S.aiReady = true;
+    }
+
+    /* ===== Dropzone ===== */
     bindDropZone(els.drop, els.input, onFile);
 
+    /* ===== Buttons ===== */
     els.removeBtn.addEventListener('click', removeBg);
     els.resetBtn.addEventListener('click', resetMask);
     els.undoBtn.addEventListener('click', undo);
@@ -139,6 +164,7 @@ DA.photoStudio = (function () {
       img.src = url;
     });
 
+    /* ===== Canvas events ===== */
     const c = els.canvas;
     c.addEventListener('pointerdown', onPointerDown);
     c.addEventListener('pointermove', onPointerMove);
@@ -149,13 +175,25 @@ DA.photoStudio = (function () {
       if (S.hasCutout) els.cursor.classList.remove('hidden');
     });
 
+    /* Re-render canvas on theme toggle (biar checker pattern sinkron) */
     const themeBtn = document.getElementById('themeToggle');
     themeBtn?.addEventListener('click', () => scheduleRender());
 
     updateUI();
+
+    /* Timeout: kalau AI 20 detik tidak ready, tampilkan warning */
+    setTimeout(() => {
+      if (!S.aiReady && !S.aiFailed) {
+        S.aiFailed = true;
+        updateUI();
+        DA.toast.warn('AI lambat dimuat. Coba refresh halaman.', 5000);
+      }
+    }, 20000);
   }
 
-  /* ---------- Load foto ---------- */
+  /* ============================================
+     LOAD FOTO
+     ============================================ */
   async function onFile(list) {
     const f = list?.[0];
     if (!f || !f.type.startsWith('image/')) {
@@ -200,13 +238,22 @@ DA.photoStudio = (function () {
     updateUI();
   }
 
-  /* ---------- AI Background Removal ---------- */
+  /* ============================================
+     AI BACKGROUND REMOVAL
+     ============================================ */
   async function removeBg() {
     if (!S.file) return;
 
-    const remover = window.imglyRemoveBackground || window.removeBackground;
+    const remover =
+      window.imglyRemoveBackground ||
+      window.removeBackground;
+
     if (typeof remover !== 'function') {
-      DA.toast.error('Library AI tidak termuat. Cek koneksi lalu refresh halaman.');
+      if (S.aiFailed) {
+        DA.toast.error('AI gagal dimuat. Refresh halaman dan cek koneksi internet.');
+      } else {
+        DA.toast.warn('AI masih dimuat... tunggu sebentar lalu coba lagi.');
+      }
       return;
     }
 
@@ -221,8 +268,12 @@ DA.photoStudio = (function () {
         progress: (key, current, total) => {
           if (!total) return;
           const pct = Math.round((current / total) * 100);
-          const label = key.startsWith('fetch') ? 'Mengunduh model' :
-                        key.startsWith('compute') ? 'Memproses' : key;
+          let label = 'Memproses';
+          if (typeof key === 'string') {
+            if (key.startsWith('fetch')) label = 'Mengunduh model';
+            else if (key.startsWith('compute')) label = 'Menghitung';
+            else label = key;
+          }
           setProgress(pct, `${label} · ${pct}%`);
         },
       });
@@ -252,15 +303,17 @@ DA.photoStudio = (function () {
       els.status.textContent = 'Cutout siap — rapikan dengan kuas jika perlu';
       DA.toast.success('Background berhasil dihapus!');
     } catch (err) {
-      console.error(err);
-      DA.toast.error('Gagal menghapus background: ' + (err.message || 'unknown error'));
+      console.error('[PhotoStudio] removeBg error:', err);
+      DA.toast.error('Gagal menghapus background: ' + (err?.message || 'unknown error'));
     } finally {
       setBusy(false);
       setTimeout(() => els.progress.classList.add('hidden'), 400);
     }
   }
 
-  /* ---------- Rendering ---------- */
+  /* ============================================
+     RENDER
+     ============================================ */
   function scheduleRender() {
     if (rafPending) return;
     rafPending = true;
@@ -274,16 +327,18 @@ DA.photoStudio = (function () {
     if (!S.imageData) return;
     const { W, H, imageData, mask } = S;
     const ctx = els.canvas.getContext('2d');
+
+    if (!mask) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(S.originalCanvas, 0, 0);
+      return;
+    }
+
     const out = ctx.createImageData(W, H);
     const outData = out.data;
     const src = imageData.data;
     const bg = S.bgData;
     const isTransparent = S.bg.type === 'transparent' || !bg;
-
-    if (!mask) {
-      ctx.drawImage(S.originalCanvas, 0, 0);
-      return;
-    }
 
     if (isTransparent) {
       for (let i = 0; i < W * H; i++) {
@@ -341,7 +396,9 @@ DA.photoStudio = (function () {
     S.bgData = ctx.getImageData(0, 0, W, H).data;
   }
 
-  /* ---------- Brush ---------- */
+  /* ============================================
+     BRUSH
+     ============================================ */
   function onPointerDown(e) {
     if (!S.hasCutout) return;
     e.preventDefault();
@@ -417,7 +474,9 @@ DA.photoStudio = (function () {
     );
   }
 
-  /* ---------- History ---------- */
+  /* ============================================
+     HISTORY
+     ============================================ */
   function pushHistory() {
     if (S.history.length > 20) S.history.shift();
     S.history.push(new Uint8ClampedArray(S.mask));
@@ -432,7 +491,9 @@ DA.photoStudio = (function () {
     updateUI();
   }
 
-  /* ---------- Reset mask ---------- */
+  /* ============================================
+     RESET
+     ============================================ */
   function resetMask() {
     if (!S.baseMask) return;
     if (!DA.confirm('Reset semua sapuan kuas ke hasil AI awal?')) return;
@@ -443,7 +504,9 @@ DA.photoStudio = (function () {
     DA.toast.info('Mask direset');
   }
 
-  /* ---------- Background type ---------- */
+  /* ============================================
+     BACKGROUND TYPE
+     ============================================ */
   function setBgType(type) {
     S.bg.type = type;
     document.querySelectorAll('[data-bg-type]').forEach((b) =>
@@ -461,9 +524,32 @@ DA.photoStudio = (function () {
     scheduleRender();
   }
 
-  /* ---------- UI state ---------- */
+  /* ============================================
+     UI STATE
+     ============================================ */
   function updateUI() {
-    els.removeBtn.disabled = !S.file;
+    /* Tombol Hapus BG: hanya aktif kalau ada file DAN AI ready */
+    const canRemove = !!S.file && S.aiReady;
+    els.removeBtn.disabled = !canRemove;
+
+    /* Update label tombol Hapus BG kalau AI belum ready */
+    if (!S.aiReady && !S.aiFailed && S.file) {
+      els.removeBtn.title = 'AI masih dimuat...';
+    } else if (S.aiFailed) {
+      els.removeBtn.title = 'AI gagal dimuat — refresh halaman';
+    } else {
+      els.removeBtn.title = 'Hapus background otomatis';
+    }
+
+    /* Status text */
+    if (!S.file) {
+      els.status.textContent = 'Belum ada foto';
+    } else if (!S.aiReady && !S.aiFailed && !S.hasCutout) {
+      els.status.textContent = 'Foto siap — AI masih dimuat...';
+    } else if (S.aiFailed && !S.hasCutout) {
+      els.status.textContent = 'Foto siap — AI gagal dimuat';
+    }
+
     els.resetBtn.disabled = !S.hasCutout;
     els.undoBtn.disabled = !S.history.length;
     els.brushPanel.classList.toggle('hidden', !S.hasCutout);
@@ -471,7 +557,7 @@ DA.photoStudio = (function () {
   }
 
   function setBusy(busy) {
-    els.removeBtn.disabled = busy || !S.file;
+    els.removeBtn.disabled = busy || !S.file || !S.aiReady;
     els.removeBtn.innerHTML = busy
       ? '<div class="loader !w-3.5 !h-3.5 !border-slate-300 !border-t-indigo-500 mr-2"></div><span class="text-xs">Proses...</span>'
       : '<i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i><span class="text-xs">Hapus BG</span>';
@@ -482,7 +568,9 @@ DA.photoStudio = (function () {
     els.progressText.textContent = text || 'Memproses...';
   }
 
-  /* ---------- Download ---------- */
+  /* ============================================
+     DOWNLOAD
+     ============================================ */
   function download() {
     if (!S.file) return;
     const sizeKey = els.sizeSel.value;
@@ -530,7 +618,9 @@ DA.photoStudio = (function () {
     );
   }
 
-  /* ---------- Helpers ---------- */
+  /* ============================================
+     HELPERS
+     ============================================ */
   function loadImage(src) {
     return new Promise((res, rej) => {
       const i = new Image();
@@ -573,11 +663,14 @@ DA.photoStudio = (function () {
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
-  /* ---------- Public API ---------- */
+  /* ============================================
+     PUBLIC API
+     ============================================ */
   return {
     init,
     loadFromDataURL(dataUrl) {
       loadImage(dataUrl).then((img) => prepareOriginal(img));
     },
+    isAiReady: () => S.aiReady,
   };
 })();
