@@ -60,6 +60,8 @@
     <button data-tab="email"     class="nav-btn"><i class="fa-regular fa-envelope"></i><span>Email</span></button>
   </nav>
 
+  <div id="roleBadge" class="flex items-center gap-1.5 shrink-0"></div>
+
   <button id="themeToggle" title="Ganti tema" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 transition-colors shrink-0">
     <i class="fa-solid fa-moon dark:hidden text-sm"></i>
     <i class="fa-solid fa-sun hidden dark:inline text-sm"></i>
@@ -67,7 +69,7 @@
 </header>
 
 <!-- MAIN -->
-<main class="flex-1 min-h-0 relative overflow-hidden">
+<main id="appContent" class="flex-1 min-h-0 relative overflow-hidden">
 
   <!-- EDITOR -->
   <section id="view-editor" class="view absolute inset-0 flex flex-col md:flex-row overflow-hidden">
@@ -478,7 +480,6 @@
           <p class="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
             Upload file <code class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">.docx</code> ke folder
             <code class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">cv-templates/</code>
-            dan daftarkan di <code class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">templates.json</code>
           </p>
         </div>
       </div>
@@ -504,17 +505,14 @@
         </button>
       </div>
 
-      <!-- TOOLBAR -->
       <div class="cv-toolbar-wrap">
         <div class="cv-toolbar">
-
           <div class="cv-tool-group">
-            <button data-cmd="undo" class="cv-tool-btn" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
-            <button data-cmd="redo" class="cv-tool-btn" title="Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+            <button data-cmd="undo" class="cv-tool-btn" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+            <button data-cmd="redo" class="cv-tool-btn" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
           </div>
-
           <div class="cv-tool-group">
-            <select id="cvFontFamily" class="cv-tool-select" title="Jenis Font">
+            <select id="cvFontFamily" class="cv-tool-select" title="Font">
               <option value="">Font</option>
               <option value="Georgia, serif">Georgia</option>
               <option value="'Times New Roman', serif">Times New Roman</option>
@@ -528,7 +526,7 @@
               <option value="'Palatino Linotype', serif">Palatino</option>
               <option value="Tahoma, sans-serif">Tahoma</option>
             </select>
-            <select id="cvFontSize" class="cv-tool-select cv-tool-select-sm" title="Ukuran Font">
+            <select id="cvFontSize" class="cv-tool-select cv-tool-select-sm" title="Size">
               <option value="">Size</option>
               <option value="8pt">8</option>
               <option value="9pt">9</option>
@@ -545,23 +543,21 @@
               <option value="36pt">36</option>
             </select>
           </div>
-
           <div class="cv-tool-group">
-            <button data-cmd="bold" class="cv-tool-btn" title="Bold (Ctrl+B)"><i class="fa-solid fa-bold"></i></button>
-            <button data-cmd="italic" class="cv-tool-btn" title="Italic (Ctrl+I)"><i class="fa-solid fa-italic"></i></button>
-            <button data-cmd="underline" class="cv-tool-btn" title="Underline (Ctrl+U)"><i class="fa-solid fa-underline"></i></button>
+            <button data-cmd="bold" class="cv-tool-btn" title="Bold"><i class="fa-solid fa-bold"></i></button>
+            <button data-cmd="italic" class="cv-tool-btn" title="Italic"><i class="fa-solid fa-italic"></i></button>
+            <button data-cmd="underline" class="cv-tool-btn" title="Underline"><i class="fa-solid fa-underline"></i></button>
             <button data-cmd="strikeThrough" class="cv-tool-btn" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
-            <button data-cmd="superscript" class="cv-tool-btn" title="Superscript"><i class="fa-solid fa-superscript"></i></button>
-            <button data-cmd="subscript" class="cv-tool-btn" title="Subscript"><i class="fa-solid fa-subscript"></i></button>
+            <button data-cmd="superscript" class="cv-tool-btn" title="Sup"><i class="fa-solid fa-superscript"></i></button>
+            <button data-cmd="subscript" class="cv-tool-btn" title="Sub"><i class="fa-solid fa-subscript"></i></button>
           </div>
-
           <div class="cv-tool-group">
             <div class="cv-color-picker" title="Warna Teks">
               <i class="fa-solid fa-font cv-color-icon"></i>
               <span class="cv-color-bar" id="cvForeColorBar" style="background:#1e293b;"></span>
               <input type="color" id="cvForeColor" value="#1e293b" class="cv-color-input">
             </div>
-            <div class="cv-color-picker" title="Warna Highlight">
+            <div class="cv-color-picker" title="Highlight">
               <i class="fa-solid fa-highlighter cv-color-icon"></i>
               <span class="cv-color-bar" id="cvBackColorBar" style="background:#fef08a;"></span>
               <input type="color" id="cvBackColor" value="#fef08a" class="cv-color-input">
@@ -570,9 +566,8 @@
               <i class="fa-solid fa-eraser"></i>
             </button>
           </div>
-
           <div class="cv-tool-group">
-            <select id="cvFormatBlock" class="cv-tool-select" title="Gaya Paragraf">
+            <select id="cvFormatBlock" class="cv-tool-select" title="Gaya">
               <option value="P">Normal</option>
               <option value="H1">Heading 1</option>
               <option value="H2">Heading 2</option>
@@ -582,29 +577,25 @@
               <option value="PRE">Code</option>
             </select>
           </div>
-
           <div class="cv-tool-group">
-            <button data-cmd="insertUnorderedList" class="cv-tool-btn" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
-            <button data-cmd="insertOrderedList" class="cv-tool-btn" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
-            <button data-cmd="outdent" class="cv-tool-btn" title="Kurangi Indent"><i class="fa-solid fa-outdent"></i></button>
-            <button data-cmd="indent" class="cv-tool-btn" title="Tambah Indent"><i class="fa-solid fa-indent"></i></button>
+            <button data-cmd="insertUnorderedList" class="cv-tool-btn" title="Bullet"><i class="fa-solid fa-list-ul"></i></button>
+            <button data-cmd="insertOrderedList" class="cv-tool-btn" title="Number"><i class="fa-solid fa-list-ol"></i></button>
+            <button data-cmd="outdent" class="cv-tool-btn" title="Outdent"><i class="fa-solid fa-outdent"></i></button>
+            <button data-cmd="indent" class="cv-tool-btn" title="Indent"><i class="fa-solid fa-indent"></i></button>
           </div>
-
           <div class="cv-tool-group">
-            <button data-cmd="justifyLeft" class="cv-tool-btn" title="Rata Kiri"><i class="fa-solid fa-align-left"></i></button>
-            <button data-cmd="justifyCenter" class="cv-tool-btn" title="Rata Tengah"><i class="fa-solid fa-align-center"></i></button>
-            <button data-cmd="justifyRight" class="cv-tool-btn" title="Rata Kanan"><i class="fa-solid fa-align-right"></i></button>
+            <button data-cmd="justifyLeft" class="cv-tool-btn" title="Kiri"><i class="fa-solid fa-align-left"></i></button>
+            <button data-cmd="justifyCenter" class="cv-tool-btn" title="Tengah"><i class="fa-solid fa-align-center"></i></button>
+            <button data-cmd="justifyRight" class="cv-tool-btn" title="Kanan"><i class="fa-solid fa-align-right"></i></button>
             <button data-cmd="justifyFull" class="cv-tool-btn" title="Justify"><i class="fa-solid fa-align-justify"></i></button>
           </div>
-
           <div class="cv-tool-group">
-            <button id="cvInsertLink" class="cv-tool-btn" title="Sisipkan Link"><i class="fa-solid fa-link"></i></button>
-            <button id="cvInsertHr" class="cv-tool-btn" title="Garis Horizontal"><i class="fa-solid fa-minus"></i></button>
-            <button id="cvInsertImage" class="cv-tool-btn" title="Sisipkan Gambar"><i class="fa-solid fa-image"></i></button>
+            <button id="cvInsertLink" class="cv-tool-btn" title="Link"><i class="fa-solid fa-link"></i></button>
+            <button id="cvInsertHr" class="cv-tool-btn" title="Garis"><i class="fa-solid fa-minus"></i></button>
+            <button id="cvInsertImage" class="cv-tool-btn" title="Gambar"><i class="fa-solid fa-image"></i></button>
           </div>
-
           <div class="cv-tool-group">
-            <select id="cvLineHeight" class="cv-tool-select cv-tool-select-sm" title="Jarak Baris">
+            <select id="cvLineHeight" class="cv-tool-select cv-tool-select-sm" title="Line">
               <option value="">Line</option>
               <option value="1">1.0</option>
               <option value="1.15">1.15</option>
@@ -614,11 +605,9 @@
               <option value="2.5">2.5</option>
             </select>
           </div>
-
           <div class="cv-tool-group">
-            <button data-cmd="removeFormat" class="cv-tool-btn" title="Hapus Semua Format"><i class="fa-solid fa-broom"></i></button>
+            <button data-cmd="removeFormat" class="cv-tool-btn" title="Clear"><i class="fa-solid fa-broom"></i></button>
           </div>
-
         </div>
       </div>
 
@@ -631,27 +620,19 @@
     </div>
   </section>
 
-  <!-- COMPANIES DIRECTORY -->
+  <!-- COMPANIES -->
   <section id="view-companies" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
     <div id="companiesList" class="flex-1 min-h-0 overflow-y-auto">
       <div class="max-w-5xl mx-auto p-4 pb-24">
-
         <div class="text-center mb-5 mt-2">
           <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Direktori Perusahaan</h2>
           <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Kumpulan email & link karir perusahaan</p>
           <div class="inline-flex items-center gap-3 mt-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            <span class="flex items-center gap-1">
-              <i class="fa-solid fa-building text-indigo-500"></i>
-              <span id="companiesStatsTotal">0</span> perusahaan
-            </span>
+            <span class="flex items-center gap-1"><i class="fa-solid fa-building text-indigo-500"></i><span id="companiesStatsTotal">0</span> perusahaan</span>
             <span class="w-px h-3 bg-slate-300 dark:bg-slate-700"></span>
-            <span class="flex items-center gap-1">
-              <i class="fa-solid fa-filter text-indigo-500"></i>
-              <span id="companiesStatsShown">0</span> ditampilkan
-            </span>
+            <span class="flex items-center gap-1"><i class="fa-solid fa-filter text-indigo-500"></i><span id="companiesStatsShown">0</span> ditampilkan</span>
           </div>
         </div>
-
         <div class="sticky top-0 z-20 -mx-4 px-4 py-3 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 mb-4" style="margin-top:-1px;">
           <div class="flex gap-2 max-w-5xl mx-auto">
             <div class="relative flex-1">
@@ -667,19 +648,14 @@
               <span id="companiesFavoritesCount" class="cp-fav-count hidden">0</span>
             </button>
           </div>
-
           <div id="companiesCategoryBar" class="cp-cat-bar mt-3 flex gap-1.5 overflow-x-auto pb-1"></div>
         </div>
-
         <div id="companiesDisclaimer" class="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-3 mb-4 text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed"></div>
-
         <div id="companiesLoading" class="text-center py-12">
           <div class="loader !w-7 !h-7 !border-slate-300 !border-t-indigo-500 mx-auto"></div>
           <p class="text-sm text-slate-400 mt-3">Memuat data perusahaan...</p>
         </div>
-
         <div id="companiesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
-
         <div id="companiesEmpty" class="hidden text-center py-16">
           <div class="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <i class="fa-solid fa-magnifying-glass text-3xl text-slate-300 dark:text-slate-600"></i>
@@ -687,7 +663,6 @@
           <h3 class="text-base font-bold text-slate-600 dark:text-slate-300 mb-1">Tidak ada hasil</h3>
           <p class="text-xs text-slate-400 max-w-md mx-auto">Coba ubah kata kunci atau pilih kategori lain.</p>
         </div>
-
       </div>
     </div>
   </section>
@@ -818,9 +793,7 @@
 <div id="cvChoiceModal" class="fixed inset-0 z-[100] hidden items-end sm:items-center justify-center" style="z-index:100;">
   <div id="cvChoiceBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
   <div id="cvChoiceSheet" class="cv-choice-sheet relative w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl z-10">
-    <div class="pt-3 pb-1 flex justify-center sm:hidden">
-      <div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
-    </div>
+    <div class="pt-3 pb-1 flex justify-center sm:hidden"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
     <div class="px-5 pt-3 pb-4 sm:pt-6 border-b border-slate-100 dark:border-slate-800">
       <div class="flex items-start gap-3">
         <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center shrink-0">
@@ -828,7 +801,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <h3 id="cvChoiceTitle" class="font-bold text-base text-slate-800 dark:text-slate-100 leading-tight">Pilih Opsi</h3>
-          <p id="cvChoiceSubtitle" class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Pilih cara Anda ingin menggunakan template ini</p>
+          <p id="cvChoiceSubtitle" class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Pilih cara menggunakan template ini</p>
         </div>
         <button id="cvChoiceCancel" class="w-9 h-9 -mt-1 -mr-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 active:scale-95 transition-transform shrink-0">
           <i class="fa-solid fa-xmark"></i>
@@ -845,9 +818,7 @@
             Download Original .docx
             <span class="cv-choice-badge bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">100% Identik</span>
           </div>
-          <p class="cv-choice-option-desc">
-            File asli diunduh → buka di Microsoft Word / Google Docs → edit sendiri.
-          </p>
+          <p class="cv-choice-option-desc">File asli diunduh → buka di Word / Google Docs → edit sendiri.</p>
         </div>
         <i class="fa-solid fa-arrow-right text-slate-300 dark:text-slate-600 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"></i>
       </button>
@@ -860,9 +831,7 @@
             Edit di Aplikasi
             <span class="cv-choice-badge bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">Cepat & Praktis</span>
           </div>
-          <p class="cv-choice-option-desc">
-            Edit langsung di sini → unduh sebagai PDF atau DOCX asli.
-          </p>
+          <p class="cv-choice-option-desc">Edit langsung di sini → unduh sebagai PDF atau DOCX asli.</p>
         </div>
         <i class="fa-solid fa-arrow-right text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all"></i>
       </button>
@@ -898,12 +867,156 @@
 
 <input type="file" id="cvImageInput" accept="image/*" class="hidden">
 
-<!-- PDF & Photo libs -->
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen" class="hidden">
+  <div class="login-card">
+    <div class="login-logo">
+      <i class="fa-solid fa-layer-group"></i>
+    </div>
+    <h1 class="login-title">DocuApply</h1>
+    <p class="login-subtitle">PDF · Photo · CV · Email · Perusahaan</p>
+
+    <div class="login-options">
+      <button id="loginUserBtn" class="login-option-btn">
+        <div class="login-option-icon user">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div class="login-option-text">
+          <div class="login-option-title">Masuk sebagai User</div>
+          <div class="login-option-desc">Langsung masuk, akses semua fitur aplikasi</div>
+        </div>
+        <i class="fa-solid fa-arrow-right login-option-arrow"></i>
+      </button>
+
+      <button id="loginAdminBtn" class="login-option-btn">
+        <div class="login-option-icon admin">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="login-option-text">
+          <div class="login-option-title">Login sebagai Admin</div>
+          <div class="login-option-desc">Butuh password. Bisa kelola template & data</div>
+        </div>
+        <i class="fa-solid fa-arrow-right login-option-arrow"></i>
+      </button>
+    </div>
+
+    <div id="adminPasswordForm" class="hidden">
+      <button id="adminBackBtn" class="login-back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Kembali
+      </button>
+      <input type="password" id="adminPasswordInput" class="login-pass-input" placeholder="••••••" autocomplete="current-password">
+      <button id="adminSubmitBtn" class="login-submit-btn">
+        <i class="fa-solid fa-unlock"></i> Login
+      </button>
+      <p class="text-[10px] text-slate-400 text-center">Password default: <code>admin123</code></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ADMIN DASHBOARD ============ -->
+<div id="adminDashboard" class="hidden">
+  <div class="admin-header">
+    <div class="admin-header-icon">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+    <div>
+      <div class="admin-header-title">Dashboard Admin</div>
+      <div class="admin-header-sub">Kelola template & data aplikasi</div>
+    </div>
+    <div class="admin-header-spacer"></div>
+    <button id="adminCloseBtn" class="admin-header-btn" title="Tutup">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <div class="admin-tabs">
+    <button data-admin-tab="cv" class="admin-tab active"><i class="fa-solid fa-id-card"></i> CV Templates</button>
+    <button data-admin-tab="companies" class="admin-tab"><i class="fa-solid fa-building"></i> Perusahaan</button>
+    <button data-admin-tab="email" class="admin-tab"><i class="fa-regular fa-envelope"></i> Template Email</button>
+    <button data-admin-tab="settings" class="admin-tab"><i class="fa-solid fa-gear"></i> Pengaturan</button>
+  </div>
+
+  <div class="admin-body">
+    <div data-admin-panel="cv">
+      <div class="admin-hint">
+        <i class="fa-solid fa-info-circle mr-1"></i>
+        Kelola daftar template CV. Untuk upload file <code>.docx</code> baru, taruh di folder
+        <code>cv-templates/</code> di project lalu tambahkan nama file di sini.
+      </div>
+      <div class="admin-panel-head">
+        <h3>Template CV</h3>
+        <button id="adminCvAddBtn" class="admin-btn admin-btn-primary"><i class="fa-solid fa-plus"></i> Tambah</button>
+        <button id="adminCvReset" class="admin-btn admin-btn-secondary"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+      </div>
+      <div id="adminCvList"></div>
+    </div>
+
+    <div data-admin-panel="companies" class="hidden">
+      <div class="admin-hint">
+        <i class="fa-solid fa-info-circle mr-1"></i>
+        Kelola daftar email & link perusahaan. Bisa multi-metode apply per perusahaan.
+      </div>
+      <div class="admin-panel-head">
+        <h3>Daftar Perusahaan</h3>
+        <button id="adminCompaniesAddBtn" class="admin-btn admin-btn-primary"><i class="fa-solid fa-plus"></i> Tambah</button>
+        <button id="adminCompaniesReset" class="admin-btn admin-btn-secondary"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+      </div>
+      <div id="adminCompaniesList"></div>
+    </div>
+
+    <div data-admin-panel="email" class="hidden">
+      <div class="admin-hint">
+        <i class="fa-solid fa-info-circle mr-1"></i>
+        Update template email lamaran. Gunakan placeholder <code>[Kurung Siku]</code> untuk data yang bisa diisi cepat user.
+      </div>
+      <div class="admin-panel-head">
+        <h3>Template Email</h3>
+        <button id="adminEmailAddBtn" class="admin-btn admin-btn-primary"><i class="fa-solid fa-plus"></i> Tambah</button>
+        <button id="adminEmailReset" class="admin-btn admin-btn-secondary"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+      </div>
+      <div id="adminEmailList"></div>
+    </div>
+
+    <div data-admin-panel="settings" class="hidden">
+      <div class="admin-panel-head">
+        <h3>Pengaturan Admin</h3>
+      </div>
+      <div class="admin-hint">
+        <i class="fa-solid fa-lock mr-1"></i>
+        <strong>Ganti Password Admin</strong> — password default <code>admin123</code>, ubah demi keamanan.
+      </div>
+      <div class="admin-form-group">
+        <label class="admin-form-label">Password Lama</label>
+        <input type="password" id="adminPassOld" class="admin-input" placeholder="••••••">
+      </div>
+      <div class="admin-form-group">
+        <label class="admin-form-label">Password Baru (min 4 karakter)</label>
+        <input type="password" id="adminPassNew" class="admin-input" placeholder="••••••">
+      </div>
+      <button id="adminPassChangeBtn" class="admin-btn admin-btn-primary mb-6">
+        <i class="fa-solid fa-key"></i> Ganti Password
+      </button>
+      <div class="admin-hint mt-6">
+        <i class="fa-solid fa-database mr-1"></i>
+        <strong>Backup / Restore Data</strong> — data admin tersimpan di browser Anda. Export untuk backup, Import untuk restore.
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button id="adminExportBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-download"></i> Export Data (JSON)
+        </button>
+        <button id="adminImportBtn" class="admin-btn admin-btn-secondary">
+          <i class="fa-solid fa-upload"></i> Import Data
+        </button>
+        <input type="file" id="adminImportInput" accept="application/json" class="hidden">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCRIPTS ===== -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
-<!-- CV Builder libs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -933,6 +1046,8 @@
 </script>
 
 <script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/camera.js"></script>
 <script src="js/pdf-editor.js"></script>
 <script src="js/pdf-tools.js"></script>
@@ -941,5 +1056,13 @@
 <script src="js/cv-builder.js"></script>
 <script src="js/companies.js"></script>
 <script src="js/app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(async () => {
+      if (DA.auth) await DA.auth.init();
+      if (DA.admin) DA.admin.init();
+    }, 50);
+  });
+</script>
 </body>
 </html>
