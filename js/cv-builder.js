@@ -1,8 +1,8 @@
 /* =====================================================
-   DocuApply — CV Builder v2
-   - docx-preview untuk render .docx lebih akurat
-   - PDF export pakai html2canvas + jsPDF (clone visible)
-   - DOCX export pakai Blob HTML (mime application/msword)
+   DocuApply — CV Builder v3
+   - Modal pilihan: Download Original .docx ATAU Edit di App
+   - Download Original: file .docx asli dari server (100% identik)
+   - Edit di App: pakai docx-preview + export PDF/DOCX
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -35,6 +35,14 @@ DA.cvBuilder = (function () {
       saveLocal: document.getElementById('cvSaveLocal'),
       formatBlock: document.getElementById('cvFormatBlock'),
       foreColor: document.getElementById('cvForeColor'),
+      // Modal
+      modal: document.getElementById('cvChoiceModal'),
+      modalBackdrop: document.getElementById('cvChoiceBackdrop'),
+      modalCancel: document.getElementById('cvChoiceCancel'),
+      modalTitle: document.getElementById('cvChoiceTitle'),
+      modalSubtitle: document.getElementById('cvChoiceSubtitle'),
+      choiceDownload: document.getElementById('cvChoiceDownload'),
+      choiceEdit: document.getElementById('cvChoiceEdit'),
     };
 
     if (!els.grid) return;
@@ -96,13 +104,70 @@ DA.cvBuilder = (function () {
             <i class="fa-solid fa-file-word text-blue-500 mr-1"></i> .docx
           </span>
           <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-            Gunakan <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            Pilih Opsi <i class="fa-solid fa-arrow-right text-[10px]"></i>
           </span>
         </div>
       `;
-      card.addEventListener('click', () => openEditor(t));
+      card.addEventListener('click', () => showChoiceModal(t));
       els.grid.appendChild(card);
     });
+  }
+
+  /* ============================================
+     MODAL PILIHAN
+     ============================================ */
+  function showChoiceModal(template) {
+    currentTemplate = template;
+    if (els.modalTitle) els.modalTitle.textContent = template.name;
+    if (els.modalSubtitle) els.modalSubtitle.textContent = template.description || 'Pilih cara menggunakan template ini';
+    els.modal?.classList.remove('hidden');
+    els.modal?.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function hideChoiceModal() {
+    els.modal?.classList.add('hidden');
+    els.modal?.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+
+  /* ============================================
+     OPSI 1: DOWNLOAD ORIGINAL (.docx asli dari server)
+     ============================================ */
+  async function downloadOriginal() {
+    if (!currentTemplate) return;
+    const t = currentTemplate;
+    hideChoiceModal();
+
+    try {
+      DA.toast.info('Mengunduh file asli...', 2000);
+
+      const url = 'cv-templates/' + encodeURIComponent(t.file);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const blob = await res.blob();
+      const filename = (t.file || 'template.docx');
+      downloadBlob(blob, filename);
+
+      setTimeout(() => {
+        DA.toast.success(`Berhasil! File "${filename}" tersimpan. Buka di Word untuk edit.`, 5000);
+      }, 300);
+    } catch (err) {
+      console.error('[CV] Download error:', err);
+      DA.toast.error('Gagal mengunduh file: ' + err.message);
+    }
+  }
+
+  /* ============================================
+     OPSI 2: EDIT DI APLIKASI
+     ============================================ */
+  function chooseEdit() {
+    if (!currentTemplate) return;
+    const t = currentTemplate;
+    hideChoiceModal();
+    // Delay sedikit supaya animasi modal selesai
+    setTimeout(() => openEditor(t), 200);
   }
 
   /* ============================================
@@ -124,12 +189,10 @@ DA.cvBuilder = (function () {
       if (!res.ok) throw new Error(`Gagal unduh file (${res.status})`);
       const arrayBuffer = await res.arrayBuffer();
 
-      // Cek library tersedia
       if (typeof docx === 'undefined' || typeof docx.renderAsync !== 'function') {
         throw new Error('Library docx-preview tidak termuat. Refresh halaman lalu coba lagi.');
       }
 
-      // Render pakai docx-preview ke container tersembunyi
       const container = document.createElement('div');
       container.style.cssText = 'position:absolute;left:-99999px;top:0;width:21cm;background:#fff;';
 
@@ -146,27 +209,20 @@ DA.cvBuilder = (function () {
         renderFooters: true,
       });
 
-      // Ambil HTML hasil render
       let html = container.innerHTML;
-
-      // Bersihkan: buang style width/height fixed yang bikin kaku
       html = html.replace(/<section[^>]*class="docx[^"]*"[^>]*>/g, '<div class="docx-section">');
       html = html.replace(/<\/section>/g, '</div>');
-      // Buang style inline yang bisa merusak tampilan editable
       html = html.replace(/ style="[^"]*position:\s*absolute[^"]*"/gi, '');
       html = html.replace(/ style="[^"]*page-break[^"]*"/gi, '');
 
-      // Set ke contenteditable
       els.content.innerHTML = html;
 
-      // Jika kosong setelah dibersihkan
       if (!els.content.textContent.trim() && !els.content.querySelector('img,table')) {
         els.content.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:2rem;font-family:sans-serif;">Template kosong. Silakan tulis CV Anda di sini.</p>';
       }
 
       originalHtml = els.content.innerHTML;
 
-      // Info draft tersimpan
       const draftKey = 'cv_draft_' + template.id;
       const saved = DA.storage.get(draftKey);
       if (saved && saved.html && saved.html !== originalHtml) {
@@ -183,7 +239,7 @@ DA.cvBuilder = (function () {
           <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem;margin-bottom:1rem;"></i>
           <p style="font-weight:700;font-size:1rem;margin-bottom:0.5rem;">Gagal memuat template</p>
           <p style="font-size:0.85rem;opacity:0.8;">${escapeHtml(err.message || 'Unknown error')}</p>
-          <p style="font-size:0.75rem;opacity:0.6;margin-top:1rem;">Pastikan file <code>.docx</code> ada di folder <code>cv-templates/</code></p>
+          <p style="font-size:0.75rem;opacity:0.6;margin-top:1rem;">Coba <strong>"Download Original"</strong> lalu edit di Word sebagai alternatif</p>
         </div>
       `;
       DA.toast.error('Gagal memuat template: ' + err.message);
@@ -258,6 +314,12 @@ DA.cvBuilder = (function () {
   function bindEvents() {
     els.back?.addEventListener('click', closeEditor);
 
+    // Modal
+    els.modalCancel?.addEventListener('click', hideChoiceModal);
+    els.modalBackdrop?.addEventListener('click', hideChoiceModal);
+    els.choiceDownload?.addEventListener('click', downloadOriginal);
+    els.choiceEdit?.addEventListener('click', chooseEdit);
+
     document.querySelectorAll('.cv-tool-btn[data-cmd]').forEach((btn) => {
       btn.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -295,18 +357,22 @@ DA.cvBuilder = (function () {
 
     els.downloadDocx?.addEventListener('click', downloadDocx);
     els.downloadPdf?.addEventListener('click', downloadPdf);
+
+    // ESC to close modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !els.modal?.classList.contains('hidden')) {
+        hideChoiceModal();
+      }
+    });
   }
 
   /* ============================================
-     EXPORT DOCX — pakai Blob HTML (mime application/msword)
-     Word / LibreOffice bisa buka langsung.
+     EXPORT DOCX
      ============================================ */
   function downloadDocx() {
     if (!els.content) return;
     try {
       const htmlContent = els.content.innerHTML;
-
-      // Bersihkan tag docx-preview jika ada
       const cleanContent = htmlContent
         .replace(/class="docx-[^"]*"/g, '')
         .replace(/<div class="docx-section">/g, '<div>')
@@ -342,7 +408,6 @@ DA.cvBuilder = (function () {
 <w:WordDocument>
 <w:View>Print</w:View>
 <w:Zoom>100</w:Zoom>
-<w:DoNotOptimizeForBrowser/>
 </w:WordDocument>
 </xml>
 <![endif]-->
@@ -355,13 +420,10 @@ ${cleanContent}
 </body>
 </html>`;
 
-      // Prefix BOM agar Word detect UTF-8
-      const blob = new Blob(['\ufeff', fullHtml], {
-        type: 'application/msword'
-      });
+      const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
       const name = (currentTemplate?.name || 'CV').replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now() + '.doc';
       downloadBlob(blob, name);
-      DA.toast.success('CV diunduh sebagai .doc — buka di Word, bisa Save As .docx');
+      DA.toast.success('CV diunduh sebagai .doc — buka di Word');
     } catch (err) {
       console.error('[CV] DOCX export error:', err);
       DA.toast.error('Gagal export DOCX: ' + err.message);
@@ -369,7 +431,7 @@ ${cleanContent}
   }
 
   /* ============================================
-     EXPORT PDF — html2canvas + jsPDF (clone visible)
+     EXPORT PDF — html2canvas + jsPDF
      ============================================ */
   async function downloadPdf() {
     if (!els.paper) return;
@@ -380,58 +442,38 @@ ${cleanContent}
 
     DA.toast.info('Menyiapkan PDF...', 2000);
 
-    // Clone paper, taruh di viewport (di atas layar user) supaya html2canvas bisa capture
     const clone = els.paper.cloneNode(true);
     clone.id = 'cvPaperClone';
     clone.style.cssText = `
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: 794px;
-      min-height: 1123px;
-      background: #ffffff;
-      color: #1e293b;
-      padding: 57px 76px;
-      box-shadow: none;
-      border-radius: 0;
-      z-index: 99999;
-      margin: 0;
-      transform: none;
+      position: fixed; left: 0; top: 0;
+      width: 794px; min-height: 1123px;
+      background: #ffffff; color: #1e293b;
+      padding: 57px 76px; box-shadow: none;
+      border-radius: 0; z-index: 99999; margin: 0;
+      transform: none; visibility: hidden;
     `;
-
-    // Sembunyikan dulu clone, tampilkan cuma 1 frame untuk capture
-    clone.style.visibility = 'hidden';
     document.body.appendChild(clone);
 
     try {
       await new Promise((r) => setTimeout(r, 100));
 
-      // Pastikan editor tidak "nyangkut" di dalam hidden container
-      // (dengan meng-clone, kita bypass semua constraint parent)
       const canvas = await html2canvas(clone, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        logging: false,
-        windowWidth: 794,
-        windowHeight: clone.scrollHeight,
-        width: 794,
-        height: clone.scrollHeight,
+        scale: 2, useCORS: true, allowTaint: false,
+        backgroundColor: '#ffffff', logging: false,
+        windowWidth: 794, windowHeight: clone.scrollHeight,
+        width: 794, height: clone.scrollHeight,
       });
 
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-      const pdfW = pdf.internal.pageSize.getWidth();   // 210mm
-      const pdfH = pdf.internal.pageSize.getHeight();  // 297mm
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const imgWmm = pdfW;
       const imgHmm = (canvas.height * imgWmm) / canvas.width;
 
-      // Multi-page jika konten lebih panjang dari 1 halaman
-      let y = 0;
-      let pageNum = 0;
+      let y = 0, pageNum = 0;
       while (y < imgHmm) {
         if (pageNum > 0) pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 0, -y, imgWmm, imgHmm, undefined, 'FAST');
