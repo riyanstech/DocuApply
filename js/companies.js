@@ -1,6 +1,7 @@
 /* =====================================================
-   DocuApply — Company Directory v2
-   Support multi-method apply: email & link (dengan subject)
+   DocuApply — Company Directory v3
+   - Support override data dari Admin Dashboard
+   - Multi-method apply: email & link (dengan subject)
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -39,6 +40,9 @@ DA.companies = (function () {
 
     bindEvents();
     loadData();
+
+    // Re-render saat admin update
+    window.addEventListener('companies:updated', loadData);
   }
 
   /* ============================================
@@ -46,25 +50,18 @@ DA.companies = (function () {
      ============================================ */
   async function loadData() {
     try {
+      // Prioritas: override dari admin
+      const override = DA.storage.get('companiesOverride');
+      if (override && override.companies) {
+        applyData(override, null);
+        return;
+      }
+
+      // Fallback: fetch dari server
       const res = await fetch('companies/companies.json?t=' + Date.now());
       if (!res.ok) throw new Error('companies.json tidak ditemukan');
       const data = await res.json();
-
-      allCompanies = (data.companies || []).sort((a, b) =>
-        a.name.localeCompare(b.name, 'id')
-      );
-      allCategories = data.categories || [{ id: 'all', name: 'Semua', icon: 'fa-globe' }];
-
-      if (els.statsTotal) els.statsTotal.textContent = allCompanies.length;
-      if (els.disclaimer && data.disclaimer) {
-        els.disclaimer.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i>${escapeHtml(data.disclaimer)}`;
-      }
-
-      renderCategories();
-      renderCompanies();
-      updateFavoritesCount();
-
-      els.loading?.classList.add('hidden');
+      applyData(data, data);
     } catch (err) {
       console.warn('[Companies] Gagal memuat:', err);
       els.loading?.classList.add('hidden');
@@ -80,6 +77,28 @@ DA.companies = (function () {
           </p>`;
       }
     }
+  }
+
+  function applyData(source, originalData) {
+    allCompanies = (source.companies || []).sort((a, b) =>
+      a.name.localeCompare(b.name, 'id')
+    );
+    allCategories = source.categories ||
+      (originalData && originalData.categories) ||
+      [{ id: 'all', name: 'Semua', icon: 'fa-globe' }];
+
+    if (els.statsTotal) els.statsTotal.textContent = allCompanies.length;
+    if (els.disclaimer && (source.disclaimer || (originalData && originalData.disclaimer))) {
+      const txt = source.disclaimer || originalData.disclaimer;
+      els.disclaimer.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i>${escapeHtml(txt)}`;
+    }
+
+    renderCategories();
+    renderCompanies();
+    updateFavoritesCount();
+
+    els.loading?.classList.add('hidden');
+    els.empty?.classList.add('hidden');
   }
 
   /* ============================================
@@ -140,7 +159,6 @@ DA.companies = (function () {
       if (showFavoritesOnly && !favs.includes(c.id)) return false;
       if (activeCategory !== 'all' && c.category !== activeCategory) return false;
       if (q) {
-        // Cari di name, location, category, dan semua apply value
         const applies = (c.apply || []).map((a) => `${a.value} ${a.subject || ''}`).join(' ');
         const hay = `${c.name} ${c.location || ''} ${c.category || ''} ${applies}`.toLowerCase();
         if (!hay.includes(q)) return false;
@@ -174,7 +192,7 @@ DA.companies = (function () {
       card.className = 'cp-card group';
 
       const applies = c.apply || [];
-      const applyHtml = applies.map((a, idx) => renderApplyItem(a, c, idx)).join('');
+      const applyHtml = applies.map((a) => renderApplyItem(a, c)).join('');
 
       card.innerHTML = `
         <div class="cp-card-header">
@@ -198,7 +216,7 @@ DA.companies = (function () {
         </div>
       `;
 
-      // Fav
+      // Favorites
       card.querySelector('[data-fav]').addEventListener('click', (e) => {
         e.stopPropagation();
         const nowFav = toggleFavorite(c.id);
@@ -209,20 +227,18 @@ DA.companies = (function () {
         DA.toast.success(nowFav ? 'Ditambahkan ke favorit' : 'Dihapus dari favorit', 1500);
       });
 
-      // Bind apply actions
+      // Apply actions
       card.querySelectorAll('[data-copy-email]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const email = btn.dataset.copyEmail;
-          copyText(email, `Email ${c.name}`);
+          copyText(btn.dataset.copyEmail, `Email ${c.name}`);
         });
       });
 
       card.querySelectorAll('[data-copy-subject]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const subj = btn.dataset.copySubject;
-          copyText(subj, `Subject ${c.name}`);
+          copyText(btn.dataset.copySubject, `Subject ${c.name}`);
         });
       });
 
@@ -239,8 +255,7 @@ DA.companies = (function () {
       card.querySelectorAll('[data-open-link]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const url = btn.dataset.openLink;
-          window.open(url, '_blank', 'noopener');
+          window.open(btn.dataset.openLink, '_blank', 'noopener');
         });
       });
 
@@ -251,7 +266,7 @@ DA.companies = (function () {
   /* ============================================
      RENDER SINGLE APPLY ITEM
      ============================================ */
-  function renderApplyItem(a, company, idx) {
+  function renderApplyItem(a, company) {
     const isEmail = a.type === 'email';
     const typeIcon = isEmail ? 'fa-envelope' : 'fa-globe';
     const typeLabel = isEmail ? 'EMAIL' : 'WEB';
@@ -284,7 +299,6 @@ DA.companies = (function () {
         </div>
       `;
     } else {
-      // Link
       const shortUrl = shortenUrl(a.value);
       return `
         <div class="cp-apply-item ${typeClass}">
