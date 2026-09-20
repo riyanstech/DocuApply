@@ -937,53 +937,136 @@
   </div>
 
   <div class="admin-body">
+
+    <!-- CV -->
     <div data-admin-panel="cv">
       <div class="admin-hint">
         <i class="fa-solid fa-info-circle mr-1"></i>
-        Kelola daftar template CV. Untuk upload file <code>.docx</code> baru, taruh di folder
-        <code>cv-templates/</code> di project lalu tambahkan nama file di sini.
+        Upload file <code>.docx</code> langsung (butuh GitHub setup) atau tambah metadata manual.
       </div>
       <div class="admin-panel-head">
         <h3>Template CV</h3>
-        <button id="adminCvAddBtn" class="admin-btn admin-btn-primary"><i class="fa-solid fa-plus"></i> Tambah</button>
-        <button id="adminCvReset" class="admin-btn admin-btn-secondary"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        <button id="adminCvUploadBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload .docx
+        </button>
+        <button id="adminCvAddBtn" class="admin-btn admin-btn-secondary">
+          <i class="fa-solid fa-plus"></i> Tambah Metadata
+        </button>
+        <button id="adminCvReset" class="admin-btn admin-btn-secondary">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
+        <input type="file" id="adminCvUploadInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden">
       </div>
       <div id="adminCvList"></div>
     </div>
 
+    <!-- COMPANIES -->
     <div data-admin-panel="companies" class="hidden">
       <div class="admin-hint">
         <i class="fa-solid fa-info-circle mr-1"></i>
-        Kelola daftar email & link perusahaan. Bisa multi-metode apply per perusahaan.
+        Perubahan langsung tersimpan ke GitHub → sync otomatis ke semua device.
       </div>
       <div class="admin-panel-head">
         <h3>Daftar Perusahaan</h3>
-        <button id="adminCompaniesAddBtn" class="admin-btn admin-btn-primary"><i class="fa-solid fa-plus"></i> Tambah</button>
-        <button id="adminCompaniesReset" class="admin-btn admin-btn-secondary"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        <button id="adminCompaniesAddBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-plus"></i> Tambah
+        </button>
+        <button id="adminCompaniesSaveBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Save ke GitHub
+        </button>
+        <button id="adminCompaniesReset" class="admin-btn admin-btn-secondary">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
       </div>
       <div id="adminCompaniesList"></div>
     </div>
 
+    <!-- EMAIL -->
     <div data-admin-panel="email" class="hidden">
       <div class="admin-hint">
         <i class="fa-solid fa-info-circle mr-1"></i>
-        Update template email lamaran. Gunakan placeholder <code>[Kurung Siku]</code> untuk data yang bisa diisi cepat user.
+        Gunakan placeholder <code>[Kurung Siku]</code> untuk data yang bisa diisi cepat user.
       </div>
       <div class="admin-panel-head">
         <h3>Template Email</h3>
-        <button id="adminEmailAddBtn" class="admin-btn admin-btn-primary"><i class="fa-solid fa-plus"></i> Tambah</button>
-        <button id="adminEmailReset" class="admin-btn admin-btn-secondary"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        <button id="adminEmailAddBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-plus"></i> Tambah
+        </button>
+        <button id="adminEmailSaveBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Save ke GitHub
+        </button>
+        <button id="adminEmailReset" class="admin-btn admin-btn-secondary">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
       </div>
       <div id="adminEmailList"></div>
     </div>
 
+    <!-- SETTINGS -->
     <div data-admin-panel="settings" class="hidden">
       <div class="admin-panel-head">
         <h3>Pengaturan Admin</h3>
       </div>
-      <div class="admin-hint">
+
+      <div class="gh-section">
+        <div class="gh-section-head">
+          <i class="fa-brands fa-github"></i>
+          <div>
+            <h4>Konfigurasi GitHub</h4>
+            <p>Wajib untuk upload file & sync data antar device</p>
+          </div>
+        </div>
+
+        <div id="ghStatus" class="gh-status gh-status-warn">
+          <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+          <span>Belum dikonfigurasi</span>
+        </div>
+
+        <div class="gh-steps">
+          <p class="gh-steps-title">📋 Cara membuat token:</p>
+          <ol class="gh-steps-list">
+            <li>Buka <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a></li>
+            <li>Klik <strong>Generate new token (classic)</strong></li>
+            <li>Centang scope <code>repo</code> (Full control)</li>
+            <li>Generate → copy token (<code>ghp_...</code>)</li>
+            <li>Tempel di field "Token" di bawah</li>
+          </ol>
+        </div>
+
+        <div class="admin-form-group">
+          <label class="admin-form-label">GitHub Username / Owner</label>
+          <input type="text" id="ghOwner" class="admin-input" placeholder="contoh: riyantech">
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Repository Name</label>
+          <input type="text" id="ghRepo" class="admin-input" placeholder="contoh: DocuApply">
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Branch</label>
+          <input type="text" id="ghBranch" class="admin-input" placeholder="main" value="main">
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Personal Access Token</label>
+          <input type="password" id="ghToken" class="admin-input" placeholder="ghp_xxxxxxxxxxxxxxxxxx" autocomplete="off">
+          <p class="text-[10px] text-slate-400 mt-1">Token disimpan di browser Anda. Jangan share ke orang lain.</p>
+        </div>
+
+        <div class="flex gap-2 flex-wrap mt-3">
+          <button id="ghSaveBtn" class="admin-btn admin-btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan & Test
+          </button>
+          <button id="ghTestBtn" class="admin-btn admin-btn-secondary">
+            <i class="fa-solid fa-plug"></i> Test Koneksi
+          </button>
+          <button id="ghClearBtn" class="admin-btn admin-btn-danger">
+            <i class="fa-solid fa-trash-can"></i> Hapus Config
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-hint mt-6">
         <i class="fa-solid fa-lock mr-1"></i>
-        <strong>Ganti Password Admin</strong> — password default <code>admin123</code>, ubah demi keamanan.
+        <strong>Ganti Password Admin</strong> — default <code>admin123</code>.
       </div>
       <div class="admin-form-group">
         <label class="admin-form-label">Password Lama</label>
@@ -996,20 +1079,22 @@
       <button id="adminPassChangeBtn" class="admin-btn admin-btn-primary mb-6">
         <i class="fa-solid fa-key"></i> Ganti Password
       </button>
+
       <div class="admin-hint mt-6">
         <i class="fa-solid fa-database mr-1"></i>
-        <strong>Backup / Restore Data</strong> — data admin tersimpan di browser Anda. Export untuk backup, Import untuk restore.
+        <strong>Backup Config</strong> — simpan konfigurasi GitHub untuk dipindah ke device lain.
       </div>
       <div class="flex gap-2 flex-wrap">
         <button id="adminExportBtn" class="admin-btn admin-btn-primary">
-          <i class="fa-solid fa-download"></i> Export Data (JSON)
+          <i class="fa-solid fa-download"></i> Export Config
         </button>
         <button id="adminImportBtn" class="admin-btn admin-btn-secondary">
-          <i class="fa-solid fa-upload"></i> Import Data
+          <i class="fa-solid fa-upload"></i> Import Config
         </button>
         <input type="file" id="adminImportInput" accept="application/json" class="hidden">
       </div>
     </div>
+
   </div>
 </div>
 
@@ -1047,6 +1132,7 @@
 
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/github.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/camera.js"></script>
 <script src="js/pdf-editor.js"></script>
