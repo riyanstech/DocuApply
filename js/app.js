@@ -12,6 +12,7 @@
     image2pdf: document.getElementById('view-image2pdf'),
     split:     document.getElementById('view-split'),
     photo:     document.getElementById('view-photo'),
+    cv:        document.getElementById('view-cv'),
     email:     document.getElementById('view-email'),
   };
   const ALL_NAV = document.querySelectorAll('[data-tab]');
@@ -21,13 +22,11 @@
 
     Object.entries(VIEWS).forEach(([k, el]) => {
       if (!el) return;
-      // Hanya toggle 'hidden' — display: flex sudah statis di HTML
       el.classList.toggle('hidden', k !== name);
     });
 
     ALL_NAV.forEach((btn) => {
-      const active = btn.dataset.tab === name;
-      btn.classList.toggle('active', active);
+      btn.classList.toggle('active', btn.dataset.tab === name);
     });
 
     DA.storage.set('lastTab', name);
@@ -54,6 +53,7 @@
     if (DA.splitPdf)     DA.splitPdf.init();
     if (DA.email)        DA.email.init();
     if (DA.photoStudio)  DA.photoStudio.init();
+    if (DA.cvBuilder)    DA.cvBuilder.init();
 
     const last = DA.storage.get('lastTab', 'editor');
     switchTab(VIEWS[last] ? last : 'editor');
