@@ -1,0 +1,36 @@
+{
+  "templates": [
+    {
+      "id": "cv-simple",
+      "name": "CV Simple",
+      "description": "Format standar ATS-friendly. Cocok untuk semua posisi dan fresh graduate.",
+      "file": "cv-simple.docx",
+      "icon": "fa-file-lines",
+      "color": "blue"
+    },
+    {
+      "id": "cv-modern",
+      "name": "CV Modern",
+      "description": "Desain modern dengan aksen warna. Cocok untuk startup dan tech company.",
+      "file": "cv-modern.docx",
+      "icon": "fa-file-invoice",
+      "color": "purple"
+    },
+    {
+      "id": "cv-professional",
+      "name": "CV Professional",
+      "description": "Layout korporat formal. Cocok untuk perusahaan besar dan BUMN.",
+      "file": "cv-professional.docx",
+      "icon": "fa-briefcase",
+      "color": "emerald"
+    },
+    {
+      "id": "cv-creative",
+      "name": "CV Creative",
+      "description": "Desain kreatif untuk posisi design, marketing, atau content creator.",
+      "file": "cv-creative.docx",
+      "icon": "fa-palette",
+      "color": "amber"
+    }
+  ]
+}
