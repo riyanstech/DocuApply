@@ -13,6 +13,7 @@
     split:     document.getElementById('view-split'),
     photo:     document.getElementById('view-photo'),
     cv:        document.getElementById('view-cv'),
+    companies: document.getElementById('view-companies'),
     email:     document.getElementById('view-email'),
   };
   const ALL_NAV = document.querySelectorAll('[data-tab]');
@@ -54,6 +55,7 @@
     if (DA.email)        DA.email.init();
     if (DA.photoStudio)  DA.photoStudio.init();
     if (DA.cvBuilder)    DA.cvBuilder.init();
+    if (DA.companies)    DA.companies.init();
 
     const last = DA.storage.get('lastTab', 'editor');
     switchTab(VIEWS[last] ? last : 'editor');
