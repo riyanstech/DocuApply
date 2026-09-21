@@ -1,5 +1,6 @@
 /* =====================================================
    DocuApply — PDF Editor (Merge + Page operations)
+   FIX: embedJpg base64 extraction + mobile settings
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -33,6 +34,7 @@ DA.pdfEditor = (function () {
       editorUploadBtn: document.getElementById('editorUploadBtn'),
       editorCameraBtn: document.getElementById('editorCameraBtn'),
       editorMergeBtn: document.getElementById('editorMergeBtn'),
+      editorSettingsBtn: document.getElementById('editorSettingsBtn'),
       editorSettingsSheet: document.getElementById('editorSettingsSheet'),
       editorSheetClose: document.getElementById('editorSheetClose'),
       editorBackdrop: document.getElementById('editorBackdrop'),
@@ -71,24 +73,18 @@ DA.pdfEditor = (function () {
     els.editorCameraBtn?.addEventListener('click', () => DA.camera.open(addCapturedImage));
     els.editorMergeBtn?.addEventListener('click', mergeAndDownload);
 
-    // Mobile sheet open/close
-    els.editorSettingsSheet && (window.openEditorSheet = () => {
-      els.editorSettingsSheet.classList.add('open');
+    // Mobile settings sheet
+    els.editorSettingsBtn?.addEventListener('click', () => {
+      els.editorSettingsSheet?.classList.add('open');
       els.editorBackdrop?.classList.add('show');
     });
-
-    // Also allow long-press on toolbar? No — just add "Simpan" button for merge.
-    // Sheet is opened by... actually no visible button. We'll auto-open when
-    // user needs settings. But we can also add: tapping "Simpan PDF" opens sheet?
-    // No — Simpan = merge. So settings is opened via a small gear we add on the toolbar.
-
     els.editorSheetClose?.addEventListener('click', () => {
-      els.editorSettingsSheet.classList.remove('open');
+      els.editorSettingsSheet?.classList.remove('open');
       els.editorBackdrop?.classList.remove('show');
     });
     els.editorBackdrop?.addEventListener('click', () => {
-      els.editorSettingsSheet.classList.remove('open');
-      els.editorBackdrop.classList.remove('show');
+      els.editorSettingsSheet?.classList.remove('open');
+      els.editorBackdrop?.classList.remove('show');
     });
 
     // Mobile compression sync
@@ -165,7 +161,6 @@ DA.pdfEditor = (function () {
     if (els.undoBtn) els.undoBtn.disabled = !undoStack.length;
     if (els.redoBtn) els.redoBtn.disabled = !redoStack.length;
     if (els.pageCountBadge) els.pageCountBadge.textContent = `${pages.length} halaman`;
-    // Sync mobile merge button
     const disabled = !pages.length;
     if (els.mergeBtn) els.mergeBtn.disabled = disabled;
     if (els.editorMergeBtn) els.editorMergeBtn.disabled = disabled;
@@ -331,7 +326,8 @@ DA.pdfEditor = (function () {
           const img = await loadImage(p.originalData);
           const canvas = rasterize(img);
           const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          const embed = await outDoc.embedJpg(dataUrl);
+          const base64 = dataUrl.split(',')[1]; // FIX: extract base64
+          const embed = await outDoc.embedJpg(base64);
           const page = outDoc.addPage([canvas.width, canvas.height]);
           page.drawImage(embed, { x: 0, y: 0, width: canvas.width, height: canvas.height });
           if (p.rotation) page.setRotation(degrees(p.rotation));
@@ -345,7 +341,8 @@ DA.pdfEditor = (function () {
             canvas.height = viewport.height;
             await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             const dataUrl = canvas.toDataURL('image/jpeg', quality);
-            const embed = await outDoc.embedJpg(dataUrl);
+            const base64 = dataUrl.split(',')[1]; // FIX: extract base64
+            const embed = await outDoc.embedJpg(base64);
             const page = outDoc.addPage([canvas.width, canvas.height]);
             page.drawImage(embed, { x: 0, y: 0, width: canvas.width, height: canvas.height });
             if (p.rotation) page.setRotation(degrees(p.rotation));
