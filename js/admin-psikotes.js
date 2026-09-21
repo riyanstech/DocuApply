@@ -1,8 +1,10 @@
 /* =====================================================
-   DocuApply — Admin: Psikotes Manager v2
-   - CRUD paket, section, soal
-   - Support section type: worksheet (print & kerjakan manual)
-   - Bulk upload gambar untuk worksheet
+   DocuApply — Admin: Psikotes Manager v3
+   Fitur baru:
+   - Bulk Import CSV (banyak soal sekaligus)
+   - Export/Import paket JSON (untuk share ke admin lain)
+   - Choice modal: Tambah Manual / Bulk Import
+   - Export paket lengkap dari halaman list
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -108,9 +110,7 @@ DA.adminPsikotes = (function () {
       });
     });
 
-    if (els.backBtn) {
-      els.backBtn.classList.toggle('hidden', nav.view === 'list');
-    }
+    if (els.backBtn) els.backBtn.classList.toggle('hidden', nav.view === 'list');
   }
 
   /* ============================================
@@ -152,6 +152,7 @@ DA.adminPsikotes = (function () {
             <button class="admin-btn-icon primary" data-act="open" title="Kelola"><i class="fa-solid fa-folder-open"></i></button>
             <button class="admin-btn-icon" data-act="edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
             <button class="admin-btn-icon warn" data-act="dup" title="Duplikat"><i class="fa-regular fa-clone"></i></button>
+            <button class="admin-btn-icon" data-act="export" title="Export JSON"><i class="fa-solid fa-file-export"></i></button>
             <button class="admin-btn-icon danger" data-act="del" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
           </div>
         </div>`;
@@ -159,13 +160,27 @@ DA.adminPsikotes = (function () {
 
     els.container.querySelectorAll('.admin-row').forEach((row) => {
       const id = row.dataset.id;
-      row.querySelector('[data-act="open"]').addEventListener('click', () => {
+      row.querySelector('[data-act="open"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
         nav = { view: 'pkg', pkgId: id, secId: null };
         render();
       });
-      row.querySelector('[data-act="edit"]').addEventListener('click', () => editPackage(id));
-      row.querySelector('[data-act="dup"]').addEventListener('click', () => dupPackage(id));
-      row.querySelector('[data-act="del"]').addEventListener('click', () => delPackage(id));
+      row.querySelector('[data-act="edit"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        editPackage(id);
+      });
+      row.querySelector('[data-act="dup"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dupPackage(id);
+      });
+      row.querySelector('[data-act="export"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        exportPackageJson(id);
+      });
+      row.querySelector('[data-act="del"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        delPackage(id);
+      });
     });
   }
 
@@ -211,13 +226,20 @@ DA.adminPsikotes = (function () {
 
     els.container.querySelectorAll('.admin-row').forEach((row) => {
       const id = row.dataset.id;
-      row.querySelector('[data-act="open"]').addEventListener('click', () => {
+      row.querySelector('[data-act="open"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
         nav.view = 'sec';
         nav.secId = id;
         render();
       });
-      row.querySelector('[data-act="edit"]').addEventListener('click', () => editSection(id));
-      row.querySelector('[data-act="del"]').addEventListener('click', () => delSection(id));
+      row.querySelector('[data-act="edit"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        editSection(id);
+      });
+      row.querySelector('[data-act="del"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        delSection(id);
+      });
     });
   }
 
@@ -234,11 +256,8 @@ DA.adminPsikotes = (function () {
       ? '<i class="fa-solid fa-plus"></i> Tambah Halaman'
       : '<i class="fa-solid fa-plus"></i> Tambah Soal';
 
-    if (isWs) {
-      renderWorksheetPages(sec);
-    } else {
-      renderInteractiveQuestions(sec);
-    }
+    if (isWs) renderWorksheetPages(sec);
+    else renderInteractiveQuestions(sec);
   }
 
   function renderWorksheetPages(sec) {
@@ -252,7 +271,6 @@ DA.adminPsikotes = (function () {
       return;
     }
 
-    const isKepribadian = false; // worksheet tidak pakai kepribadian
     els.container.innerHTML = `
       <div class="apk-ws-grid">
         ${sec.questions.map((q, i) => `
@@ -276,9 +294,9 @@ DA.adminPsikotes = (function () {
 
     els.container.querySelectorAll('.apk-ws-card').forEach((card) => {
       const id = card.dataset.id;
-      card.querySelector('[data-act="edit"]').addEventListener('click', () => editWorksheetPage(id));
-      card.querySelector('[data-act="dup"]').addEventListener('click', () => dupWorksheetPage(id));
-      card.querySelector('[data-act="del"]').addEventListener('click', () => delWorksheetPage(id));
+      card.querySelector('[data-act="edit"]')?.addEventListener('click', () => editWorksheetPage(id));
+      card.querySelector('[data-act="dup"]')?.addEventListener('click', () => dupWorksheetPage(id));
+      card.querySelector('[data-act="del"]')?.addEventListener('click', () => delWorksheetPage(id));
     });
   }
 
@@ -288,6 +306,7 @@ DA.adminPsikotes = (function () {
         <div class="admin-empty">
           <i class="fa-solid fa-circle-question"></i>
           <div>Belum ada soal di bagian ini</div>
+          <p class="text-xs mt-1">Klik "Tambah Soal" untuk membuat manual<br>atau import banyak sekaligus via CSV</p>
         </div>`;
       return;
     }
@@ -298,7 +317,6 @@ DA.adminPsikotes = (function () {
       let meta = '';
       if (q.type === 'essay') meta = '<span class="admin-chip"><i class="fa-solid fa-pen-fancy"></i> Esai</span>';
       else {
-        const correctOpt = (q.options || []).find((o) => o.id === q.correct);
         meta = `<span class="admin-chip"><i class="fa-solid fa-list"></i> ${(q.options || []).length} opsi</span>`;
         if (!isKepribadian && q.correct) {
           meta += `<span class="admin-chip admin-chip-correct"><i class="fa-solid fa-check"></i> ${escapeHtml(q.correct)}</span>`;
@@ -326,9 +344,9 @@ DA.adminPsikotes = (function () {
 
     els.container.querySelectorAll('.admin-row').forEach((row) => {
       const id = row.dataset.id;
-      row.querySelector('[data-act="edit"]').addEventListener('click', () => editQuestion(id));
-      row.querySelector('[data-act="dup"]').addEventListener('click', () => dupQuestion(id));
-      row.querySelector('[data-act="del"]').addEventListener('click', () => delQuestion(id));
+      row.querySelector('[data-act="edit"]')?.addEventListener('click', () => editQuestion(id));
+      row.querySelector('[data-act="dup"]')?.addEventListener('click', () => dupQuestion(id));
+      row.querySelector('[data-act="del"]')?.addEventListener('click', () => delQuestion(id));
     });
   }
 
@@ -457,6 +475,152 @@ DA.adminPsikotes = (function () {
   }
 
   /* ============================================
+     EXPORT / IMPORT PACKAGE JSON
+     ============================================ */
+  function exportPackageJson(id) {
+    const pkg = data.packages.find((p) => p.id === id);
+    if (!pkg) return;
+    const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
+    DA.utils.downloadBlob(blob, `psikotes-${pkg.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
+    DA.toast.success('Paket berhasil diexport');
+  }
+
+  function importPackageJson() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = (e) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const pkg = JSON.parse(ev.target.result);
+          if (!pkg.name) throw new Error('File bukan paket psikotes yang valid');
+
+          pkg.id = uid();
+          (pkg.sections || []).forEach((s) => {
+            s.id = uid();
+            (s.questions || []).forEach((q) => { q.id = uid(); });
+          });
+          pkg.name = pkg.name + ' (Import)';
+
+          data.packages.push(pkg);
+          save();
+          render();
+          DA.toast.success('Paket berhasil diimport!');
+        } catch (err) {
+          DA.toast.error('Gagal import: ' + err.message);
+        }
+      };
+      reader.readAsText(f);
+    };
+    input.click();
+  }
+
+  /* ============================================
+     BULK IMPORT CSV
+     ============================================ */
+  function bulkImportCsv() {
+    const pkg = data.packages.find((p) => p.id === nav.pkgId);
+    const sec = pkg?.sections?.find((s) => s.id === nav.secId);
+    if (!sec) return;
+
+    DA.admin.openModal({
+      icon: 'fa-file-csv',
+      title: 'Bulk Import Soal (CSV)',
+      subtitle: sec.name,
+      bodyHtml: `
+        <div class="admin-hint">
+          Format CSV: <code>pertanyaan,opsiA,opsiB,opsiC,opsiD,jawaban</code><br>
+          <strong>Pisahkan dengan koma.</strong> Baris pertama bisa header (opsional).<br>
+          Jawaban: A / B / C / D (huruf besar).
+        </div>
+        <div class="form-field">
+          <label class="form-field-label">Paste CSV atau Upload File</label>
+          <textarea id="csvInput" class="form-field-input tall" placeholder="Ibu kota Indonesia?,Jakarta,Bandung,Surabaya,Medan,A
+2 + 3 = ?,4,5,6,7,B"></textarea>
+        </div>
+        <div class="form-field">
+          <label class="form-field-label">Atau Upload File CSV</label>
+          <input type="file" id="csvFile" accept=".csv,.txt,text/csv" class="form-field-input">
+        </div>
+      `,
+      submitText: 'Import',
+      onSubmit: async () => {
+        const raw = document.getElementById('csvInput')?.value || '';
+        if (!raw.trim()) return DA.toast.error('Isi CSV dulu');
+
+        const lines = raw.split('\n').map((l) => l.trim()).filter((l) => l);
+        if (!lines.length) return DA.toast.error('CSV kosong');
+
+        let startIdx = 0;
+        if (/pertanyaan|question|soal/i.test(lines[0])) startIdx = 1;
+
+        const newQuestions = [];
+        const errors = [];
+
+        for (let i = startIdx; i < lines.length; i++) {
+          const cols = lines[i].split(',').map((c) => c.trim());
+          if (cols.length < 6) {
+            errors.push(`Baris ${i + 1}: kolom kurang`);
+            continue;
+          }
+          const [qText, a, b, c, d, correct] = cols;
+          const correctLetter = correct.toUpperCase();
+          if (!['A', 'B', 'C', 'D'].includes(correctLetter)) {
+            errors.push(`Baris ${i + 1}: jawaban harus A/B/C/D`);
+            continue;
+          }
+          newQuestions.push({
+            id: uid(),
+            type: 'mc',
+            text: qText,
+            image: null,
+            options: [
+              { id: 'A', text: a, image: null },
+              { id: 'B', text: b, image: null },
+              { id: 'C', text: c, image: null },
+              { id: 'D', text: d, image: null },
+            ],
+            correct: correctLetter,
+            modelAnswer: '',
+          });
+        }
+
+        if (!newQuestions.length) {
+          DA.toast.error('Tidak ada soal valid. Cek format CSV.');
+          return;
+        }
+
+        sec.questions = sec.questions || [];
+        sec.questions.push(...newQuestions);
+        save();
+        DA.admin.closeModal();
+        render();
+
+        let msg = `✅ ${newQuestions.length} soal berhasil diimport`;
+        if (errors.length) msg += ` · ${errors.length} baris gagal`;
+        DA.toast.success(msg, 5000);
+        if (errors.length) console.warn('[CSV Import] Errors:', errors);
+      },
+    });
+
+    setTimeout(() => {
+      document.getElementById('csvFile')?.addEventListener('change', (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const ta = document.getElementById('csvInput');
+          if (ta) ta.value = ev.target.result;
+        };
+        reader.readAsText(f);
+      });
+    }, 60);
+  }
+
+  /* ============================================
      SECTION MODAL
      ============================================ */
   function sectionFormHtml(s = {}) {
@@ -470,7 +634,7 @@ DA.adminPsikotes = (function () {
         <select id="secType" class="form-field-input">
           ${TYPES.map((t) => `<option value="${t.id}" ${s.type === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}
         </select>
-        <p class="form-field-hint" id="secTypeHint">Pilih <strong>Worksheet (Print)</strong> untuk tes seperti Kraepelin, Wartegg, Menggambar, Logika Gambar, atau Ketelitian.</p>
+        <p class="form-field-hint">Pilih <strong>Worksheet (Print)</strong> untuk tes seperti Kraepelin, Wartegg, Menggambar, Logika Gambar, atau Ketelitian.</p>
       </div>
       <div class="form-field">
         <label class="form-field-label">Durasi Bagian (menit)</label>
@@ -545,7 +709,7 @@ DA.adminPsikotes = (function () {
   }
 
   /* ============================================
-     WORKSHEET PAGE (BARU)
+     WORKSHEET PAGE MODAL
      ============================================ */
   function worksheetPageFormHtml(q = {}) {
     return `
@@ -578,7 +742,6 @@ DA.adminPsikotes = (function () {
 
   function bindWorksheetPageForm(q) {
     let imgData = q.image || '';
-
     const imgBox = document.getElementById('wsImgBox');
     const imgInput = document.getElementById('wsImgInput');
 
@@ -856,7 +1019,6 @@ DA.adminPsikotes = (function () {
       renderOptions();
     });
 
-    // Question image
     const qImgInput = document.getElementById('qImgInput');
     const qImgBox = document.getElementById('qImgBox');
 
@@ -1027,14 +1189,108 @@ DA.adminPsikotes = (function () {
   }
 
   function handleAddClick() {
-    if (nav.view === 'list') addPackage();
-    else if (nav.view === 'pkg') addSection();
-    else if (nav.view === 'sec') {
+    if (nav.view === 'list') {
+      openAddChoiceModal();
+    } else if (nav.view === 'pkg') {
+      addSection();
+    } else if (nav.view === 'sec') {
       const pkg = data.packages.find((p) => p.id === nav.pkgId);
       const sec = pkg?.sections?.find((s) => s.id === nav.secId);
       if (sec?.type === 'worksheet') addWorksheetPage();
-      else addQuestion();
+      else openAddQuestionChoiceModal();
     }
+  }
+
+  function openAddChoiceModal() {
+    DA.admin.openModal({
+      icon: 'fa-plus',
+      title: 'Tambah Paket',
+      subtitle: 'Pilih cara menambahkan paket',
+      bodyHtml: `
+        <button class="cv-choice-option" id="apkAddManual" style="margin-bottom:8px;">
+          <div class="cv-choice-option-icon bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600">
+            <i class="fa-solid fa-pen-to-square text-lg"></i>
+          </div>
+          <div class="flex-1 min-w-0 text-left">
+            <div class="cv-choice-option-title">Tambah Manual</div>
+            <div class="cv-choice-option-desc">Buat paket baru dari awal</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-slate-300"></i>
+        </button>
+        <button class="cv-choice-option" id="apkAddJson">
+          <div class="cv-choice-option-icon bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600">
+            <i class="fa-solid fa-file-import text-lg"></i>
+          </div>
+          <div class="flex-1 min-w-0 text-left">
+            <div class="cv-choice-option-title">Import dari JSON</div>
+            <div class="cv-choice-option-desc">Upload file paket .json</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-slate-300"></i>
+        </button>
+      `,
+      submitText: 'Tutup',
+      onSubmit: () => { DA.admin.closeModal(); },
+    });
+    setTimeout(() => {
+      const foot = document.querySelector('#adminModal .admin-modal-foot');
+      if (foot) foot.style.display = 'none';
+      document.getElementById('apkAddManual')?.addEventListener('click', () => {
+        if (foot) foot.style.display = '';
+        DA.admin.closeModal();
+        setTimeout(addPackage, 100);
+      });
+      document.getElementById('apkAddJson')?.addEventListener('click', () => {
+        if (foot) foot.style.display = '';
+        DA.admin.closeModal();
+        importPackageJson();
+      });
+    }, 60);
+  }
+
+  function openAddQuestionChoiceModal() {
+    DA.admin.openModal({
+      icon: 'fa-plus',
+      title: 'Tambah Soal',
+      subtitle: 'Pilih cara menambahkan soal',
+      bodyHtml: `
+        <button class="cv-choice-option" id="qAddManual" style="margin-bottom:8px;">
+          <div class="cv-choice-option-icon bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600">
+            <i class="fa-solid fa-pen-to-square text-lg"></i>
+          </div>
+          <div class="flex-1 min-w-0 text-left">
+            <div class="cv-choice-option-title">Tambah Satu Soal</div>
+            <div class="cv-choice-option-desc">Isi form manual</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-slate-300"></i>
+        </button>
+        <button class="cv-choice-option" id="qAddBulk">
+          <div class="cv-choice-option-icon bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600">
+            <i class="fa-solid fa-file-csv text-lg"></i>
+          </div>
+          <div class="flex-1 min-w-0 text-left">
+            <div class="cv-choice-option-title">Bulk Import CSV</div>
+            <div class="cv-choice-option-desc">Upload banyak soal sekaligus</div>
+          </div>
+          <i class="fa-solid fa-arrow-right text-slate-300"></i>
+        </button>
+      `,
+      submitText: 'Tutup',
+      onSubmit: () => { DA.admin.closeModal(); },
+    });
+    setTimeout(() => {
+      const foot = document.querySelector('#adminModal .admin-modal-foot');
+      if (foot) foot.style.display = 'none';
+      document.getElementById('qAddManual')?.addEventListener('click', () => {
+        if (foot) foot.style.display = '';
+        DA.admin.closeModal();
+        setTimeout(addQuestion, 100);
+      });
+      document.getElementById('qAddBulk')?.addEventListener('click', () => {
+        if (foot) foot.style.display = '';
+        DA.admin.closeModal();
+        setTimeout(bulkImportCsv, 100);
+      });
+    }, 60);
   }
 
   function handleBackClick() {
