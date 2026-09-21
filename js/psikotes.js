@@ -1,6 +1,8 @@
 /* =====================================================
-   DocuApply — Psikotes (User Side)
-   Browse paket → Mulai → Kerjakan → Submit → Hasil
+   DocuApply — Psikotes (User Side) v2
+   - Section interaktif: logika-angka, matematika-dasar, kepribadian
+   - Section worksheet: kraepelin, logika-gambar, wartegg,
+     menggambar, ketelitian (print & kerjakan manual)
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -14,6 +16,9 @@ DA.psikotes = (function () {
   let els = {};
   let packages = [];
   let activeSession = null;
+  let activePkg = null;
+  let activeWorksheet = null;
+  let currentWorksheetIdx = 0;
   let timerInterval = null;
 
   const COLORS = {
@@ -29,7 +34,12 @@ DA.psikotes = (function () {
     'logika-angka':     'Tes Logika Angka',
     'matematika-dasar': 'Tes Matematika Dasar',
     'kepribadian':      'Tes Kepribadian',
+    'worksheet':        'Worksheet',
   };
+
+  const INTERACTIVE_TYPES = ['logika-angka', 'matematika-dasar', 'kepribadian'];
+  const isInteractive = (sec) => INTERACTIVE_TYPES.indexOf(sec.type) >= 0;
+  const isWorksheet   = (sec) => sec.type === 'worksheet';
 
   /* ============================================
      INIT
@@ -41,15 +51,16 @@ DA.psikotes = (function () {
       loading:      document.getElementById('pkLoading'),
       listWrap:     document.getElementById('pkListWrap'),
       testWrap:     document.getElementById('pkTestWrap'),
+      wsWrap:       document.getElementById('pkWorksheetWrap'),
       resultWrap:   document.getElementById('pkResultWrap'),
-      // Modal start
+      // Modal
       startModal:   document.getElementById('pkStartModal'),
       startBackdrop: document.getElementById('pkStartBackdrop'),
       startTitle:   document.getElementById('pkStartTitle'),
       startDesc:    document.getElementById('pkStartDesc'),
       startInfo:    document.getElementById('pkStartInfo'),
-      startBtn:     document.getElementById('pkStartConfirm'),
-      cancelBtn:    document.getElementById('pkStartCancel'),
+      startFooter:  document.getElementById('pkStartFooter'),
+      startCancel:  document.getElementById('pkStartCancel'),
       startClose:   document.getElementById('pkStartClose'),
       // Test UI
       testPkgName:  document.getElementById('pkTestPkgName'),
@@ -63,6 +74,20 @@ DA.psikotes = (function () {
       testNavSubmit: document.getElementById('pkTestSubmit'),
       testExit:     document.getElementById('pkTestExit'),
       testNavGrid:  document.getElementById('pkTestNavGrid'),
+      // Worksheet UI
+      wsTitle:      document.getElementById('pkWsTitle'),
+      wsSubtitle:   document.getElementById('pkWsSubtitle'),
+      wsInstruction: document.getElementById('pkWsInstruction'),
+      wsStage:      document.getElementById('pkWsStage'),
+      wsThumbs:     document.getElementById('pkWsThumbs'),
+      wsPrev:       document.getElementById('pkWsPrev'),
+      wsNext:       document.getElementById('pkWsNext'),
+      wsCounter:    document.getElementById('pkWsCounter'),
+      wsPrint:      document.getElementById('pkWsPrint'),
+      wsZoomIn:     document.getElementById('pkWsZoomIn'),
+      wsZoomOut:    document.getElementById('pkWsZoomOut'),
+      wsZoomReset:  document.getElementById('pkWsZoomReset'),
+      wsClose:      document.getElementById('pkWsClose'),
       // Result UI
       resultTitle:  document.getElementById('pkResultTitle'),
       resultScore:  document.getElementById('pkResultScore'),
@@ -75,7 +100,6 @@ DA.psikotes = (function () {
 
     bindEvents();
     loadData();
-
     window.addEventListener('psikotes:updated', loadData);
   }
 
@@ -102,7 +126,7 @@ DA.psikotes = (function () {
   }
 
   /* ============================================
-     RENDER LIST
+     RENDER LIST PAKET
      ============================================ */
   function renderList() {
     els.loading?.classList.add('hidden');
@@ -115,7 +139,11 @@ DA.psikotes = (function () {
 
     packages.forEach((pkg) => {
       const c = COLORS[pkg.color] || COLORS.blue;
-      const totalQ = (pkg.sections || []).reduce((s, sec) => s + (sec.questions?.length || 0), 0);
+      const interSecs = (pkg.sections || []).filter(isInteractive);
+      const wsSecs = (pkg.sections || []).filter(isWorksheet);
+      const totalQ = interSecs.reduce((s, sec) => s + (sec.questions?.length || 0), 0);
+      const totalWs = wsSecs.reduce((s, sec) => s + (sec.questions?.length || 0), 0);
+
       const card = document.createElement('div');
       card.className = 'pk-card group';
       card.innerHTML = `
@@ -130,12 +158,12 @@ DA.psikotes = (function () {
         </div>
         <div class="pk-card-stats">
           <span><i class="fa-solid fa-clock text-[10px]"></i> ${pkg.duration || 0} menit</span>
-          <span><i class="fa-solid fa-list-check text-[10px]"></i> ${pkg.sections?.length || 0} bagian</span>
-          <span><i class="fa-solid fa-circle-question text-[10px]"></i> ${totalQ} soal</span>
+          ${interSecs.length ? `<span><i class="fa-solid fa-list-check text-[10px]"></i> ${totalQ} soal</span>` : ''}
+          ${wsSecs.length ? `<span><i class="fa-solid fa-file-lines text-[10px]"></i> ${totalWs} lembar worksheet</span>` : ''}
         </div>
         <div class="pk-card-footer">
           <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-            Mulai <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            Lihat <i class="fa-solid fa-arrow-right text-[10px]"></i>
           </span>
         </div>
       `;
@@ -145,63 +173,143 @@ DA.psikotes = (function () {
   }
 
   /* ============================================
-     START MODAL
+     START MODAL (kaya)
      ============================================ */
   function openStartModal(pkg) {
-    activeSession = { pkg, mode: 'confirm' };
-    const totalQ = (pkg.sections || []).reduce((s, sec) => s + (sec.questions?.length || 0), 0);
+    activePkg = pkg;
+
     if (els.startTitle) els.startTitle.textContent = pkg.name;
     if (els.startDesc) els.startDesc.textContent = pkg.description || '';
-    if (els.startInfo) {
-      els.startInfo.innerHTML = `
-        <div class="pk-info-item">
-          <i class="fa-solid fa-clock text-indigo-500"></i>
-          <span>Durasi: <strong>${pkg.duration || 0} menit</strong></span>
-        </div>
+
+    const interSecs = (pkg.sections || []).filter(isInteractive);
+    const wsSecs = (pkg.sections || []).filter(isWorksheet);
+
+    const totalQ = interSecs.reduce((s, sec) => s + (sec.questions?.length || 0), 0);
+
+    // ===== Info summary =====
+    let infoHtml = `
+      <div class="pk-info-item">
+        <i class="fa-solid fa-clock text-indigo-500"></i>
+        <span>Durasi: <strong>${pkg.duration || 0} menit</strong></span>
+      </div>`;
+
+    if (interSecs.length) {
+      infoHtml += `
         <div class="pk-info-item">
           <i class="fa-solid fa-list-check text-indigo-500"></i>
-          <span>${pkg.sections?.length || 0} bagian tes</span>
-        </div>
-        <div class="pk-info-item">
-          <i class="fa-solid fa-circle-question text-indigo-500"></i>
-          <span>${totalQ} soal total</span>
-        </div>
-        <div class="pk-info-warn">
-          <i class="fa-solid fa-triangle-exclamation"></i>
-          <span>Setelah mulai, Anda harus menyelesaikan tes. Waktu akan berjalan.</span>
-        </div>
-      `;
+          <span>${interSecs.length} bagian tes interaktif · ${totalQ} soal</span>
+        </div>`;
     }
+    if (wsSecs.length) {
+      infoHtml += `
+        <div class="pk-info-item">
+          <i class="fa-solid fa-print text-indigo-500"></i>
+          <span>${wsSecs.length} worksheet untuk latihan cetak</span>
+        </div>`;
+    }
+
+    // ===== Section list =====
+    if (interSecs.length) {
+      infoHtml += `<div class="pk-section-group">
+        <div class="pk-section-group-head"><i class="fa-solid fa-bolt text-amber-500"></i> Tes Interaktif</div>`;
+      interSecs.forEach((sec) => {
+        infoHtml += `
+          <div class="pk-section-item">
+            <div class="pk-section-item-icon pk-si-interactive">
+              <i class="fa-solid fa-circle-question"></i>
+            </div>
+            <div class="pk-section-item-body">
+              <div class="pk-section-item-title">${escapeHtml(sec.name)}</div>
+              <div class="pk-section-item-sub">${(sec.questions?.length || 0)} soal · ${sec.duration || 0} menit</div>
+            </div>
+          </div>`;
+      });
+      infoHtml += `</div>`;
+    }
+
+    if (wsSecs.length) {
+      infoHtml += `<div class="pk-section-group">
+        <div class="pk-section-group-head"><i class="fa-solid fa-print text-indigo-500"></i> Worksheet (Latihan Cetak)</div>`;
+      wsSecs.forEach((sec, i) => {
+        infoHtml += `
+          <div class="pk-section-item pk-section-ws" data-ws-idx="${i}">
+            <div class="pk-section-item-icon pk-si-worksheet">
+              <i class="fa-solid fa-file-lines"></i>
+            </div>
+            <div class="pk-section-item-body">
+              <div class="pk-section-item-title">${escapeHtml(sec.name)}</div>
+              <div class="pk-section-item-sub">${(sec.questions?.length || 0)} halaman · ${sec.duration || 0} menit</div>
+            </div>
+            <button class="pk-section-open-btn" data-open-ws="${i}">
+              <i class="fa-solid fa-up-right-from-square"></i> Buka
+            </button>
+          </div>`;
+      });
+      infoHtml += `</div>`;
+    }
+
+    if (!interSecs.length && !wsSecs.length) {
+      infoHtml += `<div class="pk-info-warn"><i class="fa-solid fa-circle-info"></i><span>Paket ini belum memiliki bagian tes.</span></div>`;
+    }
+
+    if (els.startInfo) els.startInfo.innerHTML = infoHtml;
+
+    // ===== Footer buttons =====
+    let footerHtml = '';
+    if (interSecs.length) {
+      footerHtml += `
+        <button id="pkStartConfirm" class="pk-start-btn-primary">
+          <i class="fa-solid fa-play text-xs"></i> Mulai Tes
+        </button>`;
+    }
+    if (els.startFooter) els.startFooter.innerHTML = footerHtml;
+
+    // ===== Bind =====
+    els.startInfo?.querySelectorAll('[data-open-ws]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = Number(btn.dataset.openWs);
+        openWorksheet(pkg, wsSecs[idx]);
+      });
+    });
+
+    const confirmBtn = document.getElementById('pkStartConfirm');
+    confirmBtn?.addEventListener('click', () => startTest(pkg));
+
     els.startModal?.classList.remove('hidden');
+    els.startModal?.classList.add('flex');
     document.body.style.overflow = 'hidden';
   }
 
   function closeStartModal() {
     els.startModal?.classList.add('hidden');
+    els.startModal?.classList.remove('flex');
     document.body.style.overflow = '';
-    activeSession = null;
+    activePkg = null;
   }
 
   /* ============================================
-     START TEST
+     TEST (Interactive)
      ============================================ */
-  function startTest() {
-    if (!activeSession?.pkg) return;
-    const pkg = activeSession.pkg;
+  function startTest(pkg) {
     closeStartModal();
 
-    // Build session
+    const interSecs = (pkg.sections || []).filter(isInteractive);
+    if (!interSecs.length) {
+      DA.toast.warn('Tidak ada tes interaktif di paket ini');
+      return;
+    }
+
     activeSession = {
       pkg,
       startedAt: Date.now(),
       timeLeft: (pkg.duration || 0) * 60,
       currentIdx: 0,
-      // Flatten questions: array of { section, question, answer }
       flatQuestions: [],
       answers: {},
     };
 
-    (pkg.sections || []).forEach((sec) => {
+    interSecs.forEach((sec) => {
       (sec.questions || []).forEach((q) => {
         activeSession.flatQuestions.push({ section: sec, question: q });
       });
@@ -221,6 +329,7 @@ DA.psikotes = (function () {
   function showTestUI() {
     els.listWrap?.classList.add('hidden');
     els.resultWrap?.classList.add('hidden');
+    els.wsWrap?.classList.add('hidden');
     els.testWrap?.classList.remove('hidden');
     if (els.testPkgName) els.testPkgName.textContent = activeSession.pkg.name;
     document.body.style.overflow = 'hidden';
@@ -316,7 +425,6 @@ DA.psikotes = (function () {
       ${optionsHtml}
     `;
 
-    // Bind option clicks
     els.testQuestion.querySelectorAll('.pk-option').forEach((btn) => {
       btn.addEventListener('click', () => {
         activeSession.answers[question.id] = btn.dataset.opt;
@@ -327,14 +435,12 @@ DA.psikotes = (function () {
       });
     });
 
-    // Essay input
     const essay = els.testQuestion.querySelector('#pkEssayInput');
     essay?.addEventListener('input', () => {
       activeSession.answers[question.id] = essay.value;
       updateNavGrid();
     });
 
-    // Nav buttons
     els.testNavPrev.disabled = currentIdx === 0;
     const isLast = currentIdx === flatQuestions.length - 1;
     els.testNavNext.classList.toggle('hidden', isLast);
@@ -399,7 +505,6 @@ DA.psikotes = (function () {
 
     const { pkg, flatQuestions, answers, startedAt } = activeSession;
 
-    // Score
     let correct = 0, wrong = 0, essayCount = 0, kepribadianCount = 0, totalScored = 0;
     const traitCounts = {};
 
@@ -425,7 +530,6 @@ DA.psikotes = (function () {
 
     const duration = Math.round((Date.now() - startedAt) / 1000);
 
-    // Save result history
     const history = DA.storage.get(RESULT_KEY, []);
     history.unshift({
       id: uid(),
@@ -503,7 +607,6 @@ DA.psikotes = (function () {
       els.resultStats.innerHTML = statsHtml;
     }
 
-    // Review
     let reviewHtml = '';
 
     if (kepribadianCount > 0 && Object.keys(traitCounts).length) {
@@ -608,13 +711,217 @@ DA.psikotes = (function () {
   }
 
   /* ============================================
+     WORKSHEET (BARU)
+     ============================================ */
+  function openWorksheet(pkg, section) {
+    activeWorksheet = section;
+    currentWorksheetIdx = 0;
+
+    closeStartModal();
+
+    els.listWrap?.classList.add('hidden');
+    els.testWrap?.classList.add('hidden');
+    els.resultWrap?.classList.add('hidden');
+    els.wsWrap?.classList.remove('hidden');
+
+    if (els.wsTitle) els.wsTitle.textContent = section.name;
+    if (els.wsSubtitle) els.wsSubtitle.textContent = pkg.name;
+
+    // Instruction
+    if (els.wsInstruction) {
+      if (section.instruction) {
+        els.wsInstruction.classList.remove('hidden');
+        els.wsInstruction.innerHTML = `<i class="fa-solid fa-circle-info"></i><div>${escapeHtml(section.instruction)}</div>`;
+      } else {
+        els.wsInstruction.classList.add('hidden');
+      }
+    }
+
+    renderWorksheetThumbs();
+    renderWorksheetPage(0);
+    document.body.style.overflow = 'hidden';
+  }
+
+  function renderWorksheetThumbs() {
+    if (!els.wsThumbs || !activeWorksheet) return;
+    const questions = activeWorksheet.questions || [];
+    els.wsThumbs.innerHTML = questions.map((q, i) => `
+      <button class="pk-ws-thumb ${i === currentWorksheetIdx ? 'active' : ''}" data-ws-page="${i}">
+        <img src="${q.image}" alt="Hal ${i + 1}">
+        <span class="pk-ws-thumb-num">${i + 1}</span>
+      </button>
+    `).join('');
+
+    els.wsThumbs.querySelectorAll('[data-ws-page]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.wsPage);
+        renderWorksheetPage(idx);
+      });
+    });
+  }
+
+  function renderWorksheetPage(idx) {
+    if (!activeWorksheet) return;
+    const questions = activeWorksheet.questions || [];
+    const q = questions[idx];
+    if (!q) return;
+
+    currentWorksheetIdx = idx;
+
+    if (els.wsStage) {
+      els.wsStage.innerHTML = `
+        <div class="pk-ws-page">
+          ${q.text ? `<div class="pk-ws-page-title">${escapeHtml(q.text)}</div>` : ''}
+          <img src="${q.image}" alt="Halaman ${idx + 1}">
+          ${q.notes ? `<div class="pk-ws-page-notes">${escapeHtml(q.notes)}</div>` : ''}
+        </div>`;
+    }
+    if (els.wsCounter) els.wsCounter.textContent = `${idx + 1} / ${questions.length}`;
+    if (els.wsPrev) els.wsPrev.disabled = idx === 0;
+    if (els.wsNext) els.wsNext.disabled = idx === questions.length - 1;
+
+    // Update active thumb
+    els.wsThumbs?.querySelectorAll('.pk-ws-thumb').forEach((btn, i) => {
+      btn.classList.toggle('active', i === idx);
+    });
+
+    // Reset zoom
+    applyWorksheetZoom(1);
+  }
+
+  function closeWorksheet() {
+    els.wsWrap?.classList.add('hidden');
+    els.listWrap?.classList.remove('hidden');
+    document.body.style.overflow = '';
+    activeWorksheet = null;
+  }
+
+  let wsZoom = 1;
+  function applyWorksheetZoom(z) {
+    wsZoom = Math.max(0.5, Math.min(3, z));
+    const page = els.wsStage?.querySelector('.pk-ws-page img');
+    if (page) page.style.transform = `scale(${wsZoom})`;
+  }
+
+  function printWorksheet() {
+    if (!activeWorksheet) return;
+    const sec = activeWorksheet;
+    const questions = sec.questions || [];
+    const title = sec.name || 'Worksheet';
+
+    const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>${escapeHtml(title)}</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #e2e8f0; -webkit-text-size-adjust: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .ws-toolbar {
+    position: sticky; top: 0; z-index: 999;
+    background: #1e293b; color: #fff;
+    padding: 12px 16px; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
+  .ws-toolbar-info { flex: 1; min-width: 0; }
+  .ws-toolbar-title { font-size: 14px; font-weight: 700; }
+  .ws-toolbar-hint { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+  .ws-print-btn {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff; border: none; padding: 11px 20px; border-radius: 12px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    white-space: nowrap; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+  }
+  .ws-print-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+  .ws-paper-wrapper { padding: 20px 12px 40px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .ws-page-card {
+    width: 100%; max-width: 21cm; background: #fff;
+    padding: 1.2cm; box-shadow: 0 4px 32px rgba(15, 23, 42, 0.18);
+    border-radius: 6px;
+  }
+  .ws-page-title {
+    font-size: 14px; font-weight: 800; color: #0f172a;
+    margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 2px solid #cbd5e1;
+  }
+  .ws-page-img {
+    width: 100%; height: auto; display: block; border-radius: 4px;
+  }
+  .ws-page-notes {
+    font-size: 11px; color: #64748b; margin-top: 8px;
+    padding: 8px 12px; background: #f8fafc; border-radius: 6px;
+    border-left: 3px solid #6366f1;
+  }
+  @media print {
+    @page { size: A4; margin: 0; }
+    html, body { background: #fff !important; }
+    .ws-toolbar { display: none !important; }
+    .ws-paper-wrapper { padding: 0 !important; gap: 0 !important; }
+    .ws-page-card {
+      box-shadow: none !important;
+      padding: 0.8cm !important;
+      border-radius: 0 !important;
+      max-width: none !important;
+      page-break-after: always;
+    }
+    .ws-page-card:last-child { page-break-after: auto; }
+  }
+</style>
+</head>
+<body>
+  <div class="ws-toolbar">
+    <div class="ws-toolbar-info">
+      <div class="ws-toolbar-title">📄 ${escapeHtml(title)}</div>
+      <div class="ws-toolbar-hint">Tap <strong>Print / Save as PDF</strong> untuk mencetak. Kerjakan di kertas terpisah.</div>
+    </div>
+    <button class="ws-print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
+  </div>
+  <div class="ws-paper-wrapper">
+    ${questions.map((q) => `
+      <div class="ws-page-card">
+        ${q.text ? `<div class="ws-page-title">${escapeHtml(q.text)}</div>` : ''}
+        <img class="ws-page-img" src="${q.image}" alt="">
+        ${q.notes ? `<div class="ws-page-notes">${escapeHtml(q.notes)}</div>` : ''}
+      </div>
+    `).join('')}
+  </div>
+  <script>
+    (function(){
+      var isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isDesktop) {
+        setTimeout(function(){ try { window.print(); } catch(e){} }, 600);
+      }
+    })();
+  <\/script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) {
+      DA.toast.warn('Popup diblokir. Membuka dalam tab yang sama...', 3000);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = title.replace(/[^a-zA-Z0-9_\s]/g, '_') + '.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } else {
+      DA.toast.success('Tab baru dibuka. Klik "Print / Save PDF" di sana.', 5000);
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  /* ============================================
      EVENTS
      ============================================ */
   function bindEvents() {
-    els.cancelBtn?.addEventListener('click', closeStartModal);
+    els.startCancel?.addEventListener('click', closeStartModal);
     els.startClose?.addEventListener('click', closeStartModal);
     els.startBackdrop?.addEventListener('click', closeStartModal);
-    els.startBtn?.addEventListener('click', startTest);
 
     els.testNavPrev?.addEventListener('click', () => {
       if (!activeSession || activeSession.currentIdx <= 0) return;
@@ -636,12 +943,39 @@ DA.psikotes = (function () {
 
     els.resultClose?.addEventListener('click', closeResults);
 
-    // Warn before unload saat tes aktif
+    // Worksheet events
+    els.wsClose?.addEventListener('click', closeWorksheet);
+    els.wsPrev?.addEventListener('click', () => {
+      if (currentWorksheetIdx > 0) renderWorksheetPage(currentWorksheetIdx - 1);
+    });
+    els.wsNext?.addEventListener('click', () => {
+      const total = activeWorksheet?.questions?.length || 0;
+      if (currentWorksheetIdx < total - 1) renderWorksheetPage(currentWorksheetIdx + 1);
+    });
+    els.wsPrint?.addEventListener('click', printWorksheet);
+    els.wsZoomIn?.addEventListener('click', () => applyWorksheetZoom(wsZoom + 0.25));
+    els.wsZoomOut?.addEventListener('click', () => applyWorksheetZoom(wsZoom - 0.25));
+    els.wsZoomReset?.addEventListener('click', () => applyWorksheetZoom(1));
+
+    // Warn before unload
     window.addEventListener('beforeunload', (e) => {
-      if (activeSession && els.testWrap && !els.testWrap.classList.contains('hidden')) {
+      const testActive = activeSession && els.testWrap && !els.testWrap.classList.contains('hidden');
+      if (testActive) {
         e.preventDefault();
         e.returnValue = '';
       }
+    });
+
+    // Keyboard navigation for worksheet
+    document.addEventListener('keydown', (e) => {
+      if (!activeWorksheet) return;
+      if (els.wsWrap?.classList.contains('hidden')) return;
+      if (e.key === 'ArrowLeft' && currentWorksheetIdx > 0) renderWorksheetPage(currentWorksheetIdx - 1);
+      if (e.key === 'ArrowRight') {
+        const total = activeWorksheet?.questions?.length || 0;
+        if (currentWorksheetIdx < total - 1) renderWorksheetPage(currentWorksheetIdx + 1);
+      }
+      if (e.key === 'Escape') closeWorksheet();
     });
   }
 
