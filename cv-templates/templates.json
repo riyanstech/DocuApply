@@ -23,14 +23,6 @@
       "file": "cv-professional.docx",
       "icon": "fa-briefcase",
       "color": "emerald"
-    },
-    {
-      "id": "cv-creative",
-      "name": "CV Creative",
-      "description": "Desain kreatif untuk posisi design, marketing, atau content creator.",
-      "file": "cv-creative.docx",
-      "icon": "fa-palette",
-      "color": "amber"
     }
   ]
 }
