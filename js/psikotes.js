@@ -1,11 +1,6 @@
 /* =====================================================
-   DocuApply — Psikotes (User Side) v3
-   Fitur baru:
-   - Mode: Ujian (timer) / Latihan (instant feedback)
-   - Acak urutan soal & pilihan
-   - Riwayat hasil + grafik skor (canvas)
-   - Export hasil ke PDF
-   - Worksheet viewer (Kraepelin, Wartegg, dll)
+   DocuApply — Psikotes (User Side) v3.1
+   BUGFIX: Shuffle options tidak update correct answer
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -62,7 +57,6 @@ DA.psikotes = (function () {
       testWrap:     document.getElementById('pkTestWrap'),
       wsWrap:       document.getElementById('pkWorksheetWrap'),
       resultWrap:   document.getElementById('pkResultWrap'),
-      // Modal
       startModal:   document.getElementById('pkStartModal'),
       startBackdrop: document.getElementById('pkStartBackdrop'),
       startTitle:   document.getElementById('pkStartTitle'),
@@ -71,7 +65,6 @@ DA.psikotes = (function () {
       startFooter:  document.getElementById('pkStartFooter'),
       startCancel:  document.getElementById('pkStartCancel'),
       startClose:   document.getElementById('pkStartClose'),
-      // Test UI
       testPkgName:  document.getElementById('pkTestPkgName'),
       testSecName:  document.getElementById('pkTestSecName'),
       testTimer:    document.getElementById('pkTestTimer'),
@@ -84,7 +77,6 @@ DA.psikotes = (function () {
       testExit:     document.getElementById('pkTestExit'),
       testNavGrid:  document.getElementById('pkTestNavGrid'),
       testModeBadge: document.getElementById('pkTestModeBadge'),
-      // Worksheet UI
       wsTitle:      document.getElementById('pkWsTitle'),
       wsSubtitle:   document.getElementById('pkWsSubtitle'),
       wsInstruction: document.getElementById('pkWsInstruction'),
@@ -98,14 +90,12 @@ DA.psikotes = (function () {
       wsZoomOut:    document.getElementById('pkWsZoomOut'),
       wsZoomReset:  document.getElementById('pkWsZoomReset'),
       wsClose:      document.getElementById('pkWsClose'),
-      // Result UI
       resultTitle:  document.getElementById('pkResultTitle'),
       resultScore:  document.getElementById('pkResultScore'),
       resultStats:  document.getElementById('pkResultStats'),
       resultReview: document.getElementById('pkResultReview'),
       resultClose:  document.getElementById('pkResultClose'),
       resultPdf:    document.getElementById('pkResultPdf'),
-      // History UI
       historyList:  document.getElementById('pkHistoryList'),
       historyChart: document.getElementById('pkHistoryChart'),
       historyEmpty: document.getElementById('pkHistoryEmpty'),
@@ -190,7 +180,7 @@ DA.psikotes = (function () {
   }
 
   /* ============================================
-     START MODAL (dengan setup)
+     START MODAL
      ============================================ */
   function openStartModal(pkg) {
     activePkg = pkg;
@@ -240,7 +230,6 @@ DA.psikotes = (function () {
       infoHtml += `</div>`;
     }
 
-    // Setup opsi (hanya jika ada tes interaktif)
     if (interSecs.length) {
       infoHtml += `
         <div class="pk-section-group">
@@ -285,7 +274,6 @@ DA.psikotes = (function () {
 
     if (els.startInfo) els.startInfo.innerHTML = infoHtml;
 
-    // Footer
     let footerHtml = '';
     if (interSecs.length) {
       footerHtml = `<button id="pkStartConfirm" class="pk-start-btn-primary">
@@ -294,7 +282,6 @@ DA.psikotes = (function () {
     }
     if (els.startFooter) els.startFooter.innerHTML = footerHtml;
 
-    // Bind setup buttons
     els.startInfo?.querySelectorAll('[data-mode]').forEach((btn) => {
       btn.addEventListener('click', () => {
         activeSetup.mode = btn.dataset.mode;
@@ -304,7 +291,6 @@ DA.psikotes = (function () {
       });
     });
 
-    // Bind worksheet buttons
     els.startInfo?.querySelectorAll('[data-open-ws]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -312,7 +298,6 @@ DA.psikotes = (function () {
       });
     });
 
-    // Bind confirm
     document.getElementById('pkStartConfirm')?.addEventListener('click', () => {
       activeSetup.shuffleQ = !!document.getElementById('pkSetupShuffleQ')?.checked;
       activeSetup.shuffleO = !!document.getElementById('pkSetupShuffleO')?.checked;
@@ -332,7 +317,7 @@ DA.psikotes = (function () {
   }
 
   /* ============================================
-     SHUFFLE HELPERS
+     SHUFFLE
      ============================================ */
   function shuffle(arr) {
     const a = arr.slice();
@@ -344,7 +329,7 @@ DA.psikotes = (function () {
   }
 
   /* ============================================
-     TEST START
+     START TEST
      ============================================ */
   function startTest(pkg, config) {
     closeStartModal();
@@ -354,7 +339,6 @@ DA.psikotes = (function () {
       return;
     }
 
-    // Build flat questions
     let flat = [];
     interSecs.forEach((sec) => {
       (sec.questions || []).forEach((q) => {
@@ -369,20 +353,40 @@ DA.psikotes = (function () {
       return;
     }
 
-    // Shuffle options per question if requested (buat mapping baru)
+    /* =================================================
+       🔧 FIX BUG SHUFFLE OPTIONS
+       - Setiap opsi baru diberi `_origId` (ID asli sebelum shuffle)
+       - `question.correct` DIPETAKAN ke ID baru
+       - Supaya koreksi `userAns === question.correct` tetap valid
+       ================================================= */
     if (config.shuffleO) {
       flat = flat.map((item) => {
+        // Skip essay / soal tanpa opsi
         if (item.question.type === 'essay') return item;
         const origOpts = item.question.options || [];
+        if (!origOpts.length) return item;
+
         const shuffled = shuffle(origOpts);
         const newOpts = shuffled.map((opt, idx) => ({
           ...opt,
-          id: String.fromCharCode(65 + idx),
-          _origId: opt.id,
+          id: String.fromCharCode(65 + idx),  // ID baru: A, B, C, D...
+          _origId: opt.id,                     // Simpan ID asli untuk referensi
         }));
+
+        // 🔧 KRITIS: Petakan correct LAMA → correct BARU
+        let newCorrect = item.question.correct;
+        if (item.question.correct) {
+          const correctOpt = newOpts.find((o) => o._origId === item.question.correct);
+          if (correctOpt) newCorrect = correctOpt.id;
+        }
+
         return {
           ...item,
-          question: { ...item.question, options: newOpts },
+          question: {
+            ...item.question,
+            options: newOpts,
+            correct: newCorrect,  // ✅ Sekarang sinkron dengan opsi baru
+          },
         };
       });
     }
@@ -397,7 +401,7 @@ DA.psikotes = (function () {
       currentIdx: 0,
       flatQuestions: flat,
       answers: {},
-      revealed: {}, // untuk practice mode: question.id -> true
+      revealed: {},
     };
 
     showTestUI();
@@ -528,7 +532,6 @@ DA.psikotes = (function () {
       optionsHtml += '</div>';
     }
 
-    // Feedback info box untuk practice mode
     let feedbackHtml = '';
     if (isPractice && isRevealed && !isKepribadian) {
       const isCorrect = userAns === question.correct;
@@ -554,21 +557,18 @@ DA.psikotes = (function () {
       ${feedbackHtml}
     `;
 
-    // Bind option clicks
     els.testQuestion.querySelectorAll('.pk-option:not([disabled])').forEach((btn) => {
       btn.addEventListener('click', () => {
         handleAnswer(question.id, btn.dataset.opt, section.type);
       });
     });
 
-    // Essay input
     const essay = els.testQuestion.querySelector('#pkEssayInput');
     essay?.addEventListener('input', () => {
       activeSession.answers[question.id] = essay.value;
       updateNavGrid();
     });
 
-    // Nav
     els.testNavPrev.disabled = currentIdx === 0;
     const isLast = currentIdx === flatQuestions.length - 1;
     els.testNavNext.classList.toggle('hidden', isLast);
@@ -582,7 +582,6 @@ DA.psikotes = (function () {
     if (!activeSession) return;
     activeSession.answers[qId] = optId;
 
-    // Practice mode: instant feedback untuk non-kepribadian
     if (activeSession.mode === 'practice' && sectionType !== 'kepribadian') {
       activeSession.revealed[qId] = true;
     }
@@ -665,6 +664,7 @@ DA.psikotes = (function () {
         return;
       }
       totalScored++;
+      // ✅ Sekarang correct sudah sinkron dengan options (hasil shuffle)
       if (userAns === question.correct) correct++;
       else if (userAns != null) wrong++;
     });
@@ -672,7 +672,6 @@ DA.psikotes = (function () {
     const duration = Math.round((Date.now() - startedAt) / 1000);
     const score = totalScored ? Math.round((correct / totalScored) * 100) : 0;
 
-    // Simpan history
     const history = DA.storage.get(RESULT_KEY, []);
     const resultData = {
       id: uid(),
@@ -687,7 +686,6 @@ DA.psikotes = (function () {
       traitCounts: { ...traitCounts },
       duration,
       at: Date.now(),
-      // Simpan snapshot soal & jawaban untuk review & PDF export
       snapshot: flatQuestions.map((item) => ({
         sectionName: item.section.name,
         sectionType: item.section.type,
@@ -766,7 +764,6 @@ DA.psikotes = (function () {
       els.resultStats.innerHTML = statsHtml;
     }
 
-    // Review
     let reviewHtml = '';
 
     if (result.kepribadianCount > 0 && Object.keys(result.traitCounts || {}).length) {
@@ -787,7 +784,6 @@ DA.psikotes = (function () {
         </div>`;
     }
 
-    // Review dari snapshot
     const reviewItems = (result.snapshot || []).filter((s) => s.sectionType !== 'kepribadian');
     if (reviewItems.length) {
       reviewHtml += `<div class="pk-review-section"><h3 class="pk-review-title"><i class="fa-solid fa-list-check"></i> Review Jawaban</h3>`;
@@ -894,7 +890,6 @@ DA.psikotes = (function () {
       }
     };
 
-    // Header
     doc.setFillColor(79, 70, 229);
     doc.rect(0, 0, pageW, 60, 'F');
     doc.setTextColor(255, 255, 255);
@@ -906,7 +901,6 @@ DA.psikotes = (function () {
     doc.text('DocuApply', margin, 46);
     y = 90;
 
-    // Info paket
     doc.setTextColor(15, 23, 42);
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
@@ -922,7 +916,6 @@ DA.psikotes = (function () {
     doc.text(`Mode: ${lastResult.mode === 'practice' ? 'Latihan' : 'Ujian'} · Durasi: ${formatDuration(lastResult.duration)}`, margin, y);
     y += 24;
 
-    // Skor box
     doc.setDrawColor(199, 210, 254);
     doc.setFillColor(238, 242, 255);
     doc.roundedRect(margin, y, pageW - margin * 2, 80, 8, 8, 'FD');
@@ -937,7 +930,6 @@ DA.psikotes = (function () {
     doc.setFont(undefined, 'normal');
     doc.text('Skor Total', margin + 20, y + 62);
 
-    // Stats kanan
     doc.setFontSize(10);
     const sx = pageW / 2 + 20;
     doc.setTextColor(16, 185, 129);
@@ -949,7 +941,6 @@ DA.psikotes = (function () {
 
     y += 110;
 
-    // Ringkasan per bagian
     const bySec = {};
     (lastResult.snapshot || []).forEach((s) => {
       if (!bySec[s.sectionName]) bySec[s.sectionName] = { correct: 0, wrong: 0, total: 0, type: s.sectionType };
@@ -982,7 +973,6 @@ DA.psikotes = (function () {
       y += 10;
     }
 
-    // Kepribadian (jika ada)
     if (lastResult.kepribadianCount > 0 && Object.keys(lastResult.traitCounts || {}).length) {
       checkPage(60);
       doc.setFontSize(12);
@@ -1004,7 +994,6 @@ DA.psikotes = (function () {
       y += 10;
     }
 
-    // Review jawaban
     const reviewItems = (lastResult.snapshot || []).filter((s) => s.sectionType !== 'kepribadian');
     if (reviewItems.length) {
       checkPage(30);
@@ -1021,7 +1010,6 @@ DA.psikotes = (function () {
 
         checkPage(50);
 
-        // Badge
         doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
         if (isEssay) { doc.setTextColor(245, 158, 11); }
@@ -1032,7 +1020,6 @@ DA.psikotes = (function () {
         doc.text(`Soal ${i + 1} · ${badge}`, margin, y);
         y += 14;
 
-        // Question text
         doc.setFontSize(10);
         doc.setFont(undefined, 'normal');
         doc.setTextColor(30, 41, 59);
@@ -1043,7 +1030,6 @@ DA.psikotes = (function () {
           y += 14;
         });
 
-        // Answer
         doc.setFontSize(9);
         if (isEssay) {
           doc.setTextColor(100, 116, 139);
@@ -1079,7 +1065,6 @@ DA.psikotes = (function () {
       });
     }
 
-    // Footer setiap page
     const totalPages = doc.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
@@ -1095,7 +1080,7 @@ DA.psikotes = (function () {
   }
 
   /* ============================================
-     HISTORY VIEW
+     HISTORY
      ============================================ */
   function showHistory() {
     els.listWrap?.classList.add('hidden');
@@ -1112,14 +1097,13 @@ DA.psikotes = (function () {
     const history = DA.storage.get(RESULT_KEY, []);
     if (!history.length) {
       els.historyEmpty?.classList.remove('hidden');
-      els.historyList && (els.historyList.innerHTML = '');
-      els.historyChart && (els.historyChart.innerHTML = '');
+      if (els.historyList) els.historyList.innerHTML = '';
+      if (els.historyChart) els.historyChart.innerHTML = '';
       if (els.historyStats) els.historyStats.innerHTML = '';
       return;
     }
     els.historyEmpty?.classList.add('hidden');
 
-    // Stats summary
     const scored = history.filter((h) => h.total > 0);
     const avgScore = scored.length
       ? Math.round(scored.reduce((s, h) => s + h.score, 0) / scored.length)
@@ -1159,10 +1143,8 @@ DA.psikotes = (function () {
       `;
     }
 
-    // Chart
     renderHistoryChart(history);
 
-    // List
     if (els.historyList) {
       els.historyList.innerHTML = history.map((h) => {
         const date = new Date(h.at).toLocaleDateString('id-ID', {
@@ -1207,7 +1189,6 @@ DA.psikotes = (function () {
           </div>`;
       }).join('');
 
-      // Bind
       els.historyList.querySelectorAll('[data-view]').forEach((btn) => {
         btn.addEventListener('click', () => viewHistoryItem(btn.dataset.view));
       });
@@ -1219,7 +1200,6 @@ DA.psikotes = (function () {
 
   function renderHistoryChart(history) {
     if (!els.historyChart) return;
-    // Ambil max 15 attempt terakhir dengan skor
     const scored = history.filter((h) => h.total > 0).slice(0, 15).reverse();
     if (scored.length < 2) {
       els.historyChart.innerHTML = `
@@ -1238,10 +1218,9 @@ DA.psikotes = (function () {
     const points = scored.map((h, i) => {
       const x = pad.l + (i / (scored.length - 1)) * innerW;
       const y = pad.t + innerH - (h.score / 100) * innerH;
-      return { x, y, score: h.score, name: h.packageName, at: h.at };
+      return { x, y, score: h.score };
     });
 
-    // Grid lines
     let gridSvg = '';
     [0, 25, 50, 75, 100].forEach((v) => {
       const gy = pad.t + innerH - (v / 100) * innerH;
@@ -1249,18 +1228,15 @@ DA.psikotes = (function () {
       gridSvg += `<text x="${pad.l - 6}" y="${gy + 3}" font-size="9" fill="#94a3b8" text-anchor="end">${v}%</text>`;
     });
 
-    // Line path
     let linePath = '';
     points.forEach((p, i) => {
       linePath += i === 0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`;
     });
 
-    // Area path
     const areaPath = linePath +
       ` L ${points[points.length - 1].x} ${pad.t + innerH}` +
       ` L ${points[0].x} ${pad.t + innerH} Z`;
 
-    // Dots
     let dotsSvg = '';
     points.forEach((p) => {
       dotsSvg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#fff" stroke="#6366f1" stroke-width="2"><title>${p.score}%</title></circle>`;
@@ -1306,7 +1282,7 @@ DA.psikotes = (function () {
   }
 
   /* ============================================
-     WORKSHEET (dipertahankan dari versi sebelumnya)
+     WORKSHEET
      ============================================ */
   function openWorksheet(pkg, section) {
     activeWorksheet = section;
@@ -1478,7 +1454,6 @@ DA.psikotes = (function () {
     els.resultClose?.addEventListener('click', closeResults);
     els.resultPdf?.addEventListener('click', exportResultPdf);
 
-    // Worksheet
     els.wsClose?.addEventListener('click', closeWorksheet);
     els.wsPrev?.addEventListener('click', () => {
       if (currentWorksheetIdx > 0) renderWorksheetPage(currentWorksheetIdx - 1);
@@ -1492,7 +1467,6 @@ DA.psikotes = (function () {
     els.wsZoomOut?.addEventListener('click', () => applyWorksheetZoom(wsZoom - 0.25));
     els.wsZoomReset?.addEventListener('click', () => applyWorksheetZoom(1));
 
-    // History
     els.historyBtn?.addEventListener('click', showHistory);
     els.historyBack?.addEventListener('click', hideHistory);
     els.historyClear?.addEventListener('click', clearHistory);
