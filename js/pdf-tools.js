@@ -1,6 +1,6 @@
 /* =====================================================
    DocuApply — Image→PDF & Split PDF
-   v2 — Fix orientasi landscape/portrait + sync 2 arah
+   v3 — FIX embedJpg base64 + orientasi + sync 2 arah
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -27,7 +27,6 @@ DA.imageToPdf = (function () {
       sheet: document.getElementById('i2pSheet'),
       sheetClose: document.getElementById('i2pSheetClose'),
       backdrop: document.getElementById('i2pBackdrop'),
-      settingsBtn: document.getElementById('i2pSettingsBtn'),
       settingsBtnM: document.getElementById('i2pSettingsBtnMobile'),
       sizeM: document.getElementById('i2pSizeM'),
       orientM: document.getElementById('i2pOrientM'),
@@ -51,10 +50,7 @@ DA.imageToPdf = (function () {
     els.sheetClose?.addEventListener('click', closeSheet);
     els.backdrop?.addEventListener('click', closeSheet);
 
-    /* ============================================================
-       Sync Mobile ↔ Desktop (DUA ARAH)
-       ============================================================ */
-    // Mobile → Desktop
+    /* Sync Mobile ↔ Desktop (DUA ARAH) */
     els.sizeM?.addEventListener('change', () => {
       if (els.size) els.size.value = els.sizeM.value;
     });
@@ -68,7 +64,6 @@ DA.imageToPdf = (function () {
       if (els.quality) els.quality.value = els.qualityM.value;
     });
 
-    // Desktop → Mobile
     els.size?.addEventListener('change', () => {
       if (els.sizeM) els.sizeM.value = els.size.value;
     });
@@ -129,7 +124,6 @@ DA.imageToPdf = (function () {
     if (els.convert) els.convert.disabled = !images.length;
   }
 
-  /* Kertas A4 & Letter dalam satuan point (72pt = 1 inch) */
   const A4 = { p: [595.28, 841.89], l: [841.89, 595.28] };
   const LETTER = { p: [612, 792], l: [792, 612] };
 
@@ -143,7 +137,6 @@ DA.imageToPdf = (function () {
       const { PDFDocument } = PDFLib;
       const doc = await PDFDocument.create();
 
-      // Baca nilai dari mobile dulu, fallback ke desktop, terakhir default
       const sizeMode = els.sizeM?.value || els.size?.value || 'fit';
       const orientMode = els.orientM?.value || els.orient?.value || 'auto';
       const margin = parseFloat(els.marginM?.value || els.margin?.value || 20) || 0;
@@ -159,41 +152,29 @@ DA.imageToPdf = (function () {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        const embed = await doc.embedJpg(dataUrl);
+        const base64 = dataUrl.split(',')[1]; // FIX: extract base64
+        const embed = await doc.embedJpg(base64);
 
         let pw, ph;
 
         if (sizeMode === 'fit') {
-          /* ============================================
-             MODE "FIT" (Sesuai gambar)
-             Ukuran halaman = ukuran gambar asli
-             TAPI hormati orientasi yang dipilih user
-             ============================================ */
           const w0 = canvas.width;
           const h0 = canvas.height;
 
           if (orientMode === 'l') {
-            // User mau LANDSCAPE → pastikan lebar ≥ tinggi
             pw = Math.max(w0, h0);
             ph = Math.min(w0, h0);
           } else if (orientMode === 'p') {
-            // User mau PORTRAIT → pastikan tinggi ≥ lebar
             pw = Math.min(w0, h0);
             ph = Math.max(w0, h0);
           } else {
-            // Auto → pakai ukuran asli apa adanya
             pw = w0;
             ph = h0;
           }
         } else {
-          /* ============================================
-             MODE "A4" atau "LETTER"
-             Ukuran halaman = ukuran kertas
-             ============================================ */
           const base = sizeMode === 'a4' ? A4 : LETTER;
           let orientation = orientMode;
           if (orientation === 'auto') {
-            // Auto: pilih orientasi berdasarkan bentuk gambar
             orientation = canvas.width > canvas.height ? 'l' : 'p';
           }
           [pw, ph] = base[orientation];
@@ -201,7 +182,6 @@ DA.imageToPdf = (function () {
 
         const page = doc.addPage([pw, ph]);
 
-        // Hitung agar gambar fit dalam halaman (dengan margin & center)
         const availW = pw - margin * 2;
         const availH = ph - margin * 2;
         const ratio = Math.min(availW / canvas.width, availH / canvas.height);
