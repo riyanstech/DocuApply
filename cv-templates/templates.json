@@ -23,14 +23,6 @@
       "file": "cv-professional.docx",
       "icon": "fa-briefcase",
       "color": "emerald"
-    },
-    {
-      "id": "muaqrligm4426h",
-      "name": "CV Creative",
-      "file": "cv-kreative.docx",
-      "description": "Desain kreatif.",
-      "icon": "fa-file-lines",
-      "color": "blue"
     }
   ]
 }
