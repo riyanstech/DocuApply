@@ -147,11 +147,45 @@
         <button id="editorCameraBtn" class="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm px-4 py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
           <i class="fa-solid fa-camera text-teal-500"></i>
         </button>
+        <button id="editorSettingsBtn" class="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm px-4 py-3.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 active:scale-95 transition-transform">
+          <i class="fa-solid fa-sliders text-indigo-500"></i>
+        </button>
         <button id="editorMergeBtn" class="flex items-center justify-center gap-2 flex-1 bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-bold text-sm py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform disabled:opacity-40" disabled>
           <i class="fa-solid fa-download"></i><span>Simpan PDF</span>
         </button>
       </div>
     </div>
+
+    <!-- Mobile Settings Sheet for Editor -->
+    <div id="editorSettingsSheet" class="md:hidden fixed inset-x-0 bottom-0 max-h-[70vh] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-[60] translate-y-full transition-transform duration-300" style="padding-bottom:env(safe-area-inset-bottom);z-index:60;">
+      <div class="pt-3 pb-1 flex justify-center"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+      <div class="px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Pengaturan PDF</h3>
+        <button id="editorSheetClose" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 space-y-4 overflow-y-auto" style="max-height:calc(70vh - 100px);">
+        <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 p-4 rounded-xl space-y-3">
+          <label class="flex items-center justify-between cursor-pointer">
+            <div class="flex items-center gap-2.5">
+              <div class="bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400">
+                <i class="fa-solid fa-compress"></i>
+              </div>
+              <span class="font-semibold text-xs text-slate-600 dark:text-slate-300">Kompresi Otomatis</span>
+            </div>
+            <span class="switch"><input type="checkbox" id="compressionToggleMobile" checked><span class="slider"></span></span>
+          </label>
+          <div id="qualityWrapperMobile" class="pl-11">
+            <label class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">Kualitas</label>
+            <select id="qualitySelectMobile" class="input">
+              <option value="0.4">Low · terkecil</option>
+              <option value="0.6" selected>Medium · seimbang</option>
+              <option value="0.85">High · terbaik</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="editorBackdrop" class="md:hidden fixed inset-0 bg-black/50 z-50 hidden" style="z-index:50;"></div>
   </section>
 
   <!-- ========== IMAGE → PDF ========== -->
