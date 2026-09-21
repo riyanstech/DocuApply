@@ -15,6 +15,7 @@
     cv:        document.getElementById('view-cv'),
     companies: document.getElementById('view-companies'),
     email:     document.getElementById('view-email'),
+    psikotes:  document.getElementById('view-psikotes'),
   };
   const ALL_NAV = document.querySelectorAll('[data-tab]');
 
@@ -39,7 +40,7 @@
 
   function initTheme() {
     const btn = document.getElementById('themeToggle');
-    btn.addEventListener('click', () => {
+    btn?.addEventListener('click', () => {
       const isDark = document.documentElement.classList.toggle('dark');
       DA.storage.set('theme', isDark ? 'dark' : 'light');
       DA.toast.info(isDark ? 'Mode gelap aktif' : 'Mode terang aktif', 1500);
@@ -56,6 +57,7 @@
     if (DA.photoStudio)  DA.photoStudio.init();
     if (DA.cvBuilder)    DA.cvBuilder.init();
     if (DA.companies)    DA.companies.init();
+    if (DA.psikotes)     DA.psikotes.init();
 
     const last = DA.storage.get('lastTab', 'editor');
     switchTab(VIEWS[last] ? last : 'editor');
