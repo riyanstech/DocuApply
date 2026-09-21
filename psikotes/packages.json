@@ -20,10 +20,26 @@
               "text": "Lanjutkan deret berikut: 2, 4, 8, 16, ...",
               "image": null,
               "options": [
-                { "id": "A", "text": "18", "image": null },
-                { "id": "B", "text": "24", "image": null },
-                { "id": "C", "text": "32", "image": null },
-                { "id": "D", "text": "36", "image": null }
+                {
+                  "id": "A",
+                  "text": "18",
+                  "image": null
+                },
+                {
+                  "id": "B",
+                  "text": "24",
+                  "image": null
+                },
+                {
+                  "id": "C",
+                  "text": "32",
+                  "image": null
+                },
+                {
+                  "id": "D",
+                  "text": "36",
+                  "image": null
+                }
               ],
               "correct": "C"
             },
@@ -33,10 +49,26 @@
               "text": "Berapakah nilai x jika 3x + 6 = 21?",
               "image": null,
               "options": [
-                { "id": "A", "text": "3", "image": null },
-                { "id": "B", "text": "5", "image": null },
-                { "id": "C", "text": "7", "image": null },
-                { "id": "D", "text": "9", "image": null }
+                {
+                  "id": "A",
+                  "text": "3",
+                  "image": null
+                },
+                {
+                  "id": "B",
+                  "text": "5",
+                  "image": null
+                },
+                {
+                  "id": "C",
+                  "text": "7",
+                  "image": null
+                },
+                {
+                  "id": "D",
+                  "text": "9",
+                  "image": null
+                }
               ],
               "correct": "B"
             }
@@ -54,10 +86,26 @@
               "text": "Hasil dari 15 × 4 - 20 ÷ 5 adalah...",
               "image": null,
               "options": [
-                { "id": "A", "text": "56", "image": null },
-                { "id": "B", "text": "58", "image": null },
-                { "id": "C", "text": "60", "image": null },
-                { "id": "D", "text": "62", "image": null }
+                {
+                  "id": "A",
+                  "text": "56",
+                  "image": null
+                },
+                {
+                  "id": "B",
+                  "text": "58",
+                  "image": null
+                },
+                {
+                  "id": "C",
+                  "text": "60",
+                  "image": null
+                },
+                {
+                  "id": "D",
+                  "text": "62",
+                  "image": null
+                }
               ],
               "correct": "A"
             }
@@ -75,15 +123,40 @@
               "text": "Saat menghadapi masalah dalam tim, saya cenderung...",
               "image": null,
               "options": [
-                { "id": "A", "text": "Mengambil inisiatif memimpin diskusi", "trait": "Leadership" },
-                { "id": "B", "text": "Mendengarkan dulu sebelum memberi pendapat", "trait": "Analitis" },
-                { "id": "C", "text": "Mencari solusi kreatif di luar kebiasaan", "trait": "Kreatif" },
-                { "id": "D", "text": "Mendukung keputusan tim apapun hasilnya", "trait": "Kolaboratif" }
+                {
+                  "id": "A",
+                  "text": "Mengambil inisiatif memimpin diskusi",
+                  "trait": "Leadership"
+                },
+                {
+                  "id": "B",
+                  "text": "Mendengarkan dulu sebelum memberi pendapat",
+                  "trait": "Analitis"
+                },
+                {
+                  "id": "C",
+                  "text": "Mencari solusi kreatif di luar kebiasaan",
+                  "trait": "Kreatif"
+                },
+                {
+                  "id": "D",
+                  "text": "Mendukung keputusan tim apapun hasilnya",
+                  "trait": "Kolaboratif"
+                }
               ]
             }
           ]
         }
       ]
+    },
+    {
+      "id": "muay4wm0po2nzl",
+      "name": "Kisi-Kisi Tes PT Epson",
+      "description": "Ini hanya kisi-kisi tidak sebenarnya sama bisa saja berbeda",
+      "duration": 30,
+      "color": "blue",
+      "icon": "fa-brain",
+      "sections": []
     }
   ]
 }
