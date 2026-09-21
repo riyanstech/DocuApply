@@ -565,19 +565,6 @@
       ]
     },
     {
-      "id": "indofood",
-      "name": "Indofood",
-      "category": "fmcg",
-      "location": "Nasional",
-      "apply": [
-        {
-          "type": "link",
-          "value": "https://e-recruitment.indofood.com/",
-          "subject": "Apply via e-recruitment"
-        }
-      ]
-    },
-    {
       "id": "mualjky8d81kzo",
       "name": "PT. UMEDA FACTORY INDONESIA",
       "category": "manufaktur",
