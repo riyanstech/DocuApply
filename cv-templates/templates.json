@@ -9,14 +9,6 @@
       "color": "blue"
     },
     {
-      "id": "cv-professional",
-      "name": "CV Professional",
-      "description": "Layout korporat formal. Cocok untuk perusahaan besar dan BUMN.",
-      "file": "cv-professional.docx",
-      "icon": "fa-briefcase",
-      "color": "emerald"
-    },
-    {
       "id": "muar7s86mumgoy",
       "name": "CV Creative",
       "file": "cv-kreative.docx",
