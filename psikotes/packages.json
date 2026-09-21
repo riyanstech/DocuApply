@@ -156,7 +156,15 @@
       "duration": 30,
       "color": "blue",
       "icon": "fa-brain",
-      "sections": []
+      "sections": [
+        {
+          "id": "muay7g06jql2hd",
+          "name": "Tes Matematika Dasar",
+          "type": "matematika-dasar",
+          "duration": 2,
+          "questions": []
+        }
+      ]
     }
   ]
 }
