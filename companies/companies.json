@@ -620,6 +620,24 @@
           "subject": "OP - Nama Lengkap"
         }
       ]
+    },
+    {
+      "id": "mualjm665lrr7u",
+      "name": "PT. UMEDA FACTORY INDONESIA",
+      "category": "manufaktur",
+      "location": "",
+      "apply": [
+        {
+          "type": "email",
+          "value": "recruitment@umedafactory.co.id",
+          "subject": "OP - Nama Lengkap"
+        },
+        {
+          "type": "email",
+          "value": "desy.pigi@umedafactory.co.id",
+          "subject": "OP - Nama Lengkap"
+        }
+      ]
     }
   ],
   "disclaimer": "Data email & link dikumpulkan dari sumber publik. Selalu verifikasi dari website resmi perusahaan sebelum melamar."
