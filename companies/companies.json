@@ -1,16 +1,50 @@
 {
-  "lastUpdated": "2025-01",
-  "disclaimer": "Data email & link dikumpulkan dari sumber publik. Selalu verifikasi dari website resmi perusahaan sebelum melamar.",
   "categories": [
-    { "id": "all", "name": "Semua", "icon": "fa-globe" },
-    { "id": "textile", "name": "Textile", "icon": "fa-shirt" },
-    { "id": "garment", "name": "Garment", "icon": "fa-scissors" },
-    { "id": "food", "name": "Makanan & Minuman", "icon": "fa-utensils" },
-    { "id": "furniture", "name": "Furniture", "icon": "fa-couch" },
-    { "id": "manufaktur", "name": "Manufaktur", "icon": "fa-industry" },
-    { "id": "retail", "name": "Retail", "icon": "fa-store" },
-    { "id": "farmasi", "name": "Farmasi", "icon": "fa-pills" },
-    { "id": "fmcg", "name": "FMCG", "icon": "fa-cart-shopping" }
+    {
+      "id": "all",
+      "name": "Semua",
+      "icon": "fa-globe"
+    },
+    {
+      "id": "textile",
+      "name": "Textile",
+      "icon": "fa-shirt"
+    },
+    {
+      "id": "garment",
+      "name": "Garment",
+      "icon": "fa-scissors"
+    },
+    {
+      "id": "food",
+      "name": "Makanan & Minuman",
+      "icon": "fa-utensils"
+    },
+    {
+      "id": "furniture",
+      "name": "Furniture",
+      "icon": "fa-couch"
+    },
+    {
+      "id": "manufaktur",
+      "name": "Manufaktur",
+      "icon": "fa-industry"
+    },
+    {
+      "id": "retail",
+      "name": "Retail",
+      "icon": "fa-store"
+    },
+    {
+      "id": "farmasi",
+      "name": "Farmasi",
+      "icon": "fa-pills"
+    },
+    {
+      "id": "fmcg",
+      "name": "FMCG",
+      "icon": "fa-cart-shopping"
+    }
   ],
   "companies": [
     {
@@ -19,7 +53,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrd2@ptsinar.com", "subject": "Lamaran Pekerjaan_Admin Produksi" }
+        {
+          "type": "email",
+          "value": "hrd2@ptsinar.com",
+          "subject": "Lamaran Pekerjaan_Admin Produksi"
+        }
       ]
     },
     {
@@ -28,7 +66,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "pencelupan.tekstil@gmail.com", "subject": "Lamaran Pekerjaan_PPC" }
+        {
+          "type": "email",
+          "value": "pencelupan.tekstil@gmail.com",
+          "subject": "Lamaran Pekerjaan_PPC"
+        }
       ]
     },
     {
@@ -37,7 +79,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "recruitment.pangjaya@gmail.com", "subject": "Staff Proses Produksi" }
+        {
+          "type": "email",
+          "value": "recruitment.pangjaya@gmail.com",
+          "subject": "Staff Proses Produksi"
+        }
       ]
     },
     {
@@ -46,7 +92,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrdjaa@gmail.com", "subject": "Admin" }
+        {
+          "type": "email",
+          "value": "hrdjaa@gmail.com",
+          "subject": "Admin"
+        }
       ]
     },
     {
@@ -55,7 +105,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "recruitment@berdikari.co.id", "subject": "Lamaran Pekerjaan_" }
+        {
+          "type": "email",
+          "value": "recruitment@berdikari.co.id",
+          "subject": "Lamaran Pekerjaan_"
+        }
       ]
     },
     {
@@ -64,8 +118,16 @@
       "category": "garment",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "pfg@firstagarment.com", "subject": "Lamaran Pekerjaan_" },
-        { "type": "email", "value": "recruitment@firstagarment.co.id", "subject": "Lamaran Pekerjaan_" }
+        {
+          "type": "email",
+          "value": "pfg@firstagarment.com",
+          "subject": "Lamaran Pekerjaan_"
+        },
+        {
+          "type": "email",
+          "value": "recruitment@firstagarment.co.id",
+          "subject": "Lamaran Pekerjaan_"
+        }
       ]
     },
     {
@@ -74,7 +136,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrd@ksmknitting.com", "subject": "Lamaran Pekerjaan" }
+        {
+          "type": "email",
+          "value": "hrd@ksmknitting.com",
+          "subject": "Lamaran Pekerjaan"
+        }
       ]
     },
     {
@@ -83,7 +149,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrd@ksmknitting.com", "subject": "Staff Admin Produksi" }
+        {
+          "type": "email",
+          "value": "hrd@ksmknitting.com",
+          "subject": "Staff Admin Produksi"
+        }
       ]
     },
     {
@@ -92,7 +162,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "sipatatexhrd@gmail.com", "subject": "Lamaran Pekerjaan_Nama" }
+        {
+          "type": "email",
+          "value": "sipatatexhrd@gmail.com",
+          "subject": "Lamaran Pekerjaan_Nama"
+        }
       ]
     },
     {
@@ -101,7 +175,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "recruitment@ptsansan.co.id", "subject": "Lamaran Pekerjaan_Non Jahit" }
+        {
+          "type": "email",
+          "value": "recruitment@ptsansan.co.id",
+          "subject": "Lamaran Pekerjaan_Non Jahit"
+        }
       ]
     },
     {
@@ -110,7 +188,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hr.kalibaru@gmail.com", "subject": "Lamaran Pekerjaan_Nama" }
+        {
+          "type": "email",
+          "value": "hr.kalibaru@gmail.com",
+          "subject": "Lamaran Pekerjaan_Nama"
+        }
       ]
     },
     {
@@ -119,7 +201,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "pt.nice.recruitment@gmail.com", "subject": "Lamaran Pekerjaan_Nama Lengkap" }
+        {
+          "type": "email",
+          "value": "pt.nice.recruitment@gmail.com",
+          "subject": "Lamaran Pekerjaan_Nama Lengkap"
+        }
       ]
     },
     {
@@ -128,7 +214,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrd@jerdytex.co.id", "subject": "Nama_Operator Produksi" }
+        {
+          "type": "email",
+          "value": "hrd@jerdytex.co.id",
+          "subject": "Nama_Operator Produksi"
+        }
       ]
     },
     {
@@ -137,7 +227,11 @@
       "category": "food",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "ptcapprecruitment@gmail.com", "subject": "Lamaran_OP" }
+        {
+          "type": "email",
+          "value": "ptcapprecruitment@gmail.com",
+          "subject": "Lamaran_OP"
+        }
       ]
     },
     {
@@ -146,7 +240,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "factory@intermodakusuma.com", "subject": "Lamaran Pekerjaan_Nama" }
+        {
+          "type": "email",
+          "value": "factory@intermodakusuma.com",
+          "subject": "Lamaran Pekerjaan_Nama"
+        }
       ]
     },
     {
@@ -155,7 +253,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "recruitmentptlkm@gmail.com", "subject": "Nama_OP" }
+        {
+          "type": "email",
+          "value": "recruitmentptlkm@gmail.com",
+          "subject": "Nama_OP"
+        }
       ]
     },
     {
@@ -164,7 +266,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "personalia@llpgold.com", "subject": "Nama_OP" }
+        {
+          "type": "email",
+          "value": "personalia@llpgold.com",
+          "subject": "Nama_OP"
+        }
       ]
     },
     {
@@ -173,7 +279,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "recruitment@alfa-polimer.com", "subject": "Operator Produksi" }
+        {
+          "type": "email",
+          "value": "recruitment@alfa-polimer.com",
+          "subject": "Operator Produksi"
+        }
       ]
     },
     {
@@ -182,7 +292,11 @@
       "category": "garment",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrd.takaglobalutama@gmail.com", "subject": "Nama_Operator Jahit" }
+        {
+          "type": "email",
+          "value": "hrd.takaglobalutama@gmail.com",
+          "subject": "Nama_Operator Jahit"
+        }
       ]
     },
     {
@@ -191,7 +305,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrdjaa@gmail.com", "subject": "Lamaran Pekerjaan_Nama" }
+        {
+          "type": "email",
+          "value": "hrdjaa@gmail.com",
+          "subject": "Lamaran Pekerjaan_Nama"
+        }
       ]
     },
     {
@@ -200,7 +318,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "lkjjlpteam@gmail.com", "subject": "Operator Produksi" }
+        {
+          "type": "email",
+          "value": "lkjjlpteam@gmail.com",
+          "subject": "Operator Produksi"
+        }
       ]
     },
     {
@@ -209,8 +331,16 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "recruitment@alkindo.co.id", "subject": "Operator Produksi_Nama" },
-        { "type": "email", "value": "aknfactory@gmail.com", "subject": "Operator Produksi_Nama" }
+        {
+          "type": "email",
+          "value": "recruitment@alkindo.co.id",
+          "subject": "Operator Produksi_Nama"
+        },
+        {
+          "type": "email",
+          "value": "aknfactory@gmail.com",
+          "subject": "Operator Produksi_Nama"
+        }
       ]
     },
     {
@@ -219,7 +349,11 @@
       "category": "furniture",
       "location": "Cimahi",
       "apply": [
-        { "type": "email", "value": "ask@chitose-indonesia.com", "subject": "Lamaran Pekerjaan_Nama" }
+        {
+          "type": "email",
+          "value": "ask@chitose-indonesia.com",
+          "subject": "Lamaran Pekerjaan_Nama"
+        }
       ]
     },
     {
@@ -228,7 +362,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrdyolita@gmail.com", "subject": "Nama_OP" }
+        {
+          "type": "email",
+          "value": "hrdyolita@gmail.com",
+          "subject": "Nama_OP"
+        }
       ]
     },
     {
@@ -237,7 +375,11 @@
       "category": "furniture",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrd@dialogue.co.id", "subject": "Operator Produksi" }
+        {
+          "type": "email",
+          "value": "hrd@dialogue.co.id",
+          "subject": "Operator Produksi"
+        }
       ]
     },
     {
@@ -246,7 +388,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrdlmsentosa@yahoo.com", "subject": "Operator Produksi" }
+        {
+          "type": "email",
+          "value": "hrdlmsentosa@yahoo.com",
+          "subject": "Operator Produksi"
+        }
       ]
     },
     {
@@ -255,7 +401,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hr@fid.fujiseiki.com", "subject": "Operator Produksi" }
+        {
+          "type": "email",
+          "value": "hr@fid.fujiseiki.com",
+          "subject": "Operator Produksi"
+        }
       ]
     },
     {
@@ -264,7 +414,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "recruitment@ytutamaputra.com", "subject": "Nama_OP" }
+        {
+          "type": "email",
+          "value": "recruitment@ytutamaputra.com",
+          "subject": "Nama_OP"
+        }
       ]
     },
     {
@@ -273,7 +427,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "offsetsanic@gmail.com", "subject": "Lamaran Pekerjaan_Nama" }
+        {
+          "type": "email",
+          "value": "offsetsanic@gmail.com",
+          "subject": "Lamaran Pekerjaan_Nama"
+        }
       ]
     },
     {
@@ -282,7 +440,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "recruitment.hrdhb@gmail.com", "subject": "Operator Produksi" }
+        {
+          "type": "email",
+          "value": "recruitment.hrdhb@gmail.com",
+          "subject": "Operator Produksi"
+        }
       ]
     },
     {
@@ -291,7 +453,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hr.sakumas@gmail.com", "subject": "Nama_OP" }
+        {
+          "type": "email",
+          "value": "hr.sakumas@gmail.com",
+          "subject": "Nama_OP"
+        }
       ]
     },
     {
@@ -300,7 +466,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrd.plastin@gmail.com", "subject": "Operator Produksi" }
+        {
+          "type": "email",
+          "value": "hrd.plastin@gmail.com",
+          "subject": "Operator Produksi"
+        }
       ]
     },
     {
@@ -309,7 +479,11 @@
       "category": "food",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "hrd.tabcompany@gmail.com", "subject": "Nama_OP" }
+        {
+          "type": "email",
+          "value": "hrd.tabcompany@gmail.com",
+          "subject": "Nama_OP"
+        }
       ]
     },
     {
@@ -318,7 +492,11 @@
       "category": "food",
       "location": "Bandung",
       "apply": [
-        { "type": "email", "value": "amidistirtamulyarecruitment@gmail.com", "subject": "Operator Produksi" }
+        {
+          "type": "email",
+          "value": "amidistirtamulyarecruitment@gmail.com",
+          "subject": "Operator Produksi"
+        }
       ]
     },
     {
@@ -327,7 +505,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "link", "value": "https://career.ateja.co.id/", "subject": "Apply via career portal" }
+        {
+          "type": "link",
+          "value": "https://career.ateja.co.id/",
+          "subject": "Apply via career portal"
+        }
       ]
     },
     {
@@ -336,7 +518,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "link", "value": "http://jobs.gsg.co.id:81/", "subject": "Apply via web career" }
+        {
+          "type": "link",
+          "value": "http://jobs.gsg.co.id:81/",
+          "subject": "Apply via web career"
+        }
       ]
     },
     {
@@ -345,7 +531,11 @@
       "category": "farmasi",
       "location": "Bandung",
       "apply": [
-        { "type": "link", "value": "https://www.medion.co.id/karir/", "subject": "Apply via portal karir" }
+        {
+          "type": "link",
+          "value": "https://www.medion.co.id/karir/",
+          "subject": "Apply via portal karir"
+        }
       ]
     },
     {
@@ -354,7 +544,11 @@
       "category": "retail",
       "location": "Nasional",
       "apply": [
-        { "type": "link", "value": "https://career.indomaretgroup.com/jobs/staff", "subject": "Staff" }
+        {
+          "type": "link",
+          "value": "https://career.indomaretgroup.com/jobs/staff",
+          "subject": "Staff"
+        }
       ]
     },
     {
@@ -363,7 +557,11 @@
       "category": "retail",
       "location": "Bandung",
       "apply": [
-        { "type": "link", "value": "http://bit.ly/PelamarAlfaBandung1", "subject": "Pelamar Alfa Bandung 1" }
+        {
+          "type": "link",
+          "value": "http://bit.ly/PelamarAlfaBandung1",
+          "subject": "Pelamar Alfa Bandung 1"
+        }
       ]
     },
     {
@@ -372,7 +570,11 @@
       "category": "retail",
       "location": "Cimahi",
       "apply": [
-        { "type": "link", "value": "http://bit.ly/satbdg2_cimahi_area", "subject": "Pelamar Alfa Bandung 2 / Cimahi" }
+        {
+          "type": "link",
+          "value": "http://bit.ly/satbdg2_cimahi_area",
+          "subject": "Pelamar Alfa Bandung 2 / Cimahi"
+        }
       ]
     },
     {
@@ -381,7 +583,11 @@
       "category": "manufaktur",
       "location": "Bandung",
       "apply": [
-        { "type": "link", "value": "https://bit.ly/OperatorStanli", "subject": "Operator" }
+        {
+          "type": "link",
+          "value": "https://bit.ly/OperatorStanli",
+          "subject": "Operator"
+        }
       ]
     },
     {
@@ -390,7 +596,11 @@
       "category": "textile",
       "location": "Bandung",
       "apply": [
-        { "type": "link", "value": "https://www.gistexgroup.com/pages/index.php?hal=career", "subject": "Apply via web career" }
+        {
+          "type": "link",
+          "value": "https://www.gistexgroup.com/pages/index.php?hal=career",
+          "subject": "Apply via web career"
+        }
       ]
     },
     {
@@ -399,8 +609,27 @@
       "category": "fmcg",
       "location": "Nasional",
       "apply": [
-        { "type": "link", "value": "https://e-recruitment.indofood.com/", "subject": "Apply via e-recruitment" }
+        {
+          "type": "link",
+          "value": "https://e-recruitment.indofood.com/",
+          "subject": "Apply via e-recruitment"
+        }
+      ]
+    },
+    {
+      "id": "muahs2scjsbf5n",
+      "name": "PT Asep Ganteng",
+      "category": "manufaktur",
+      "location": "Bandung",
+      "apply": [
+        {
+          "type": "email",
+          "value": "asep@gmail.com",
+          "subject": "Lamaran Pekerjaan_Nama"
+        }
       ]
     }
-  ]
+  ],
+  "disclaimer": "Data email & link dikumpulkan dari sumber publik. Selalu verifikasi dari website resmi perusahaan sebelum melamar.",
+  "lastUpdated": "2025-01"
 }
