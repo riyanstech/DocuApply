@@ -1,6 +1,8 @@
 /* =====================================================
-   DocuApply — Admin: Psikotes Manager
-   CRUD paket, section, soal + upload gambar (base64)
+   DocuApply — Admin: Psikotes Manager v2
+   - CRUD paket, section, soal
+   - Support section type: worksheet (print & kerjakan manual)
+   - Bulk upload gambar untuk worksheet
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -9,18 +11,18 @@ DA.adminPsikotes = (function () {
 
   const { escapeHtml, uid } = DA.utils;
   const STORAGE_KEY = 'psikotesOverride';
-  const MAX_IMG_DIM = 800; // resize target
+  const MAX_IMG_DIM = 1400;
 
   let els = {};
   let data = { packages: [] };
   let nav = { view: 'list', pkgId: null, secId: null };
-  let cache = { pkg: null, sec: null, question: null };
 
   const COLORS = ['blue', 'emerald', 'purple', 'amber', 'rose', 'indigo'];
   const TYPES = [
-    { id: 'logika-angka',     label: 'Tes Logika Angka' },
-    { id: 'matematika-dasar', label: 'Tes Matematika Dasar' },
-    { id: 'kepribadian',      label: 'Tes Kepribadian' },
+    { id: 'logika-angka',     label: 'Tes Logika Angka',     interactive: true },
+    { id: 'matematika-dasar', label: 'Tes Matematika Dasar', interactive: true },
+    { id: 'kepribadian',      label: 'Tes Kepribadian',      interactive: true },
+    { id: 'worksheet',        label: 'Worksheet (Print)',    interactive: false },
   ];
   const ICONS = [
     'fa-brain', 'fa-calculator', 'fa-user-astronaut', 'fa-lightbulb',
@@ -40,6 +42,7 @@ DA.adminPsikotes = (function () {
     };
     if (!els.container) return;
     loadData();
+    bindUI();
   }
 
   async function loadData() {
@@ -62,7 +65,6 @@ DA.adminPsikotes = (function () {
   function save() {
     DA.storage.set(STORAGE_KEY, data);
     window.dispatchEvent(new Event('psikotes:updated'));
-    // Sync GitHub if configured
     if (DA.github && DA.github.isConfigured()) {
       DA.github.uploadFile(
         'psikotes/packages.json',
@@ -74,7 +76,7 @@ DA.adminPsikotes = (function () {
   }
 
   /* ============================================
-     RENDER MAIN
+     RENDER
      ============================================ */
   function render() {
     renderBreadcrumb();
@@ -106,15 +108,13 @@ DA.adminPsikotes = (function () {
       });
     });
 
-    // Back button
     if (els.backBtn) {
-      const show = nav.view !== 'list';
-      els.backBtn.classList.toggle('hidden', !show);
+      els.backBtn.classList.toggle('hidden', nav.view === 'list');
     }
   }
 
   /* ============================================
-     VIEW: PACKAGE LIST
+     LIST VIEW
      ============================================ */
   function renderList() {
     if (els.addBtn) els.addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Tambah Paket';
@@ -130,7 +130,10 @@ DA.adminPsikotes = (function () {
     }
 
     els.container.innerHTML = data.packages.map((pkg) => {
-      const totalQ = (pkg.sections || []).reduce((s, sec) => s + (sec.questions?.length || 0), 0);
+      const interSecs = (pkg.sections || []).filter((s) => s.type !== 'worksheet');
+      const wsSecs = (pkg.sections || []).filter((s) => s.type === 'worksheet');
+      const totalQ = interSecs.reduce((s, sec) => s + (sec.questions?.length || 0), 0);
+      const totalWs = wsSecs.reduce((s, sec) => s + (sec.questions?.length || 0), 0);
       return `
         <div class="admin-row admin-row-lg" data-id="${pkg.id}">
           <div class="admin-row-icon"><i class="fa-solid ${escapeHtml(pkg.icon || 'fa-brain')}"></i></div>
@@ -139,8 +142,10 @@ DA.adminPsikotes = (function () {
             <div class="admin-row-sub">${escapeHtml(pkg.description || '')}</div>
             <div class="admin-row-chips">
               <span class="admin-chip"><i class="fa-solid fa-clock"></i> ${pkg.duration || 0} menit</span>
-              <span class="admin-chip"><i class="fa-solid fa-list-check"></i> ${pkg.sections?.length || 0} bagian</span>
-              <span class="admin-chip"><i class="fa-solid fa-circle-question"></i> ${totalQ} soal</span>
+              ${interSecs.length ? `<span class="admin-chip"><i class="fa-solid fa-bolt"></i> ${interSecs.length} interaktif</span>` : ''}
+              ${wsSecs.length ? `<span class="admin-chip"><i class="fa-solid fa-print"></i> ${wsSecs.length} worksheet</span>` : ''}
+              ${totalQ ? `<span class="admin-chip"><i class="fa-solid fa-circle-question"></i> ${totalQ} soal</span>` : ''}
+              ${totalWs ? `<span class="admin-chip"><i class="fa-solid fa-file-lines"></i> ${totalWs} lembar</span>` : ''}
             </div>
           </div>
           <div class="admin-row-actions">
@@ -165,7 +170,7 @@ DA.adminPsikotes = (function () {
   }
 
   /* ============================================
-     VIEW: SECTION LIST (dalam paket)
+     SECTIONS VIEW
      ============================================ */
   function renderSections() {
     const pkg = data.packages.find((p) => p.id === nav.pkgId);
@@ -181,24 +186,28 @@ DA.adminPsikotes = (function () {
       return;
     }
 
-    els.container.innerHTML = pkg.sections.map((sec) => `
-      <div class="admin-row admin-row-lg" data-id="${sec.id}">
-        <div class="admin-row-icon"><i class="fa-solid fa-list-check"></i></div>
-        <div class="admin-row-body">
-          <div class="admin-row-title">${escapeHtml(sec.name)}</div>
-          <div class="admin-row-chips">
-            <span class="admin-chip">${escapeHtml(TYPES.find((t) => t.id === sec.type)?.label || sec.type)}</span>
-            <span class="admin-chip"><i class="fa-solid fa-clock"></i> ${sec.duration || 0} menit</span>
-            <span class="admin-chip"><i class="fa-solid fa-circle-question"></i> ${sec.questions?.length || 0} soal</span>
+    els.container.innerHTML = pkg.sections.map((sec) => {
+      const isWs = sec.type === 'worksheet';
+      return `
+        <div class="admin-row admin-row-lg" data-id="${sec.id}">
+          <div class="admin-row-icon ${isWs ? 'apk-row-icon-ws' : ''}">
+            <i class="fa-solid ${isWs ? 'fa-print' : 'fa-list-check'}"></i>
           </div>
-        </div>
-        <div class="admin-row-actions">
-          <button class="admin-btn-icon primary" data-act="open" title="Kelola Soal"><i class="fa-solid fa-folder-open"></i></button>
-          <button class="admin-btn-icon" data-act="edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
-          <button class="admin-btn-icon danger" data-act="del" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
-        </div>
-      </div>
-    `).join('');
+          <div class="admin-row-body">
+            <div class="admin-row-title">${escapeHtml(sec.name)}</div>
+            <div class="admin-row-chips">
+              <span class="admin-chip">${escapeHtml(TYPES.find((t) => t.id === sec.type)?.label || sec.type)}</span>
+              <span class="admin-chip"><i class="fa-solid fa-clock"></i> ${sec.duration || 0} menit</span>
+              <span class="admin-chip"><i class="fa-solid ${isWs ? 'fa-file-lines' : 'fa-circle-question'}"></i> ${sec.questions?.length || 0} ${isWs ? 'lembar' : 'soal'}</span>
+            </div>
+          </div>
+          <div class="admin-row-actions">
+            <button class="admin-btn-icon primary" data-act="open" title="Kelola"><i class="fa-solid fa-folder-open"></i></button>
+            <button class="admin-btn-icon" data-act="edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button class="admin-btn-icon danger" data-act="del" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>`;
+    }).join('');
 
     els.container.querySelectorAll('.admin-row').forEach((row) => {
       const id = row.dataset.id;
@@ -213,14 +222,67 @@ DA.adminPsikotes = (function () {
   }
 
   /* ============================================
-     VIEW: QUESTION LIST (dalam section)
+     QUESTIONS VIEW
      ============================================ */
   function renderQuestions() {
     const pkg = data.packages.find((p) => p.id === nav.pkgId);
     const sec = pkg?.sections?.find((s) => s.id === nav.secId);
     if (!sec) { nav.view = 'pkg'; return render(); }
-    if (els.addBtn) els.addBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Tambah Soal';
 
+    const isWs = sec.type === 'worksheet';
+    if (els.addBtn) els.addBtn.innerHTML = isWs
+      ? '<i class="fa-solid fa-plus"></i> Tambah Halaman'
+      : '<i class="fa-solid fa-plus"></i> Tambah Soal';
+
+    if (isWs) {
+      renderWorksheetPages(sec);
+    } else {
+      renderInteractiveQuestions(sec);
+    }
+  }
+
+  function renderWorksheetPages(sec) {
+    if (!sec.questions?.length) {
+      els.container.innerHTML = `
+        <div class="admin-empty">
+          <i class="fa-solid fa-file-lines"></i>
+          <div>Belum ada halaman worksheet</div>
+          <p class="text-xs mt-1">Upload gambar soal yang akan dicetak user</p>
+        </div>`;
+      return;
+    }
+
+    const isKepribadian = false; // worksheet tidak pakai kepribadian
+    els.container.innerHTML = `
+      <div class="apk-ws-grid">
+        ${sec.questions.map((q, i) => `
+          <div class="apk-ws-card" data-id="${q.id}">
+            <div class="apk-ws-thumb">
+              <img src="${q.image}" alt="">
+              <div class="apk-ws-num">${i + 1}</div>
+            </div>
+            <div class="apk-ws-body">
+              <div class="apk-ws-title">${escapeHtml(q.text || '(tanpa judul)')}</div>
+              ${q.notes ? `<div class="apk-ws-notes">${escapeHtml(q.notes)}</div>` : ''}
+            </div>
+            <div class="apk-ws-actions">
+              <button class="admin-btn-icon" data-act="edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="admin-btn-icon warn" data-act="dup" title="Duplikat"><i class="fa-regular fa-clone"></i></button>
+              <button class="admin-btn-icon danger" data-act="del" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+
+    els.container.querySelectorAll('.apk-ws-card').forEach((card) => {
+      const id = card.dataset.id;
+      card.querySelector('[data-act="edit"]').addEventListener('click', () => editWorksheetPage(id));
+      card.querySelector('[data-act="dup"]').addEventListener('click', () => dupWorksheetPage(id));
+      card.querySelector('[data-act="del"]').addEventListener('click', () => delWorksheetPage(id));
+    });
+  }
+
+  function renderInteractiveQuestions(sec) {
     if (!sec.questions?.length) {
       els.container.innerHTML = `
         <div class="admin-empty">
@@ -401,17 +463,23 @@ DA.adminPsikotes = (function () {
     return `
       <div class="form-field">
         <label class="form-field-label">Nama Bagian <span class="req">*</span></label>
-        <input type="text" id="secName" class="form-field-input" value="${escapeHtml(s.name || '')}" placeholder="Contoh: Tes Logika Angka">
+        <input type="text" id="secName" class="form-field-input" value="${escapeHtml(s.name || '')}" placeholder="Contoh: Tes Kraepelin">
       </div>
       <div class="form-field">
         <label class="form-field-label">Jenis Tes <span class="req">*</span></label>
         <select id="secType" class="form-field-input">
           ${TYPES.map((t) => `<option value="${t.id}" ${s.type === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}
         </select>
+        <p class="form-field-hint" id="secTypeHint">Pilih <strong>Worksheet (Print)</strong> untuk tes seperti Kraepelin, Wartegg, Menggambar, Logika Gambar, atau Ketelitian.</p>
       </div>
       <div class="form-field">
         <label class="form-field-label">Durasi Bagian (menit)</label>
         <input type="number" id="secDur" class="form-field-input" value="${s.duration || 10}" min="1" max="180">
+      </div>
+      <div class="form-field">
+        <label class="form-field-label">Instruksi (opsional)</label>
+        <textarea id="secInstruction" class="form-field-input" rows="3" placeholder="Petunjuk pengerjaan untuk user">${escapeHtml(s.instruction || '')}</textarea>
+        <p class="form-field-hint">Muncul di atas worksheet sebagai petunjuk.</p>
       </div>
     `;
   }
@@ -431,6 +499,7 @@ DA.adminPsikotes = (function () {
           name,
           type: document.getElementById('secType').value,
           duration: parseInt(document.getElementById('secDur').value) || 10,
+          instruction: document.getElementById('secInstruction').value.trim() || '',
           questions: [],
         });
         save();
@@ -451,6 +520,7 @@ DA.adminPsikotes = (function () {
         sec.name = document.getElementById('secName').value.trim() || sec.name;
         sec.type = document.getElementById('secType').value;
         sec.duration = parseInt(document.getElementById('secDur').value) || 10;
+        sec.instruction = document.getElementById('secInstruction').value.trim() || '';
         save();
         DA.admin.closeModal();
         render();
@@ -464,7 +534,7 @@ DA.adminPsikotes = (function () {
     if (!sec) return;
     DA.admin.showConfirm({
       title: 'Hapus Bagian?', subtitle: sec.name,
-      message: `Bagian <strong>${escapeHtml(sec.name)}</strong> dan ${sec.questions?.length || 0} soal di dalamnya akan dihapus.`,
+      message: `Bagian <strong>${escapeHtml(sec.name)}</strong> dan ${sec.questions?.length || 0} item di dalamnya akan dihapus.`,
       okText: 'Ya, Hapus',
       onOk: () => {
         pkg.sections = pkg.sections.filter((s) => s.id !== id);
@@ -475,7 +545,159 @@ DA.adminPsikotes = (function () {
   }
 
   /* ============================================
-     QUESTION MODAL
+     WORKSHEET PAGE (BARU)
+     ============================================ */
+  function worksheetPageFormHtml(q = {}) {
+    return `
+      <div class="form-field">
+        <label class="form-field-label">Judul Halaman</label>
+        <input type="text" id="wsPageTitle" class="form-field-input" value="${escapeHtml(q.text || '')}" placeholder="Contoh: Set A - Kolom 1-10">
+      </div>
+      <div class="form-field">
+        <label class="form-field-label">Gambar Soal <span class="req">*</span></label>
+        <div class="apk-img-upload" id="wsImgBox">
+          ${q.image ? `
+            <div class="apk-img-preview">
+              <img src="${q.image}" alt="">
+              <button type="button" class="apk-img-remove" id="wsImgRemove"><i class="fa-solid fa-xmark"></i></button>
+            </div>` : `
+            <label class="apk-img-drop" for="wsImgInput">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Klik untuk upload gambar</span>
+              <small>Auto-compress hingga 1400px</small>
+            </label>`}
+          <input type="file" id="wsImgInput" accept="image/*" class="hidden">
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-field-label">Catatan (opsional)</label>
+        <textarea id="wsPageNotes" class="form-field-input" rows="2" placeholder="Contoh: Waktu 30 detik per kolom">${escapeHtml(q.notes || '')}</textarea>
+      </div>
+    `;
+  }
+
+  function bindWorksheetPageForm(q) {
+    let imgData = q.image || '';
+
+    const imgBox = document.getElementById('wsImgBox');
+    const imgInput = document.getElementById('wsImgInput');
+
+    function renderImgPreview() {
+      const old = imgBox.querySelector('.apk-img-preview, .apk-img-drop');
+      if (old) old.remove();
+      if (imgData) {
+        const preview = document.createElement('div');
+        preview.className = 'apk-img-preview';
+        preview.innerHTML = `<img src="${imgData}"><button type="button" class="apk-img-remove" id="wsImgRemove"><i class="fa-solid fa-xmark"></i></button>`;
+        imgBox.insertBefore(preview, imgInput);
+        preview.querySelector('#wsImgRemove').addEventListener('click', () => {
+          imgData = '';
+          renderImgPreview();
+        });
+      } else {
+        const drop = document.createElement('label');
+        drop.className = 'apk-img-drop';
+        drop.htmlFor = 'wsImgInput';
+        drop.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i><span>Klik untuk upload gambar</span><small>Auto-compress hingga 1400px</small>`;
+        imgBox.insertBefore(drop, imgInput);
+      }
+    }
+
+    imgInput?.addEventListener('change', async (e) => {
+      const f = e.target.files?.[0];
+      e.target.value = '';
+      if (!f) return;
+      try {
+        imgData = await fileToResizedBase64(f, MAX_IMG_DIM);
+        renderImgPreview();
+      } catch (err) {
+        DA.toast.error('Gagal memuat gambar: ' + err.message);
+      }
+    });
+
+    return () => ({
+      type: 'worksheet',
+      text: document.getElementById('wsPageTitle')?.value.trim() || '',
+      image: imgData,
+      notes: document.getElementById('wsPageNotes')?.value.trim() || '',
+    });
+  }
+
+  function addWorksheetPage() {
+    const pkg = data.packages.find((p) => p.id === nav.pkgId);
+    const sec = pkg?.sections?.find((s) => s.id === nav.secId);
+    if (!sec) return;
+
+    let collect;
+    DA.admin.openModal({
+      icon: 'fa-plus', title: 'Tambah Halaman Worksheet', subtitle: sec.name,
+      bodyHtml: worksheetPageFormHtml({}), submitText: 'Tambah',
+      onSubmit: () => {
+        const v = collect();
+        if (!v.image) return DA.toast.error('Gambar wajib diupload');
+        const q = { id: uid(), ...v };
+        sec.questions = sec.questions || [];
+        sec.questions.push(q);
+        save();
+        DA.admin.closeModal();
+        render();
+      },
+    });
+    setTimeout(() => { collect = bindWorksheetPageForm({}); }, 60);
+  }
+
+  function editWorksheetPage(qid) {
+    const pkg = data.packages.find((p) => p.id === nav.pkgId);
+    const sec = pkg?.sections?.find((s) => s.id === nav.secId);
+    const q = sec?.questions?.find((x) => x.id === qid);
+    if (!q) return;
+
+    let collect;
+    DA.admin.openModal({
+      icon: 'fa-pen', title: 'Edit Halaman', subtitle: sec.name,
+      bodyHtml: worksheetPageFormHtml(q), submitText: 'Simpan',
+      onSubmit: () => {
+        const v = collect();
+        if (!v.image) return DA.toast.error('Gambar wajib diupload');
+        Object.assign(q, v);
+        save();
+        DA.admin.closeModal();
+        render();
+      },
+    });
+    setTimeout(() => { collect = bindWorksheetPageForm(q); }, 60);
+  }
+
+  function dupWorksheetPage(qid) {
+    const pkg = data.packages.find((p) => p.id === nav.pkgId);
+    const sec = pkg?.sections?.find((s) => s.id === nav.secId);
+    const q = sec?.questions?.find((x) => x.id === qid);
+    if (!q) return;
+    const dup = JSON.parse(JSON.stringify(q));
+    dup.id = uid();
+    sec.questions.push(dup);
+    save();
+    render();
+  }
+
+  function delWorksheetPage(qid) {
+    const pkg = data.packages.find((p) => p.id === nav.pkgId);
+    const sec = pkg?.sections?.find((s) => s.id === nav.secId);
+    if (!sec) return;
+    DA.admin.showConfirm({
+      title: 'Hapus Halaman?', subtitle: '',
+      message: 'Halaman worksheet akan dihapus.',
+      okText: 'Ya, Hapus',
+      onOk: () => {
+        sec.questions = sec.questions.filter((x) => x.id !== qid);
+        save();
+        render();
+      },
+    });
+  }
+
+  /* ============================================
+     INTERACTIVE QUESTION MODAL
      ============================================ */
   function questionFormHtml(q = {}, sectionType) {
     const isKepribadian = sectionType === 'kepribadian';
@@ -510,7 +732,7 @@ DA.adminPsikotes = (function () {
             <label class="apk-img-drop" for="qImgInput">
               <i class="fa-solid fa-cloud-arrow-up"></i>
               <span>Klik untuk upload</span>
-              <small>Maks ~1MB (otomatis dikompres)</small>
+              <small>Auto-compress hingga 1400px</small>
             </label>`}
           <input type="file" id="qImgInput" accept="image/*" class="hidden">
         </div>
@@ -548,8 +770,8 @@ DA.adminPsikotes = (function () {
       { id: 'C', text: '', image: null, trait: '' },
       { id: 'D', text: '', image: null, trait: '' },
     ];
+    let qImgData = q.image || '';
 
-    // Tipe soal
     document.querySelectorAll('.apk-type-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const t = btn.dataset.qtype;
@@ -560,7 +782,6 @@ DA.adminPsikotes = (function () {
       });
     });
 
-    // Render opsi
     function renderOptions() {
       const list = document.getElementById('qOptionsList');
       list.innerHTML = options.map((o, i) => `
@@ -585,7 +806,6 @@ DA.adminPsikotes = (function () {
         </div>
       `).join('');
 
-      // Update correct select
       const sel = document.getElementById('qCorrect');
       if (sel) {
         const curVal = q.correct || options[0]?.id;
@@ -595,7 +815,6 @@ DA.adminPsikotes = (function () {
           </option>`).join('');
       }
 
-      // Bind events
       list.querySelectorAll('.apk-opt-text').forEach((inp) => {
         inp.addEventListener('input', (e) => { options[Number(e.target.dataset.i)].text = e.target.value; });
       });
@@ -606,7 +825,7 @@ DA.adminPsikotes = (function () {
         btn.addEventListener('click', () => {
           if (options.length <= 2) return DA.toast.warn('Minimal 2 pilihan');
           options.splice(Number(btn.dataset.i), 1);
-          reindexOptions();
+          options.forEach((o, i) => { o.id = String.fromCharCode(65 + i); });
           renderOptions();
         });
       });
@@ -629,70 +848,55 @@ DA.adminPsikotes = (function () {
       });
     }
 
-    function reindexOptions() {
-      // After removal, reindex IDs A, B, C...
-      options.forEach((o, i) => { o.id = String.fromCharCode(65 + i); });
-    }
-
     renderOptions();
 
-    // Add option
     document.getElementById('qAddOption')?.addEventListener('click', () => {
       if (options.length >= 8) return DA.toast.warn('Maks 8 pilihan');
       options.push({ id: String.fromCharCode(65 + options.length), text: '', image: null, trait: '' });
       renderOptions();
     });
 
-    // Question image upload
+    // Question image
     const qImgInput = document.getElementById('qImgInput');
+    const qImgBox = document.getElementById('qImgBox');
+
+    function renderQImg() {
+      const old = qImgBox.querySelector('.apk-img-preview, .apk-img-drop');
+      if (old) old.remove();
+      if (qImgData) {
+        const preview = document.createElement('div');
+        preview.className = 'apk-img-preview';
+        preview.innerHTML = `<img src="${qImgData}"><button type="button" class="apk-img-remove" id="qImgRemove"><i class="fa-solid fa-xmark"></i></button>`;
+        qImgBox.insertBefore(preview, qImgInput);
+        preview.querySelector('#qImgRemove').addEventListener('click', () => {
+          qImgData = '';
+          renderQImg();
+        });
+      } else {
+        const drop = document.createElement('label');
+        drop.className = 'apk-img-drop';
+        drop.htmlFor = 'qImgInput';
+        drop.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i><span>Klik untuk upload</span><small>Auto-compress hingga 1400px</small>`;
+        qImgBox.insertBefore(drop, qImgInput);
+      }
+    }
+
     qImgInput?.addEventListener('change', async (e) => {
       const f = e.target.files?.[0];
       e.target.value = '';
       if (!f) return;
-      const b64 = await fileToResizedBase64(f, MAX_IMG_DIM);
-      const box = document.getElementById('qImgBox');
-      box.querySelector('.apk-img-drop')?.remove();
-      const old = box.querySelector('.apk-img-preview');
-      if (old) old.remove();
-      const preview = document.createElement('div');
-      preview.className = 'apk-img-preview';
-      preview.innerHTML = `<img src="${b64}"><button type="button" class="apk-img-remove" id="qImgRemove"><i class="fa-solid fa-xmark"></i></button>`;
-      box.insertBefore(preview, qImgInput);
-      box.dataset.qImg = b64;
-      preview.querySelector('#qImgRemove').addEventListener('click', () => {
-        preview.remove();
-        box.dataset.qImg = '';
-        box.insertAdjacentHTML('afterbegin', `
-          <label class="apk-img-drop" for="qImgInput">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-            <span>Klik untuk upload</span>
-            <small>Maks ~1MB (otomatis dikompres)</small>
-          </label>`);
-      });
+      qImgData = await fileToResizedBase64(f, MAX_IMG_DIM);
+      renderQImg();
     });
-    document.getElementById('qImgRemove')?.addEventListener('click', (e) => {
-      const box = document.getElementById('qImgBox');
-      e.target.closest('.apk-img-preview').remove();
-      box.dataset.qImg = '';
-      box.insertAdjacentHTML('afterbegin', `
-        <label class="apk-img-drop" for="qImgInput">
-          <i class="fa-solid fa-cloud-arrow-up"></i>
-          <span>Klik untuk upload</span>
-          <small>Maks ~1MB (otomatis dikompres)</small>
-        </label>`);
-    });
-    const imgBox = document.getElementById('qImgBox');
-    if (q.image) imgBox.dataset.qImg = q.image;
 
-    // Return collector
-    return () => {
-      const type = document.getElementById('qType').value;
-      const text = document.getElementById('qText').value.trim();
-      const image = document.getElementById('qImgBox').dataset.qImg || null;
-      const correct = document.getElementById('qCorrect')?.value || null;
-      const modelAnswer = document.getElementById('qModelAnswer')?.value.trim() || '';
-      return { type, text, image, options, correct, modelAnswer };
-    };
+    return () => ({
+      type: document.getElementById('qType').value,
+      text: document.getElementById('qText').value.trim(),
+      image: qImgData || null,
+      options,
+      correct: document.getElementById('qCorrect')?.value || null,
+      modelAnswer: document.getElementById('qModelAnswer')?.value.trim() || '',
+    });
   }
 
   function addQuestion() {
@@ -716,7 +920,7 @@ DA.adminPsikotes = (function () {
         render();
       },
     });
-    setTimeout(() => { collect = bindQuestionForm({}, sec.type); }, 50);
+    setTimeout(() => { collect = bindQuestionForm({}, sec.type); }, 60);
   }
 
   function editQuestion(qid) {
@@ -739,7 +943,7 @@ DA.adminPsikotes = (function () {
         render();
       },
     });
-    setTimeout(() => { collect = bindQuestionForm(q, sec.type); }, 50);
+    setTimeout(() => { collect = bindQuestionForm(q, sec.type); }, 60);
   }
 
   function dupQuestion(qid) {
@@ -812,10 +1016,7 @@ DA.adminPsikotes = (function () {
           ctx.fillStyle = '#fff';
           ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
-          // PNG untuk yang butuh transparansi (jarang untuk soal), JPG untuk yang lain
-          const mime = 'image/jpeg';
-          const q = 0.82;
-          resolve(c.toDataURL(mime, q));
+          resolve(c.toDataURL('image/jpeg', 0.82));
         };
         img.onerror = reject;
         img.src = e.target.result;
@@ -825,14 +1026,17 @@ DA.adminPsikotes = (function () {
     });
   }
 
-  /* ============================================
-     PUBLIC API
-     ============================================ */
   function handleAddClick() {
     if (nav.view === 'list') addPackage();
     else if (nav.view === 'pkg') addSection();
-    else if (nav.view === 'sec') addQuestion();
+    else if (nav.view === 'sec') {
+      const pkg = data.packages.find((p) => p.id === nav.pkgId);
+      const sec = pkg?.sections?.find((s) => s.id === nav.secId);
+      if (sec?.type === 'worksheet') addWorksheetPage();
+      else addQuestion();
+    }
   }
+
   function handleBackClick() {
     if (nav.view === 'sec') { nav.view = 'pkg'; nav.secId = null; render(); }
     else if (nav.view === 'pkg') { nav = { view: 'list', pkgId: null, secId: null }; render(); }
@@ -843,11 +1047,5 @@ DA.adminPsikotes = (function () {
     els.backBtn?.addEventListener('click', handleBackClick);
   }
 
-  const origInit = init;
-  function initAndBind() {
-    origInit();
-    bindUI();
-  }
-
-  return { init: initAndBind, reload: loadData };
+  return { init, reload: loadData };
 })();
