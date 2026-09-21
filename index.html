@@ -46,7 +46,7 @@
     </div>
     <div class="min-w-0">
       <h1 class="text-sm sm:text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-none">DocuApply</h1>
-      <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5">PDF · Photo · CV · Email</p>
+      <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5">PDF · Photo · CV · Email · Tes</p>
     </div>
   </div>
 
@@ -58,6 +58,7 @@
     <button data-tab="cv"        class="nav-btn"><i class="fa-solid fa-id-card"></i><span>CV</span></button>
     <button data-tab="companies" class="nav-btn"><i class="fa-solid fa-building"></i><span>Perusahaan</span></button>
     <button data-tab="email"     class="nav-btn"><i class="fa-regular fa-envelope"></i><span>Email</span></button>
+    <button data-tab="psikotes"  class="nav-btn"><i class="fa-solid fa-brain"></i><span>Psikotes</span></button>
   </nav>
 
   <div id="roleBadge" class="flex items-center gap-1.5 shrink-0"></div>
@@ -810,10 +811,97 @@
     </div>
   </section>
 
+  <!-- ========== PSIKOTES (USER) ========== -->
+  <section id="view-psikotes" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
+
+    <!-- LIST WRAP -->
+    <div id="pkListWrap" class="flex-1 min-h-0 overflow-y-auto">
+      <div class="max-w-5xl mx-auto p-4">
+        <div class="text-center mb-6 mt-2">
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Latihan Psikotes</h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Pilih paket psikotes untuk mulai berlatih</p>
+        </div>
+        <div id="pkLoading" class="text-center py-12">
+          <div class="loader !w-8 !h-8 !border-slate-300 !border-t-indigo-500 mx-auto"></div>
+          <p class="text-sm text-slate-400 mt-3">Memuat paket...</p>
+        </div>
+        <div id="pkEmpty" class="hidden text-center py-16">
+          <div class="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-brain text-3xl text-slate-300 dark:text-slate-600"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-600 dark:text-slate-300 mb-1">Belum ada paket psikotes</h3>
+          <p class="text-xs text-slate-400">Hubungi admin untuk menambahkan paket</p>
+        </div>
+        <div id="pkPackageGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5"></div>
+      </div>
+    </div>
+
+    <!-- TEST WRAP -->
+    <div id="pkTestWrap" class="hidden flex-1 min-h-0 flex-col overflow-hidden">
+      <div class="shrink-0 px-3 sm:px-5 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-3xl mx-auto flex items-center gap-3">
+          <button id="pkTestExit" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <div class="flex-1 min-w-0">
+            <div id="pkTestPkgName" class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate"></div>
+            <div id="pkTestSecName" class="text-[11px] text-indigo-500 font-semibold"></div>
+          </div>
+          <div id="pkTestTimer" class="pk-timer">00:00</div>
+        </div>
+        <div class="max-w-3xl mx-auto mt-2 flex items-center gap-3">
+          <div class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div id="pkTestProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all" style="width:0%"></div>
+          </div>
+          <span id="pkTestProgress" class="text-[11px] font-bold text-slate-500 dark:text-slate-400 shrink-0">0 / 0</span>
+        </div>
+      </div>
+
+      <div id="pkTestQuestion" class="flex-1 min-h-0 overflow-y-auto"></div>
+
+      <div class="shrink-0 p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
+        <div class="max-w-3xl mx-auto space-y-3">
+          <div id="pkTestNavGrid" class="pk-nav-grid"></div>
+          <div class="flex gap-2">
+            <button id="pkTestPrev" class="flex-1 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 py-3.5 rounded-2xl font-bold text-sm active:scale-95 transition-transform disabled:opacity-40">
+              <i class="fa-solid fa-arrow-left text-xs"></i> Sebelumnya
+            </button>
+            <button id="pkTestNext" class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-br from-indigo-500 to-violet-600 text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform">
+              Selanjutnya <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+            <button id="pkTestSubmit" class="hidden flex-1 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform">
+              <i class="fa-solid fa-paper-plane text-xs"></i> Kirim Jawaban
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT WRAP -->
+    <div id="pkResultWrap" class="hidden flex-1 min-h-0 overflow-y-auto">
+      <div class="max-w-3xl mx-auto p-4 pb-24">
+        <div class="pk-result-header">
+          <div class="pk-result-badge">
+            <i class="fa-solid fa-clipboard-check"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">Hasil Psikotes</h2>
+          <p id="pkResultTitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1"></p>
+        </div>
+        <div id="pkResultScore" class="mb-4"></div>
+        <div id="pkResultStats" class="pk-stats-grid mb-6"></div>
+        <div id="pkResultReview"></div>
+        <button id="pkResultClose" class="btn-bounce w-full mt-6 btn-primary py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-check"></i> Selesai
+        </button>
+      </div>
+    </div>
+
+  </section>
+
 </main>
 
 <!-- ===== MOBILE NAV ===== -->
-<nav id="navMobile" class="lg:hidden shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 grid grid-cols-7 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
+<nav id="navMobile" class="lg:hidden shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 grid grid-cols-8 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
   <button data-tab="editor"    class="m-nav-btn py-2"><i class="fa-solid fa-file-pdf"></i><span>Editor</span></button>
   <button data-tab="image2pdf" class="m-nav-btn py-2"><i class="fa-solid fa-image"></i><span>Image</span></button>
   <button data-tab="split"     class="m-nav-btn py-2"><i class="fa-solid fa-scissors"></i><span>Split</span></button>
@@ -821,6 +909,7 @@
   <button data-tab="cv"        class="m-nav-btn py-2"><i class="fa-solid fa-id-card"></i><span>CV</span></button>
   <button data-tab="companies" class="m-nav-btn py-2"><i class="fa-solid fa-building"></i><span>PT</span></button>
   <button data-tab="email"     class="m-nav-btn py-2"><i class="fa-regular fa-envelope"></i><span>Email</span></button>
+  <button data-tab="psikotes"  class="m-nav-btn py-2"><i class="fa-solid fa-brain"></i><span>Tes</span></button>
 </nav>
 
 <!-- ===== CV CHOICE MODAL ===== -->
@@ -879,6 +968,37 @@
   </div>
 </div>
 
+<!-- ===== PSIKOTES START MODAL ===== -->
+<div id="pkStartModal" class="fixed inset-0 z-[100] hidden items-end sm:items-center justify-center" style="z-index:100;">
+  <div id="pkStartBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+  <div class="relative w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 overflow-hidden">
+    <div class="pt-3 pb-1 flex justify-center sm:hidden"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-3 pb-4 sm:pt-6 border-b border-slate-100 dark:border-slate-800">
+      <div class="flex items-start gap-3">
+        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-brain text-lg"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 id="pkStartTitle" class="font-bold text-base text-slate-800 dark:text-slate-100 leading-tight">Paket Psikotes</h3>
+          <p id="pkStartDesc" class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed"></p>
+        </div>
+        <button id="pkStartClose" class="w-9 h-9 -mt-1 -mr-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+    <div id="pkStartInfo" class="p-4 sm:p-5 space-y-2.5"></div>
+    <div class="p-4 sm:p-5 pt-0 grid grid-cols-2 gap-3">
+      <button id="pkStartCancel" class="py-3.5 rounded-2xl font-bold text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform">
+        Batal
+      </button>
+      <button id="pkStartConfirm" class="py-3.5 rounded-2xl font-bold text-sm bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform">
+        <i class="fa-solid fa-play text-xs"></i> Mulai
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== CAMERA MODAL ===== -->
 <div id="cameraModal" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-[80] hidden flex-col" style="z-index:80;">
   <div class="flex justify-between items-center p-4 sm:p-6 text-white">
@@ -912,7 +1032,7 @@
       <i class="fa-solid fa-layer-group"></i>
     </div>
     <h1 class="login-title">DocuApply</h1>
-    <p class="login-subtitle">PDF · Photo · CV · Email · Perusahaan</p>
+    <p class="login-subtitle">PDF · Photo · CV · Email · Perusahaan · Tes</p>
 
     <div class="login-options">
       <button id="loginUserBtn" class="login-option-btn">
@@ -975,6 +1095,7 @@
     <button data-admin-tab="companies" class="admin-tab"><i class="fa-solid fa-building"></i> Perusahaan</button>
     <button data-admin-tab="categories" class="admin-tab"><i class="fa-solid fa-tags"></i> Kategori</button>
     <button data-admin-tab="email" class="admin-tab"><i class="fa-regular fa-envelope"></i> Email</button>
+    <button data-admin-tab="psikotes" class="admin-tab"><i class="fa-solid fa-brain"></i> Psikotes</button>
     <button data-admin-tab="settings" class="admin-tab"><i class="fa-solid fa-gear"></i> Pengaturan</button>
   </div>
 
@@ -1176,6 +1297,25 @@
       </div>
 
       <div id="adminEmailList" class="admin-list"></div>
+    </div>
+
+    <!-- PSIKOTES -->
+    <div data-admin-panel="psikotes" class="hidden">
+      <div class="admin-hint">
+        <i class="fa-solid fa-info-circle mr-1"></i>
+        Buat paket psikotes dengan beberapa bagian tes. Gambar otomatis dikompres agar ringan.
+      </div>
+      <div class="admin-toolbar">
+        <div id="apkBreadcrumb" class="apk-breadcrumb"></div>
+        <div class="flex-1"></div>
+        <button id="apkBackBtn" class="admin-btn admin-btn-secondary hidden">
+          <i class="fa-solid fa-arrow-left"></i> Kembali
+        </button>
+        <button id="apkAddBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-plus"></i> Tambah Paket
+        </button>
+      </div>
+      <div id="apkContainer" class="admin-list"></div>
     </div>
 
     <!-- SETTINGS -->
@@ -1391,6 +1531,8 @@
 <script src="js/photostudio.js"></script>
 <script src="js/cv-builder.js"></script>
 <script src="js/companies.js"></script>
+<script src="js/psikotes.js"></script>
+<script src="js/admin-psikotes.js"></script>
 <script src="js/app.js"></script>
 
 <!-- ===== AUTH & ADMIN INIT ===== -->
