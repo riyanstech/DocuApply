@@ -6,6 +6,7 @@
    - Search & filter
    - Duplicate entries
    - GitHub sync integration
+   - Psikotes Manager integration
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -129,6 +130,11 @@ DA.admin = (function () {
     loadActivity();
     bindEvents();
     loadGithubConfig();
+
+    // Init psikotes manager
+    if (DA.adminPsikotes && typeof DA.adminPsikotes.init === 'function') {
+      try { DA.adminPsikotes.init(); } catch (e) { console.warn('[Admin] psikotes init error:', e); }
+    }
   }
 
   /* ============================================
@@ -165,6 +171,9 @@ DA.admin = (function () {
     else if (name === 'companies') renderCompaniesList();
     else if (name === 'categories') renderCategoriesList();
     else if (name === 'email') renderEmailList();
+    else if (name === 'psikotes') {
+      // adminPsikotes renders itself; no action needed here
+    }
   }
 
   /* ============================================
@@ -966,10 +975,6 @@ DA.admin = (function () {
     const cats = (cpCache.categories || []).filter((x) => x.id !== 'all');
     if (!cats.length) cats.push({ id: 'manufaktur', name: 'Manufaktur' });
 
-    const applyList = (c.apply && c.apply.length)
-      ? c.apply
-      : [{ type: 'email', value: '', subject: '' }];
-
     return `
       <div class="form-field">
         <label class="form-field-label">Nama Perusahaan <span class="req">*</span></label>
@@ -1721,5 +1726,14 @@ DA.admin = (function () {
   /* ============================================
      PUBLIC API
      ============================================ */
-  return { init, open, close };
+  return {
+    init,
+    open,
+    close,
+    // Expose for admin-psikotes module
+    openModal,
+    closeModal,
+    showConfirm,
+    logActivity,
+  };
 })();
