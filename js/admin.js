@@ -5,7 +5,7 @@
    - Category management
    - Search & filter
    - Duplicate entries
-   - GitHub sync
+   - GitHub sync integration
    ===================================================== */
 window.DA = window.DA || {};
 
@@ -15,12 +15,29 @@ DA.admin = (function () {
   const { storage, toast } = DA;
   const { downloadBlob, escapeHtml, uid, formatBytes } = DA.utils;
 
+  /* ============================================
+     STATE
+     ============================================ */
   let els = {};
   let activeTab = 'overview';
   let activityLog = [];
 
+  let cvCache = [];
+  let cpCache = { categories: [], companies: [], disclaimer: '' };
+  let emCache = [];
+
   const ACTIVITY_KEY = 'adminActivityLog';
   const CATEGORY_COLORS = ['blue', 'emerald', 'purple', 'amber', 'rose', 'indigo', 'slate'];
+  const ICON_LIST_CV = [
+    'fa-file-lines', 'fa-file-invoice', 'fa-briefcase', 'fa-palette', 'fa-star', 'fa-rocket',
+    'fa-id-card', 'fa-file-word', 'fa-user-tie', 'fa-lightbulb', 'fa-gem', 'fa-crown',
+  ];
+  const ICON_LIST_CAT = [
+    'fa-globe', 'fa-landmark', 'fa-building-columns', 'fa-tower-cell', 'fa-rocket',
+    'fa-cart-shopping', 'fa-car', 'fa-industry', 'fa-plane', 'fa-store',
+    'fa-bolt', 'fa-briefcase', 'fa-shirt', 'fa-scissors', 'fa-utensils',
+    'fa-couch', 'fa-pills', 'fa-tag', 'fa-star', 'fa-heart',
+  ];
 
   /* ============================================
      INIT
@@ -74,6 +91,7 @@ DA.admin = (function () {
       passOld: document.getElementById('adminPassOld'),
       passNew: document.getElementById('adminPassNew'),
       passChangeBtn: document.getElementById('adminPassChangeBtn'),
+
       ghOwner: document.getElementById('ghOwner'),
       ghRepo: document.getElementById('ghRepo'),
       ghBranch: document.getElementById('ghBranch'),
@@ -82,6 +100,7 @@ DA.admin = (function () {
       ghSaveBtn: document.getElementById('ghSaveBtn'),
       ghClearBtn: document.getElementById('ghClearBtn'),
       ghStatus: document.getElementById('ghStatus'),
+
       exportBtn: document.getElementById('adminExportBtn'),
       importBtn: document.getElementById('adminImportBtn'),
       importInput: document.getElementById('adminImportInput'),
@@ -102,6 +121,11 @@ DA.admin = (function () {
       confirmOk: document.getElementById('adminConfirmOk'),
     };
 
+    if (!els.screen) {
+      console.warn('[Admin] Dashboard element not found — skip init');
+      return;
+    }
+
     loadActivity();
     bindEvents();
     loadGithubConfig();
@@ -111,17 +135,17 @@ DA.admin = (function () {
      OPEN / CLOSE
      ============================================ */
   function open() {
-    if (!DA.auth.isAdmin()) {
+    if (!DA.auth || !DA.auth.isAdmin()) {
       toast.error('Hanya admin yang bisa membuka dashboard');
       return;
     }
-    els.screen?.classList.remove('hidden');
+    els.screen.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     switchTab('overview');
   }
 
   function close() {
-    els.screen?.classList.add('hidden');
+    els.screen.classList.add('hidden');
     document.body.style.overflow = '';
   }
 
@@ -137,14 +161,10 @@ DA.admin = (function () {
 
   function renderTab(name) {
     if (name === 'overview') renderOverview();
-    if (name === 'cv') renderCvList();
-    if (name === 'companies') renderCompaniesList();
-    if (name === 'categories') renderCategoriesList();
-    if (name === 'email') renderEmailList();
-  }
-
-  function refreshCurrentTab() {
-    renderTab(activeTab);
+    else if (name === 'cv') renderCvList();
+    else if (name === 'companies') renderCompaniesList();
+    else if (name === 'categories') renderCategoriesList();
+    else if (name === 'email') renderEmailList();
   }
 
   /* ============================================
@@ -152,14 +172,11 @@ DA.admin = (function () {
      ============================================ */
   function loadActivity() {
     activityLog = storage.get(ACTIVITY_KEY, []);
+    if (!Array.isArray(activityLog)) activityLog = [];
   }
 
   function logActivity(text, icon = 'fa-pen') {
-    activityLog.unshift({
-      text,
-      icon,
-      ts: Date.now(),
-    });
+    activityLog.unshift({ text, icon, ts: Date.now() });
     if (activityLog.length > 50) activityLog.length = 50;
     storage.set(ACTIVITY_KEY, activityLog);
     if (activeTab === 'overview') renderActivity();
@@ -182,17 +199,15 @@ DA.admin = (function () {
         </div>`;
       return;
     }
-    els.adminActivityList.innerHTML = activityLog.slice(0, 20).map((a) => {
-      const time = formatTimeAgo(a.ts);
-      return `
-        <div class="admin-activity-item">
-          <div class="admin-activity-icon"><i class="fa-solid ${a.icon}"></i></div>
-          <div class="admin-activity-body">
-            <div class="admin-activity-text">${escapeHtml(a.text)}</div>
-            <div class="admin-activity-time">${escapeHtml(time)}</div>
-          </div>
-        </div>`;
-    }).join('');
+    els.adminActivityList.innerHTML = activityLog.slice(0, 20).map((a) => `
+      <div class="admin-activity-item">
+        <div class="admin-activity-icon"><i class="fa-solid ${escapeHtml(a.icon || 'fa-pen')}"></i></div>
+        <div class="admin-activity-body">
+          <div class="admin-activity-text">${escapeHtml(a.text)}</div>
+          <div class="admin-activity-time">${escapeHtml(formatTimeAgo(a.ts))}</div>
+        </div>
+      </div>
+    `).join('');
   }
 
   function formatTimeAgo(ts) {
@@ -212,7 +227,7 @@ DA.admin = (function () {
      GITHUB CONFIG
      ============================================ */
   function loadGithubConfig() {
-    const cfg = DA.github.getConfig();
+    const cfg = DA.github ? DA.github.getConfig() : null;
     if (!cfg) return;
     if (els.ghOwner) els.ghOwner.value = cfg.owner || '';
     if (els.ghRepo) els.ghRepo.value = cfg.repo || '';
@@ -222,26 +237,26 @@ DA.admin = (function () {
   }
 
   function updateGhStatus() {
-    const cfg = DA.github.getConfig();
-    const ok = cfg && cfg.owner && cfg.repo && cfg.token;
+    const cfg = DA.github ? DA.github.getConfig() : null;
+    const ok = !!(cfg && cfg.owner && cfg.repo && cfg.token);
+
     if (els.ghStatus) {
       if (ok) {
+        els.ghStatus.className = 'gh-status gh-status-ok';
         els.ghStatus.innerHTML = `
           <i class="fa-solid fa-circle-check text-emerald-500"></i>
           <span class="text-emerald-700 dark:text-emerald-400">
             Terhubung ke <strong>${escapeHtml(cfg.owner)}/${escapeHtml(cfg.repo)}</strong>
             (<code>${escapeHtml(cfg.branch || 'main')}</code>)
           </span>`;
-        els.ghStatus.className = 'gh-status gh-status-ok';
       } else {
+        els.ghStatus.className = 'gh-status gh-status-warn';
         els.ghStatus.innerHTML = `
           <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
-          <span class="text-amber-700 dark:text-amber-400">
-            Belum dikonfigurasi
-          </span>`;
-        els.ghStatus.className = 'gh-status gh-status-warn';
+          <span class="text-amber-700 dark:text-amber-400">Belum dikonfigurasi</span>`;
       }
     }
+
     if (els.overviewGhStatus) {
       if (ok) {
         els.overviewGhStatus.className = 'overview-gh-status ok';
@@ -262,12 +277,15 @@ DA.admin = (function () {
     const repo = els.ghRepo?.value.trim();
     const branch = els.ghBranch?.value.trim() || 'main';
     const token = els.ghToken?.value.trim();
+
     if (!owner || !repo || !token) {
       toast.error('Semua field wajib diisi');
       return;
     }
+
     DA.github.setConfig({ owner, repo, branch, token });
     toast.info('Testing koneksi...', 1500);
+
     const result = await DA.github.testConnection();
     if (result.ok) {
       toast.success('✅ ' + result.msg, 3500);
@@ -288,7 +306,8 @@ DA.admin = (function () {
     showConfirm({
       title: 'Hapus Config GitHub?',
       subtitle: 'Konfigurasi akan dihapus dari browser',
-      message: 'Setelah dihapus, admin tidak bisa upload file atau sync data ke GitHub sampai setup ulang.',
+      message: 'Setelah dihapus, admin tidak bisa upload file atau sync ke GitHub sampai setup ulang.',
+      okText: 'Ya, Hapus',
       onOk: () => {
         DA.github.clearConfig();
         if (els.ghOwner) els.ghOwner.value = '';
@@ -303,10 +322,10 @@ DA.admin = (function () {
   }
 
   /* ============================================
-     LOAD DATA
+     DATA LOADERS
      ============================================ */
   async function getCvTemplates() {
-    if (DA.github.isConfigured()) {
+    if (DA.github && DA.github.isConfigured()) {
       const raw = await DA.github.getFileContent('cv-templates/templates.json');
       if (raw) {
         try {
@@ -319,11 +338,13 @@ DA.admin = (function () {
       const res = await fetch('cv-templates/templates.json?t=' + Date.now());
       const data = await res.json();
       return Array.isArray(data) ? data : (data.templates || []);
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   }
 
   async function getCompaniesData() {
-    if (DA.github.isConfigured()) {
+    if (DA.github && DA.github.isConfigured()) {
       const raw = await DA.github.getFileContent('companies/companies.json');
       if (raw) {
         try {
@@ -331,8 +352,7 @@ DA.admin = (function () {
           return {
             categories: data.categories || [],
             companies: data.companies || [],
-            disclaimer: data.disclaimer,
-            lastUpdated: data.lastUpdated,
+            disclaimer: data.disclaimer || '',
           };
         } catch {}
       }
@@ -343,14 +363,15 @@ DA.admin = (function () {
       return {
         categories: data.categories || [],
         companies: data.companies || [],
-        disclaimer: data.disclaimer,
-        lastUpdated: data.lastUpdated,
+        disclaimer: data.disclaimer || '',
       };
-    } catch { return { categories: [], companies: [] }; }
+    } catch {
+      return { categories: [], companies: [], disclaimer: '' };
+    }
   }
 
   async function getEmailTemplates() {
-    if (DA.github.isConfigured()) {
+    if (DA.github && DA.github.isConfigured()) {
       const raw = await DA.github.getFileContent('email-templates/email-templates.json');
       if (raw) {
         try { return JSON.parse(raw); } catch {}
@@ -360,12 +381,12 @@ DA.admin = (function () {
   }
 
   /* ============================================
-     SAVE DATA
+     DATA SAVERS
      ============================================ */
   async function saveCvTemplates(list) {
     storage.set('cvTemplatesOverride', list);
-    if (!DA.github.isConfigured()) {
-      toast.warn('Tersimpan lokal. Setup GitHub untuk sync.', 4000);
+    if (!DA.github || !DA.github.isConfigured()) {
+      toast.warn('Tersimpan lokal. Setup GitHub untuk sync antar device.', 4000);
       return false;
     }
     try {
@@ -373,21 +394,21 @@ DA.admin = (function () {
       await DA.github.uploadFile(
         'cv-templates/templates.json',
         JSON.stringify({ templates: list }, null, 2),
-        'chore: update CV templates from admin'
+        'chore: update CV templates from admin dashboard'
       );
       toast.success('✅ Tersimpan di GitHub. Deploy ~1 menit.', 5000);
       window.dispatchEvent(new Event('cvTemplates:updated'));
       return true;
     } catch (err) {
-      toast.error('Gagal simpan: ' + err.message, 6000);
+      toast.error('Gagal simpan ke GitHub: ' + err.message, 6000);
       return false;
     }
   }
 
   async function saveCompanies(data) {
     storage.set('companiesOverride', data);
-    if (!DA.github.isConfigured()) {
-      toast.warn('Tersimpan lokal. Setup GitHub untuk sync.', 4000);
+    if (!DA.github || !DA.github.isConfigured()) {
+      toast.warn('Tersimpan lokal. Setup GitHub untuk sync antar device.', 4000);
       return false;
     }
     try {
@@ -395,7 +416,7 @@ DA.admin = (function () {
       await DA.github.uploadFile(
         'companies/companies.json',
         JSON.stringify(data, null, 2),
-        'chore: update companies from admin'
+        'chore: update companies data from admin dashboard'
       );
       toast.success('✅ Tersimpan di GitHub.', 5000);
       window.dispatchEvent(new Event('companies:updated'));
@@ -408,8 +429,8 @@ DA.admin = (function () {
 
   async function saveEmailTemplates(list) {
     storage.set('emailTemplatesOverride', list);
-    if (!DA.github.isConfigured()) {
-      toast.warn('Tersimpan lokal. Setup GitHub untuk sync.', 4000);
+    if (!DA.github || !DA.github.isConfigured()) {
+      toast.warn('Tersimpan lokal. Setup GitHub untuk sync antar device.', 4000);
       return false;
     }
     try {
@@ -417,7 +438,7 @@ DA.admin = (function () {
       await DA.github.uploadFile(
         'email-templates/email-templates.json',
         JSON.stringify({ templates: list }, null, 2),
-        'chore: update email templates from admin'
+        'chore: update email templates from admin dashboard'
       );
       toast.success('✅ Tersimpan di GitHub.', 5000);
       window.dispatchEvent(new Event('emailTemplates:updated'));
@@ -431,66 +452,136 @@ DA.admin = (function () {
   /* ============================================
      MODAL SYSTEM
      ============================================ */
-  function openModal({ icon = 'fa-pen', title, subtitle, bodyHtml, submitText = 'Simpan', onSubmit }) {
+  function openModal(opts = {}) {
     if (!els.modal) return;
-    els.modalIcon.innerHTML = `<i class="fa-solid ${icon}"></i>`;
-    els.modalTitle.textContent = title || 'Edit';
-    els.modalSubtitle.textContent = subtitle || 'Isi form di bawah';
-    els.modalBody.innerHTML = bodyHtml || '';
-    els.modalSubmit.innerHTML = `<i class="fa-solid fa-check"></i> ${submitText}`;
+
+    const {
+      icon = 'fa-pen',
+      title = 'Edit',
+      subtitle = 'Isi form di bawah',
+      bodyHtml = '',
+      submitText = 'Simpan',
+      onSubmit = null,
+    } = opts;
+
+    if (els.modalIcon) els.modalIcon.innerHTML = `<i class="fa-solid ${escapeHtml(icon)}"></i>`;
+    if (els.modalTitle) els.modalTitle.textContent = title;
+    if (els.modalSubtitle) els.modalSubtitle.textContent = subtitle;
+    if (els.modalBody) els.modalBody.innerHTML = bodyHtml;
+    if (els.modalSubmit) {
+      els.modalSubmit.innerHTML = `<i class="fa-solid fa-check"></i> ${escapeHtml(submitText)}`;
+    }
+
     els.modal.classList.remove('hidden');
 
-    const newSubmit = els.modalSubmit.cloneNode(true);
-    els.modalSubmit.parentNode.replaceChild(newSubmit, els.modalSubmit);
-    els.modalSubmit = newSubmit;
+    // Rebind submit listener
+    const fresh = els.modalSubmit.cloneNode(true);
+    els.modalSubmit.parentNode.replaceChild(fresh, els.modalSubmit);
+    els.modalSubmit = fresh;
     els.modalSubmit.addEventListener('click', () => {
-      if (onSubmit) onSubmit();
+      if (typeof onSubmit === 'function') onSubmit();
     });
 
     setTimeout(() => {
-      const firstInput = els.modalBody.querySelector('input, select, textarea');
-      firstInput?.focus();
-    }, 100);
+      const first = els.modalBody?.querySelector('input, select, textarea');
+      first?.focus();
+    }, 120);
   }
 
   function closeModal() {
-    els.modal?.classList.add('hidden');
+    if (els.modal) els.modal.classList.add('hidden');
   }
 
-  function showConfirm({ title, subtitle, message, okText = 'Ya, Lanjutkan', onOk }) {
+  function showConfirm(opts = {}) {
     if (!els.confirmModal) return;
-    els.confirmTitle.textContent = title || 'Konfirmasi';
-    els.confirmSubtitle.textContent = subtitle || 'Apakah Anda yakin?';
-    els.confirmMessage.innerHTML = message || '';
-    els.confirmOk.innerHTML = `<i class="fa-solid fa-check"></i> ${okText}`;
+
+    const {
+      title = 'Konfirmasi',
+      subtitle = 'Apakah Anda yakin?',
+      message = '',
+      okText = 'Ya, Lanjutkan',
+      onOk = null,
+    } = opts;
+
+    if (els.confirmTitle) els.confirmTitle.textContent = title;
+    if (els.confirmSubtitle) els.confirmSubtitle.textContent = subtitle;
+    if (els.confirmMessage) els.confirmMessage.innerHTML = message;
+    if (els.confirmOk) {
+      els.confirmOk.innerHTML = `<i class="fa-solid fa-check"></i> ${escapeHtml(okText)}`;
+    }
+
     els.confirmModal.classList.remove('hidden');
 
-    const newOk = els.confirmOk.cloneNode(true);
-    els.confirmOk.parentNode.replaceChild(newOk, els.confirmOk);
-    els.confirmOk = newOk;
+    const fresh = els.confirmOk.cloneNode(true);
+    els.confirmOk.parentNode.replaceChild(fresh, els.confirmOk);
+    els.confirmOk = fresh;
     els.confirmOk.addEventListener('click', () => {
       els.confirmModal.classList.add('hidden');
-      if (onOk) onOk();
+      if (typeof onOk === 'function') onOk();
     });
   }
 
   function closeConfirm() {
-    els.confirmModal?.classList.add('hidden');
+    if (els.confirmModal) els.confirmModal.classList.add('hidden');
+  }
+
+  /* ============================================
+     HELPERS
+     ============================================ */
+  function colorHex(name) {
+    const map = {
+      blue: 'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+      emerald: 'linear-gradient(135deg,#10b981,#047857)',
+      purple: 'linear-gradient(135deg,#8b5cf6,#6d28d9)',
+      amber: 'linear-gradient(135deg,#f59e0b,#d97706)',
+      rose: 'linear-gradient(135deg,#f43f5e,#be123c)',
+      indigo: 'linear-gradient(135deg,#6366f1,#4338ca)',
+      slate: 'linear-gradient(135deg,#64748b,#334155)',
+    };
+    return map[name] || map.blue;
+  }
+
+  function bindColorPicker(rowId, inputId) {
+    const row = document.getElementById(rowId);
+    const input = document.getElementById(inputId);
+    if (!row || !input) return;
+    row.querySelectorAll('.color-option').forEach((el) => {
+      el.addEventListener('click', () => {
+        row.querySelectorAll('.color-option').forEach((x) => x.classList.remove('selected'));
+        el.classList.add('selected');
+        input.value = el.dataset.color;
+      });
+    });
+  }
+
+  function bindIconPicker(rowId, inputId) {
+    const row = document.getElementById(rowId);
+    const input = document.getElementById(inputId);
+    if (!row || !input) return;
+    row.querySelectorAll('.icon-option').forEach((el) => {
+      el.addEventListener('click', () => {
+        row.querySelectorAll('.icon-option').forEach((x) => x.classList.remove('selected'));
+        el.classList.add('selected');
+        input.value = el.dataset.icon;
+      });
+    });
   }
 
   /* ============================================
      TAB: OVERVIEW
      ============================================ */
   async function renderOverview() {
-    const [cvList, compData, emData] = await Promise.all([
+    const [cvList, cpData, emData] = await Promise.all([
       getCvTemplates(),
       getCompaniesData(),
       getEmailTemplates(),
     ]);
+
     if (els.statCvCount) els.statCvCount.textContent = cvList.length;
-    if (els.statCompaniesCount) els.statCompaniesCount.textContent = (compData.companies || []).length;
-    if (els.statCategoriesCount) els.statCategoriesCount.textContent = (compData.categories || []).length;
+    if (els.statCompaniesCount) els.statCompaniesCount.textContent = (cpData.companies || []).length;
+    if (els.statCategoriesCount) els.statCategoriesCount.textContent = (cpData.categories || []).length;
     if (els.statEmailCount) els.statEmailCount.textContent = (emData?.templates || []).length;
+
     renderActivity();
     updateGhStatus();
   }
@@ -498,21 +589,20 @@ DA.admin = (function () {
   /* ============================================
      TAB: CV TEMPLATES
      ============================================ */
-  let cvCache = [];
-
   async function renderCvList() {
     if (!els.cvList) return;
     els.cvList.innerHTML = '<div class="admin-empty" style="padding:24px;"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
     cvCache = await getCvTemplates();
-
     filterCvList();
   }
 
   function filterCvList() {
+    if (!els.cvList) return;
     const q = (els.cvSearch?.value || '').toLowerCase().trim();
+
     const filtered = cvCache.filter((t) => {
       if (!q) return true;
-      const hay = `${t.name} ${t.file} ${t.description}`.toLowerCase();
+      const hay = `${t.name || ''} ${t.file || ''} ${t.description || ''}`.toLowerCase();
       return hay.includes(q);
     });
 
@@ -530,22 +620,16 @@ DA.admin = (function () {
       return `
         <div class="admin-row" data-idx="${idx}">
           <div class="admin-row-icon">
-            <i class="fa-solid ${t.icon || 'fa-file-lines'}"></i>
+            <i class="fa-solid ${escapeHtml(t.icon || 'fa-file-lines')}"></i>
           </div>
           <div class="admin-row-body">
-            <div class="admin-row-title">${escapeHtml(t.name)}</div>
-            <div class="admin-row-sub">${escapeHtml(t.file)} · ${escapeHtml(t.description || '')}</div>
+            <div class="admin-row-title">${escapeHtml(t.name || '(tanpa nama)')}</div>
+            <div class="admin-row-sub">${escapeHtml(t.file || '')} · ${escapeHtml(t.description || '')}</div>
           </div>
           <div class="admin-row-actions">
-            <button data-action="edit" class="admin-btn-icon primary" title="Edit">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button data-action="dup" class="admin-btn-icon warn" title="Duplikat">
-              <i class="fa-regular fa-clone"></i>
-            </button>
-            <button data-action="del" class="admin-btn-icon danger" title="Hapus">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+            <button data-action="edit" class="admin-btn-icon primary" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button data-action="dup" class="admin-btn-icon warn" title="Duplikat"><i class="fa-regular fa-clone"></i></button>
+            <button data-action="del" class="admin-btn-icon danger" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
           </div>
         </div>`;
     }).join('');
@@ -559,6 +643,8 @@ DA.admin = (function () {
   }
 
   function cvFormHtml(t = {}) {
+    const color = t.color || 'blue';
+    const icon = t.icon || 'fa-file-lines';
     return `
       <div class="form-field">
         <label class="form-field-label">Nama Template <span class="req">*</span></label>
@@ -567,7 +653,7 @@ DA.admin = (function () {
       <div class="form-field">
         <label class="form-field-label">File .docx <span class="req">*</span></label>
         <input type="text" id="cvFile" class="form-field-input" value="${escapeHtml(t.file || '')}" placeholder="cv-modern.docx">
-        <p class="form-field-hint">Nama file harus persis sama dengan file yang diupload ke folder <code>cv-templates/</code></p>
+        <p class="form-field-hint">Nama file harus persis sama dengan file di folder <code>cv-templates/</code></p>
       </div>
       <div class="form-field">
         <label class="form-field-label">Deskripsi</label>
@@ -577,29 +663,22 @@ DA.admin = (function () {
         <label class="form-field-label">Warna Kartu</label>
         <div class="color-options-row" id="cvColorRow">
           ${CATEGORY_COLORS.map((c) => `
-            <div class="color-option ${(t.color || 'blue') === c ? 'selected' : ''}" data-color="${c}" style="background:${colorHex(c)}"></div>
+            <div class="color-option ${color === c ? 'selected' : ''}" data-color="${c}" style="background:${colorHex(c)}"></div>
           `).join('')}
         </div>
-        <input type="hidden" id="cvColor" value="${t.color || 'blue'}">
+        <input type="hidden" id="cvColor" value="${escapeHtml(color)}">
       </div>
       <div class="form-field">
         <label class="form-field-label">Icon</label>
         <div class="icon-options-row" id="cvIconRow">
-          ${['fa-file-lines', 'fa-file-invoice', 'fa-briefcase', 'fa-palette', 'fa-star', 'fa-rocket',
-             'fa-id-card', 'fa-file-word', 'fa-user-tie', 'fa-lightbulb', 'fa-gem', 'fa-crown']
-            .map((ic) => `
-              <div class="icon-option ${(t.icon || 'fa-file-lines') === ic ? 'selected' : ''}" data-icon="${ic}">
-                <i class="fa-solid ${ic}"></i>
-              </div>`).join('')}
+          ${ICON_LIST_CV.map((ic) => `
+            <div class="icon-option ${icon === ic ? 'selected' : ''}" data-icon="${ic}">
+              <i class="fa-solid ${ic}"></i>
+            </div>`).join('')}
         </div>
-        <input type="hidden" id="cvIcon" value="${t.icon || 'fa-file-lines'}">
+        <input type="hidden" id="cvIcon" value="${escapeHtml(icon)}">
       </div>
     `;
-  }
-
-  function bindCvFormEvents() {
-    bindColorPicker('cvColorRow', 'cvColor');
-    bindIconPicker('cvIconRow', 'cvIcon');
   }
 
   function addCvTemplate() {
@@ -612,7 +691,7 @@ DA.admin = (function () {
       onSubmit: async () => {
         const name = document.getElementById('cvName')?.value.trim();
         const file = document.getElementById('cvFile')?.value.trim();
-        const desc = document.getElementById('cvDesc')?.value.trim();
+        const desc = document.getElementById('cvDesc')?.value.trim() || '';
         const color = document.getElementById('cvColor')?.value || 'blue';
         const icon = document.getElementById('cvIcon')?.value || 'fa-file-lines';
 
@@ -629,7 +708,10 @@ DA.admin = (function () {
         renderCvList();
       },
     });
-    setTimeout(bindCvFormEvents, 50);
+    setTimeout(() => {
+      bindColorPicker('cvColorRow', 'cvColor');
+      bindIconPicker('cvIconRow', 'cvIcon');
+    }, 60);
   }
 
   async function editCvTemplate(idx) {
@@ -640,13 +722,13 @@ DA.admin = (function () {
     openModal({
       icon: 'fa-pen',
       title: 'Edit Template CV',
-      subtitle: t.name,
+      subtitle: t.name || '',
       bodyHtml: cvFormHtml(t),
       submitText: 'Simpan',
       onSubmit: async () => {
         const name = document.getElementById('cvName')?.value.trim();
         const file = document.getElementById('cvFile')?.value.trim();
-        const desc = document.getElementById('cvDesc')?.value.trim();
+        const desc = document.getElementById('cvDesc')?.value.trim() || '';
         const color = document.getElementById('cvColor')?.value || 'blue';
         const icon = document.getElementById('cvIcon')?.value || 'fa-file-lines';
 
@@ -666,14 +748,17 @@ DA.admin = (function () {
         renderCvList();
       },
     });
-    setTimeout(bindCvFormEvents, 50);
+    setTimeout(() => {
+      bindColorPicker('cvColorRow', 'cvColor');
+      bindIconPicker('cvIconRow', 'cvIcon');
+    }, 60);
   }
 
   async function duplicateCvTemplate(idx) {
     const list = await getCvTemplates();
     const t = list[idx];
     if (!t) return;
-    const dup = { ...t, id: uid(), name: t.name + ' (Copy)' };
+    const dup = { ...t, id: uid(), name: (t.name || '') + ' (Copy)' };
     list.splice(idx + 1, 0, dup);
     await saveCvTemplates(list);
     logActivity(`Duplikasi CV: ${t.name}`, 'fa-clone');
@@ -686,8 +771,8 @@ DA.admin = (function () {
     if (!t) return;
     showConfirm({
       title: 'Hapus Template CV?',
-      subtitle: t.name,
-      message: `Template <strong>${escapeHtml(t.name)}</strong> akan dihapus dari daftar. File .docx di GitHub tidak ikut terhapus.`,
+      subtitle: t.name || '',
+      message: `Template <strong>${escapeHtml(t.name || '')}</strong> akan dihapus dari daftar. File .docx di GitHub tidak ikut terhapus.`,
       okText: 'Ya, Hapus',
       onOk: async () => {
         list.splice(idx, 1);
@@ -701,7 +786,7 @@ DA.admin = (function () {
   async function resetCvTemplates() {
     showConfirm({
       title: 'Reset Template CV?',
-      subtitle: 'Kembalikan ke default',
+      subtitle: 'Kembalikan ke default dari server',
       message: 'Semua template CV akan dikembalikan ke data default dari server. Perubahan tidak bisa dibatalkan.',
       okText: 'Ya, Reset',
       onOk: async () => {
@@ -711,7 +796,6 @@ DA.admin = (function () {
           const list = Array.isArray(data) ? data : (data.templates || []);
           await saveCvTemplates(list);
           logActivity('Reset template CV ke default', 'fa-rotate-left');
-          toast.success('Reset berhasil');
           renderCvList();
         } catch (err) {
           toast.error('Gagal reset: ' + err.message);
@@ -721,7 +805,7 @@ DA.admin = (function () {
   }
 
   async function uploadCvFile(file) {
-    if (!DA.github.isConfigured()) {
+    if (!DA.github || !DA.github.isConfigured()) {
       toast.error('Setup GitHub dulu di tab Pengaturan', 5000);
       return;
     }
@@ -766,7 +850,7 @@ DA.admin = (function () {
       submitText: 'Upload & Tambah',
       onSubmit: async () => {
         const name = document.getElementById('uploadCvName')?.value.trim();
-        const desc = document.getElementById('uploadCvDesc')?.value.trim();
+        const desc = document.getElementById('uploadCvDesc')?.value.trim() || 'Template CV dari admin';
         const color = document.getElementById('upCvColor')?.value || 'blue';
         if (!name) {
           toast.error('Nama wajib diisi');
@@ -796,17 +880,12 @@ DA.admin = (function () {
         }
       },
     });
-    setTimeout(() => {
-      bindColorPicker('upCvColorRow', 'upCvColor');
-    }, 50);
+    setTimeout(() => bindColorPicker('upCvColorRow', 'upCvColor'), 60);
   }
 
   /* ============================================
      TAB: COMPANIES
      ============================================ */
-  let cpCache = { categories: [], companies: [] };
-  let cpFilter = { q: '', category: '' };
-
   async function renderCompaniesList() {
     if (!els.cpList) return;
     els.cpList.innerHTML = '<div class="admin-empty" style="padding:24px;"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
@@ -833,8 +912,8 @@ DA.admin = (function () {
     const filtered = (cpCache.companies || []).filter((c) => {
       if (cat && c.category !== cat) return false;
       if (q) {
-        const applies = (c.apply || []).map((a) => `${a.value} ${a.subject || ''}`).join(' ');
-        const hay = `${c.name} ${c.location || ''} ${c.category || ''} ${applies}`.toLowerCase();
+        const applies = (c.apply || []).map((a) => `${a.value || ''} ${a.subject || ''}`).join(' ');
+        const hay = `${c.name || ''} ${c.location || ''} ${c.category || ''} ${applies}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -853,13 +932,13 @@ DA.admin = (function () {
       const idx = cpCache.companies.indexOf(c);
       const applies = (c.apply || []).map((a) => {
         const icon = a.type === 'email' ? 'fa-envelope' : 'fa-globe';
-        return `<span class="admin-chip"><i class="fa-solid ${icon}"></i> ${escapeHtml(a.value)}</span>`;
+        return `<span class="admin-chip"><i class="fa-solid ${icon}"></i> ${escapeHtml(a.value || '')}</span>`;
       }).join('');
       return `
         <div class="admin-row admin-row-lg" data-idx="${idx}">
           <div class="admin-row-body">
-            <div class="admin-row-title">${escapeHtml(c.name)}</div>
-            <div class="admin-row-sub">${escapeHtml(c.category || '')} · ${escapeHtml(c.location || '')}</div>
+            <div class="admin-row-title">${escapeHtml(c.name || '')}</div>
+            <div class="admin-row-sub">${escapeHtml(catName(c.category))} · ${escapeHtml(c.location || '')}</div>
             <div class="admin-row-chips">${applies}</div>
           </div>
           <div class="admin-row-actions">
@@ -878,16 +957,25 @@ DA.admin = (function () {
     });
   }
 
+  function catName(id) {
+    const c = (cpCache.categories || []).find((x) => x.id === id);
+    return c ? c.name : (id || '');
+  }
+
   function companyFormHtml(c = {}) {
     const cats = (cpCache.categories || []).filter((x) => x.id !== 'all');
-    const applyList = c.apply && c.apply.length ? c.apply : [{ type: 'email', value: '', subject: '' }];
+    if (!cats.length) cats.push({ id: 'manufaktur', name: 'Manufaktur' });
+
+    const applyList = (c.apply && c.apply.length)
+      ? c.apply
+      : [{ type: 'email', value: '', subject: '' }];
 
     return `
       <div class="form-field">
         <label class="form-field-label">Nama Perusahaan <span class="req">*</span></label>
         <input type="text" id="cpName" class="form-field-input" value="${escapeHtml(c.name || '')}" placeholder="PT Contoh Sukses">
       </div>
-      <div class="form-field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="form-field">
           <label class="form-field-label">Kategori</label>
           <select id="cpCategory" class="form-field-input">
@@ -949,8 +1037,8 @@ DA.admin = (function () {
     if (!list) return [];
     return Array.from(list.querySelectorAll('.apply-item')).map((item) => ({
       type: item.querySelector('[data-field="type"]')?.value || 'email',
-      value: item.querySelector('[data-field="value"]')?.value.trim() || '',
-      subject: item.querySelector('[data-field="subject"]')?.value.trim() || '',
+      value: (item.querySelector('[data-field="value"]')?.value || '').trim(),
+      subject: (item.querySelector('[data-field="subject"]')?.value || '').trim(),
     })).filter((a) => a.value);
   }
 
@@ -986,7 +1074,7 @@ DA.admin = (function () {
         renderCompaniesList();
       },
     });
-    setTimeout(() => bindCompanyFormEvents([{ type: 'email', value: '', subject: '' }]), 50);
+    setTimeout(() => bindCompanyFormEvents([{ type: 'email', value: '', subject: '' }]), 60);
   }
 
   async function editCompany(idx) {
@@ -996,7 +1084,7 @@ DA.admin = (function () {
     openModal({
       icon: 'fa-pen',
       title: 'Edit Perusahaan',
-      subtitle: c.name,
+      subtitle: c.name || '',
       bodyHtml: companyFormHtml(c),
       submitText: 'Simpan',
       onSubmit: async () => {
@@ -1018,7 +1106,7 @@ DA.admin = (function () {
         renderCompaniesList();
       },
     });
-    setTimeout(() => bindCompanyFormEvents(c.apply || []), 50);
+    setTimeout(() => bindCompanyFormEvents(c.apply || []), 60);
   }
 
   async function duplicateCompany(idx) {
@@ -1027,7 +1115,7 @@ DA.admin = (function () {
     const dup = {
       ...c,
       id: uid(),
-      name: c.name + ' (Copy)',
+      name: (c.name || '') + ' (Copy)',
       apply: (c.apply || []).map((a) => ({ ...a })),
     };
     cpCache.companies.splice(idx + 1, 0, dup);
@@ -1041,8 +1129,8 @@ DA.admin = (function () {
     if (!c) return;
     showConfirm({
       title: 'Hapus Perusahaan?',
-      subtitle: c.name,
-      message: `Perusahaan <strong>${escapeHtml(c.name)}</strong> akan dihapus dari daftar.`,
+      subtitle: c.name || '',
+      message: `Perusahaan <strong>${escapeHtml(c.name || '')}</strong> akan dihapus dari daftar.`,
       okText: 'Ya, Hapus',
       onOk: async () => {
         cpCache.companies.splice(idx, 1);
@@ -1056,7 +1144,7 @@ DA.admin = (function () {
   async function resetCompanies() {
     showConfirm({
       title: 'Reset Data Perusahaan?',
-      subtitle: 'Kembalikan ke default',
+      subtitle: 'Kembalikan ke default server',
       message: 'Semua data perusahaan akan dikembalikan ke data default dari server.',
       okText: 'Ya, Reset',
       onOk: async () => {
@@ -1065,7 +1153,6 @@ DA.admin = (function () {
           const data = await res.json();
           await saveCompanies(data);
           logActivity('Reset data perusahaan', 'fa-rotate-left');
-          toast.success('Reset berhasil');
           renderCompaniesList();
         } catch (err) {
           toast.error('Gagal reset: ' + err.message);
@@ -1084,17 +1171,18 @@ DA.admin = (function () {
      ============================================ */
   async function renderCategoriesList() {
     if (!els.catList) return;
-    els.catList.innerHTML = '<div class="admin-empty" style="padding:24px;"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
     if (!cpCache.categories || !cpCache.categories.length) {
+      els.catList.innerHTML = '<div class="admin-empty" style="padding:24px;"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
       cpCache = await getCompaniesData();
     }
     filterCategoriesList();
   }
 
   function filterCategoriesList() {
+    if (!els.catList) return;
     const q = (els.catSearch?.value || '').toLowerCase().trim();
     const cats = cpCache.categories || [];
-    const filtered = cats.filter((c) => !q || c.name.toLowerCase().includes(q));
+    const filtered = cats.filter((c) => !q || (c.name || '').toLowerCase().includes(q));
 
     if (!filtered.length) {
       els.catList.innerHTML = `
@@ -1108,18 +1196,19 @@ DA.admin = (function () {
     els.catList.innerHTML = filtered.map((c) => {
       const idx = cats.indexOf(c);
       const count = (cpCache.companies || []).filter((x) => x.category === c.id).length;
+      const isDefault = c.id === 'all';
       return `
         <div class="admin-row" data-idx="${idx}">
-          <div class="admin-row-icon"><i class="fa-solid ${c.icon || 'fa-tag'}"></i></div>
+          <div class="admin-row-icon"><i class="fa-solid ${escapeHtml(c.icon || 'fa-tag')}"></i></div>
           <div class="admin-row-body">
-            <div class="admin-row-title">${escapeHtml(c.name)}</div>
+            <div class="admin-row-title">${escapeHtml(c.name || '')}</div>
             <div class="admin-row-sub">
               ID: <code>${escapeHtml(c.id)}</code> · ${count} perusahaan
             </div>
           </div>
           <div class="admin-row-actions">
             <button data-action="edit" class="admin-btn-icon primary"><i class="fa-solid fa-pen"></i></button>
-            ${c.id !== 'all' ? `<button data-action="del" class="admin-btn-icon danger"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+            ${!isDefault ? `<button data-action="del" class="admin-btn-icon danger"><i class="fa-solid fa-trash-can"></i></button>` : ''}
           </div>
         </div>`;
     }).join('');
@@ -1132,10 +1221,7 @@ DA.admin = (function () {
   }
 
   function categoryFormHtml(c = {}) {
-    const iconList = ['fa-globe', 'fa-landmark', 'fa-building-columns', 'fa-tower-cell', 'fa-rocket',
-                      'fa-cart-shopping', 'fa-car', 'fa-industry', 'fa-plane', 'fa-store',
-                      'fa-bolt', 'fa-briefcase', 'fa-shirt', 'fa-scissors', 'fa-utensils',
-                      'fa-couch', 'fa-pills', 'fa-tag', 'fa-star', 'fa-heart'];
+    const icon = c.icon || 'fa-tag';
     return `
       <div class="form-field">
         <label class="form-field-label">ID Kategori <span class="req">*</span></label>
@@ -1151,12 +1237,12 @@ DA.admin = (function () {
       <div class="form-field">
         <label class="form-field-label">Icon</label>
         <div class="icon-options-row" id="catIconRow">
-          ${iconList.map((ic) => `
-            <div class="icon-option ${(c.icon || 'fa-tag') === ic ? 'selected' : ''}" data-icon="${ic}">
+          ${ICON_LIST_CAT.map((ic) => `
+            <div class="icon-option ${icon === ic ? 'selected' : ''}" data-icon="${ic}">
               <i class="fa-solid ${ic}"></i>
             </div>`).join('')}
         </div>
-        <input type="hidden" id="catIcon" value="${c.icon || 'fa-tag'}">
+        <input type="hidden" id="catIcon" value="${escapeHtml(icon)}">
       </div>
     `;
   }
@@ -1169,14 +1255,16 @@ DA.admin = (function () {
       bodyHtml: categoryFormHtml(),
       submitText: 'Tambah',
       onSubmit: async () => {
-        const id = document.getElementById('catId')?.value.trim().toLowerCase().replace(/\s+/g, '-');
+        const id = (document.getElementById('catId')?.value || '').trim().toLowerCase().replace(/\s+/g, '-');
         const name = document.getElementById('catName')?.value.trim();
         const icon = document.getElementById('catIcon')?.value || 'fa-tag';
+
         if (!id || !name) { toast.error('ID & Nama wajib'); return; }
         if ((cpCache.categories || []).find((c) => c.id === id)) {
           toast.error('ID kategori sudah dipakai');
           return;
         }
+
         cpCache.categories = cpCache.categories || [];
         cpCache.categories.push({ id, name, icon });
         await saveCompanies(cpCache);
@@ -1185,51 +1273,57 @@ DA.admin = (function () {
         renderCategoriesList();
       },
     });
-    setTimeout(() => bindIconPicker('catIconRow', 'catIcon'), 50);
+    setTimeout(() => bindIconPicker('catIconRow', 'catIcon'), 60);
   }
 
   function editCategory(idx) {
     const c = cpCache.categories[idx];
     if (!c) return;
+
     openModal({
       icon: 'fa-pen',
       title: 'Edit Kategori',
-      subtitle: c.name,
+      subtitle: c.name || '',
       bodyHtml: categoryFormHtml(c),
       submitText: 'Simpan',
       onSubmit: async () => {
-        const id = document.getElementById('catId')?.value.trim().toLowerCase().replace(/\s+/g, '-');
+        const newId = (document.getElementById('catId')?.value || '').trim().toLowerCase().replace(/\s+/g, '-');
         const name = document.getElementById('catName')?.value.trim();
         const icon = document.getElementById('catIcon')?.value || 'fa-tag';
-        if (!id || !name) { toast.error('ID & Nama wajib'); return; }
+
+        if (!newId || !name) { toast.error('ID & Nama wajib'); return; }
+
         const oldId = c.id;
-        c.id = id;
+        c.id = newId;
         c.name = name;
         c.icon = icon;
-        if (oldId !== id) {
+
+        if (oldId !== newId) {
           (cpCache.companies || []).forEach((comp) => {
-            if (comp.category === oldId) comp.category = id;
+            if (comp.category === oldId) comp.category = newId;
           });
         }
+
         await saveCompanies(cpCache);
         logActivity(`Edit kategori: ${name}`, 'fa-pen');
         closeModal();
         renderCategoriesList();
       },
     });
-    setTimeout(() => bindIconPicker('catIconRow', 'catIcon'), 50);
+    setTimeout(() => bindIconPicker('catIconRow', 'catIcon'), 60);
   }
 
   function deleteCategory(idx) {
     const c = cpCache.categories[idx];
     if (!c || c.id === 'all') return;
+
     const used = (cpCache.companies || []).filter((x) => x.category === c.id).length;
     showConfirm({
       title: 'Hapus Kategori?',
-      subtitle: c.name,
+      subtitle: c.name || '',
       message: used
-        ? `Kategori <strong>${escapeHtml(c.name)}</strong> sedang dipakai oleh <strong>${used} perusahaan</strong>. Perusahaan yang menggunakan kategori ini akan kehilangan kategorinya.`
-        : `Kategori <strong>${escapeHtml(c.name)}</strong> akan dihapus.`,
+        ? `Kategori <strong>${escapeHtml(c.name || '')}</strong> sedang dipakai oleh <strong>${used} perusahaan</strong>. Perusahaan tersebut akan kehilangan kategorinya.`
+        : `Kategori <strong>${escapeHtml(c.name || '')}</strong> akan dihapus.`,
       okText: 'Ya, Hapus',
       onOk: async () => {
         cpCache.categories.splice(idx, 1);
@@ -1246,8 +1340,6 @@ DA.admin = (function () {
   /* ============================================
      TAB: EMAIL
      ============================================ */
-  let emCache = [];
-
   async function renderEmailList() {
     if (!els.emList) return;
     els.emList.innerHTML = '<div class="admin-empty" style="padding:24px;"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
@@ -1257,10 +1349,11 @@ DA.admin = (function () {
   }
 
   function filterEmailList() {
+    if (!els.emList) return;
     const q = (els.emSearch?.value || '').toLowerCase().trim();
     const filtered = emCache.filter((t) => {
       if (!q) return true;
-      return `${t.name} ${t.desc || ''}`.toLowerCase().includes(q);
+      return `${t.name || ''} ${t.desc || ''}`.toLowerCase().includes(q);
     });
 
     if (!filtered.length) {
@@ -1276,9 +1369,9 @@ DA.admin = (function () {
       const idx = emCache.indexOf(t);
       return `
         <div class="admin-row" data-idx="${idx}">
-          <div class="admin-row-icon"><i class="fa-solid ${t.icon || 'fa-envelope'}"></i></div>
+          <div class="admin-row-icon"><i class="fa-solid ${escapeHtml(t.icon || 'fa-envelope')}"></i></div>
           <div class="admin-row-body">
-            <div class="admin-row-title">${escapeHtml(t.name)}</div>
+            <div class="admin-row-title">${escapeHtml(t.name || '')}</div>
             <div class="admin-row-sub">${escapeHtml(t.desc || '')}</div>
           </div>
           <div class="admin-row-actions">
@@ -1298,6 +1391,7 @@ DA.admin = (function () {
   }
 
   function emailFormHtml(t = {}) {
+    const color = t.color || 'blue';
     return `
       <div class="form-field">
         <label class="form-field-label">Nama Template <span class="req">*</span></label>
@@ -1321,16 +1415,12 @@ DA.admin = (function () {
         <label class="form-field-label">Warna Kartu</label>
         <div class="color-options-row" id="emColorRow">
           ${CATEGORY_COLORS.map((c) => `
-            <div class="color-option ${(t.color || 'blue') === c ? 'selected' : ''}" data-color="${c}" style="background:${colorHex(c)}"></div>
+            <div class="color-option ${color === c ? 'selected' : ''}" data-color="${c}" style="background:${colorHex(c)}"></div>
           `).join('')}
         </div>
-        <input type="hidden" id="emColor" value="${t.color || 'blue'}">
+        <input type="hidden" id="emColor" value="${escapeHtml(color)}">
       </div>
     `;
-  }
-
-  function bindEmailFormEvents() {
-    bindColorPicker('emColorRow', 'emColor');
   }
 
   function addEmailTemplate() {
@@ -1342,13 +1432,13 @@ DA.admin = (function () {
       submitText: 'Tambah',
       onSubmit: async () => {
         const name = document.getElementById('emName')?.value.trim();
-        const desc = document.getElementById('emDesc')?.value.trim();
+        const desc = document.getElementById('emDesc')?.value.trim() || '';
         const subject = document.getElementById('emSubject')?.value.trim();
         const body = document.getElementById('emBody')?.value.trim();
         const color = document.getElementById('emColor')?.value || 'blue';
 
         if (!name || !subject || !body) {
-          toast.error('Nama, subjek, dan isi wajib');
+          toast.error('Nama, subjek, dan isi wajib diisi');
           return;
         }
 
@@ -1367,27 +1457,28 @@ DA.admin = (function () {
         renderEmailList();
       },
     });
-    setTimeout(bindEmailFormEvents, 50);
+    setTimeout(() => bindColorPicker('emColorRow', 'emColor'), 60);
   }
 
   function editEmailTemplate(idx) {
     const t = emCache[idx];
     if (!t) return;
+
     openModal({
       icon: 'fa-pen',
       title: 'Edit Template Email',
-      subtitle: t.name,
+      subtitle: t.name || '',
       bodyHtml: emailFormHtml(t),
       submitText: 'Simpan',
       onSubmit: async () => {
         const name = document.getElementById('emName')?.value.trim();
-        const desc = document.getElementById('emDesc')?.value.trim();
+        const desc = document.getElementById('emDesc')?.value.trim() || '';
         const subject = document.getElementById('emSubject')?.value.trim();
         const body = document.getElementById('emBody')?.value.trim();
         const color = document.getElementById('emColor')?.value || 'blue';
 
         if (!name || !subject || !body) {
-          toast.error('Nama, subjek, dan isi wajib');
+          toast.error('Nama, subjek, dan isi wajib diisi');
           return;
         }
 
@@ -1402,13 +1493,13 @@ DA.admin = (function () {
         renderEmailList();
       },
     });
-    setTimeout(bindEmailFormEvents, 50);
+    setTimeout(() => bindColorPicker('emColorRow', 'emColor'), 60);
   }
 
   async function duplicateEmailTemplate(idx) {
     const t = emCache[idx];
     if (!t) return;
-    const dup = { ...t, id: uid(), name: t.name + ' (Copy)' };
+    const dup = { ...t, id: uid(), name: (t.name || '') + ' (Copy)' };
     emCache.splice(idx + 1, 0, dup);
     await saveEmailTemplates(emCache);
     logActivity(`Duplikasi email: ${t.name}`, 'fa-clone');
@@ -1420,8 +1511,8 @@ DA.admin = (function () {
     if (!t) return;
     showConfirm({
       title: 'Hapus Template Email?',
-      subtitle: t.name,
-      message: `Template <strong>${escapeHtml(t.name)}</strong> akan dihapus.`,
+      subtitle: t.name || '',
+      message: `Template <strong>${escapeHtml(t.name || '')}</strong> akan dihapus.`,
       okText: 'Ya, Hapus',
       onOk: async () => {
         emCache.splice(idx, 1);
@@ -1441,11 +1532,13 @@ DA.admin = (function () {
       onOk: async () => {
         storage.remove('emailTemplatesOverride');
         emCache = [];
-        if (DA.github.isConfigured()) {
+        if (DA.github && DA.github.isConfigured()) {
           try {
             await DA.github.deleteFile('email-templates/email-templates.json',
-              'chore: reset email templates');
-          } catch {}
+              'chore: reset email templates to default');
+          } catch (e) {
+            console.warn('[Admin] Gagal hapus file GitHub:', e);
+          }
         }
         logActivity('Reset email ke default', 'fa-rotate-left');
         toast.success('Reset berhasil');
@@ -1467,7 +1560,7 @@ DA.admin = (function () {
     const newPwd = els.passNew?.value || '';
     const result = await DA.auth.changePassword(oldPwd, newPwd);
     if (result.ok) {
-      toast.success('Password berhasil diganti');
+      toast.success('Password admin berhasil diganti');
       logActivity('Ganti password admin', 'fa-key');
       if (els.passOld) els.passOld.value = '';
       if (els.passNew) els.passNew.value = '';
@@ -1481,7 +1574,7 @@ DA.admin = (function () {
       exportedAt: new Date().toISOString(),
       appName: 'DocuApply',
       version: 3,
-      githubConfig: DA.github.getConfig(),
+      githubConfig: DA.github ? DA.github.getConfig() : null,
       adminPasswordHash: storage.get('adminPasswordHash', null),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1496,9 +1589,9 @@ DA.admin = (function () {
       try {
         const data = JSON.parse(e.target.result);
         if (data.appName !== 'DocuApply') throw new Error('File tidak valid');
-        if (data.githubConfig) DA.github.setConfig(data.githubConfig);
+        if (data.githubConfig && DA.github) DA.github.setConfig(data.githubConfig);
         if (data.adminPasswordHash) storage.set('adminPasswordHash', data.adminPasswordHash);
-        toast.success('Config diimport');
+        toast.success('Config berhasil diimport');
         logActivity('Import config', 'fa-upload');
         loadGithubConfig();
       } catch (err) {
@@ -1509,68 +1602,18 @@ DA.admin = (function () {
   }
 
   /* ============================================
-     HELPERS
-     ============================================ */
-  function colorHex(name) {
-    const map = {
-      blue: 'linear-gradient(135deg,#3b82f6,#1d4ed8)',
-      emerald: 'linear-gradient(135deg,#10b981,#047857)',
-      purple: 'linear-gradient(135deg,#8b5cf6,#6d28d9)',
-      amber: 'linear-gradient(135deg,#f59e0b,#d97706)',
-      rose: 'linear-gradient(135deg,#f43f5e,#be123c)',
-      indigo: 'linear-gradient(135deg,#6366f1,#4338ca)',
-      slate: 'linear-gradient(135deg,#64748b,#334155)',
-    };
-    return map[name] || map.blue;
-  }
-
-  function bindColorPicker(rowId, inputId) {
-    const row = document.getElementById(rowId);
-    const input = document.getElementById(inputId);
-    if (!row || !input) return;
-    row.querySelectorAll('.color-option').forEach((el) => {
-      el.addEventListener('click', () => {
-        row.querySelectorAll('.color-option').forEach((x) => x.classList.remove('selected'));
-        el.classList.add('selected');
-        input.value = el.dataset.color;
-      });
-    });
-  }
-
-  function bindIconPicker(rowId, inputId) {
-    const row = document.getElementById(rowId);
-    const input = document.getElementById(inputId);
-    if (!row || !input) return;
-    row.querySelectorAll('.icon-option').forEach((el) => {
-      el.addEventListener('click', () => {
-        row.querySelectorAll('.icon-option').forEach((x) => x.classList.remove('selected'));
-        el.classList.add('selected');
-        input.value = el.dataset.icon;
-      });
-    });
-  }
-
-  function escapeHtml(s = '') {
-    return String(s).replace(/[&<>"']/g, (c) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    })[c]);
-  }
-
-  /* ============================================
      BIND EVENTS
      ============================================ */
   function bindEvents() {
+    // Header close
     els.close?.addEventListener('click', close);
-    els.screen?.addEventListener('click', (e) => {
-      if (e.target === els.screen) close();
-    });
 
     // Tabs
     els.tabs.forEach((tab) => {
       tab.addEventListener('click', () => switchTab(tab.dataset.adminTab));
     });
 
-    // Modal close
+    // Modal close (backdrop & button)
     document.querySelectorAll('[data-modal-close]').forEach((el) => {
       el.addEventListener('click', closeModal);
     });
@@ -1581,9 +1624,9 @@ DA.admin = (function () {
     // ESC
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (!els.modal?.classList.contains('hidden')) closeModal();
-        else if (!els.confirmModal?.classList.contains('hidden')) closeConfirm();
-        else if (!els.screen?.classList.contains('hidden')) close();
+        if (els.modal && !els.modal.classList.contains('hidden')) closeModal();
+        else if (els.confirmModal && !els.confirmModal.classList.contains('hidden')) closeConfirm();
+        else if (els.screen && !els.screen.classList.contains('hidden')) close();
       }
     });
 
@@ -1632,7 +1675,7 @@ DA.admin = (function () {
       if (f) importData(f);
     });
 
-    // Overview
+    // Clear activity
     els.clearActivityBtn?.addEventListener('click', () => {
       showConfirm({
         title: 'Bersihkan Aktivitas?',
@@ -1647,11 +1690,20 @@ DA.admin = (function () {
     document.querySelectorAll('[data-quick]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const q = btn.dataset.quick;
-        if (q === 'upload-cv') { switchTab('cv'); setTimeout(() => els.cvUploadInput?.click(), 200); }
-        if (q === 'add-company') { switchTab('companies'); setTimeout(addCompany, 200); }
-        if (q === 'add-email') { switchTab('email'); setTimeout(addEmailTemplate, 200); }
+        if (q === 'upload-cv') {
+          switchTab('cv');
+          setTimeout(() => els.cvUploadInput?.click(), 220);
+        }
+        if (q === 'add-company') {
+          switchTab('companies');
+          setTimeout(addCompany, 220);
+        }
+        if (q === 'add-email') {
+          switchTab('email');
+          setTimeout(addEmailTemplate, 220);
+        }
         if (q === 'sync-github') {
-          if (DA.github.isConfigured()) {
+          if (DA.github && DA.github.isConfigured()) {
             saveCvTemplates(cvCache);
             saveCompanies(cpCache);
             saveEmailTemplates(emCache);
@@ -1666,5 +1718,8 @@ DA.admin = (function () {
     });
   }
 
+  /* ============================================
+     PUBLIC API
+     ============================================ */
   return { init, open, close };
 })();
