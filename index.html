@@ -908,12 +908,12 @@
       <button id="adminSubmitBtn" class="login-submit-btn">
         <i class="fa-solid fa-unlock"></i> Login
       </button>
-      <p class="text-[10px] text-slate-400 text-center">© Riyan · 2026</p>
+      <p class="text-[10px] text-slate-400 text-center mt-2">© 2026 Riyan</p>
     </div>
   </div>
 </div>
 
-<!-- ============ ADMIN DASHBOARD ============ -->
+<!-- ============ ADMIN DASHBOARD v3 ============ -->
 <div id="adminDashboard" class="hidden">
   <div class="admin-header">
     <div class="admin-header-icon">
@@ -930,34 +930,134 @@
   </div>
 
   <div class="admin-tabs">
-    <button data-admin-tab="cv" class="admin-tab active"><i class="fa-solid fa-id-card"></i> CV Templates</button>
+    <button data-admin-tab="overview" class="admin-tab active"><i class="fa-solid fa-chart-line"></i> Overview</button>
+    <button data-admin-tab="cv" class="admin-tab"><i class="fa-solid fa-id-card"></i> CV</button>
     <button data-admin-tab="companies" class="admin-tab"><i class="fa-solid fa-building"></i> Perusahaan</button>
-    <button data-admin-tab="email" class="admin-tab"><i class="fa-regular fa-envelope"></i> Template Email</button>
+    <button data-admin-tab="categories" class="admin-tab"><i class="fa-solid fa-tags"></i> Kategori</button>
+    <button data-admin-tab="email" class="admin-tab"><i class="fa-regular fa-envelope"></i> Email</button>
     <button data-admin-tab="settings" class="admin-tab"><i class="fa-solid fa-gear"></i> Pengaturan</button>
   </div>
 
   <div class="admin-body">
 
+    <!-- OVERVIEW -->
+    <div data-admin-panel="overview">
+      <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+          <div class="admin-stat-icon stat-blue"><i class="fa-solid fa-id-card"></i></div>
+          <div class="admin-stat-body">
+            <div class="admin-stat-num" id="statCvCount">0</div>
+            <div class="admin-stat-label">Template CV</div>
+          </div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-icon stat-emerald"><i class="fa-solid fa-building"></i></div>
+          <div class="admin-stat-body">
+            <div class="admin-stat-num" id="statCompaniesCount">0</div>
+            <div class="admin-stat-label">Perusahaan</div>
+          </div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-icon stat-purple"><i class="fa-solid fa-tags"></i></div>
+          <div class="admin-stat-body">
+            <div class="admin-stat-num" id="statCategoriesCount">0</div>
+            <div class="admin-stat-label">Kategori</div>
+          </div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-icon stat-amber"><i class="fa-regular fa-envelope"></i></div>
+          <div class="admin-stat-body">
+            <div class="admin-stat-num" id="statEmailCount">0</div>
+            <div class="admin-stat-label">Template Email</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <h3><i class="fa-solid fa-bolt text-amber-500"></i> Aksi Cepat</h3>
+        </div>
+        <div class="admin-quick-actions">
+          <button class="admin-quick-action" data-quick="upload-cv">
+            <div class="admin-quick-icon bg-blue-500"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <div>
+              <div class="admin-quick-title">Upload CV</div>
+              <div class="admin-quick-desc">Upload file .docx baru</div>
+            </div>
+          </button>
+          <button class="admin-quick-action" data-quick="add-company">
+            <div class="admin-quick-icon bg-emerald-500"><i class="fa-solid fa-plus"></i></div>
+            <div>
+              <div class="admin-quick-title">Tambah Perusahaan</div>
+              <div class="admin-quick-desc">Daftar email/link karir</div>
+            </div>
+          </button>
+          <button class="admin-quick-action" data-quick="add-email">
+            <div class="admin-quick-icon bg-purple-500"><i class="fa-regular fa-envelope"></i></div>
+            <div>
+              <div class="admin-quick-title">Tambah Template Email</div>
+              <div class="admin-quick-desc">Template lamaran baru</div>
+            </div>
+          </button>
+          <button class="admin-quick-action" data-quick="sync-github">
+            <div class="admin-quick-icon bg-slate-800"><i class="fa-brands fa-github"></i></div>
+            <div>
+              <div class="admin-quick-title">Sync ke GitHub</div>
+              <div class="admin-quick-desc">Push semua perubahan</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <h3><i class="fa-brands fa-github"></i> Status GitHub</h3>
+          <button class="admin-btn admin-btn-secondary admin-btn-sm" data-quick="settings-github">
+            <i class="fa-solid fa-gear"></i> Konfigurasi
+          </button>
+        </div>
+        <div id="overviewGhStatus" class="overview-gh-status warn">
+          <i class="fa-solid fa-circle-notch fa-spin"></i>
+          <span>Memuat status...</span>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <h3><i class="fa-solid fa-clock-rotate-left"></i> Aktivitas Terakhir</h3>
+          <button class="admin-btn admin-btn-secondary admin-btn-sm" id="clearActivityBtn">
+            <i class="fa-solid fa-trash-can"></i> Bersihkan
+          </button>
+        </div>
+        <div id="adminActivityList" class="admin-activity-list"></div>
+      </div>
+    </div>
+
     <!-- CV -->
-    <div data-admin-panel="cv">
+    <div data-admin-panel="cv" class="hidden">
       <div class="admin-hint">
         <i class="fa-solid fa-info-circle mr-1"></i>
         Upload file <code>.docx</code> langsung (butuh GitHub setup) atau tambah metadata manual.
       </div>
-      <div class="admin-panel-head">
-        <h3>Template CV</h3>
+
+      <div class="admin-toolbar">
+        <div class="admin-toolbar-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="adminCvSearch" placeholder="Cari template CV..." />
+        </div>
         <button id="adminCvUploadBtn" class="admin-btn admin-btn-primary">
           <i class="fa-solid fa-cloud-arrow-up"></i> Upload .docx
         </button>
         <button id="adminCvAddBtn" class="admin-btn admin-btn-secondary">
-          <i class="fa-solid fa-plus"></i> Tambah Metadata
+          <i class="fa-solid fa-plus"></i> Tambah
         </button>
         <button id="adminCvReset" class="admin-btn admin-btn-secondary">
-          <i class="fa-solid fa-rotate-left"></i> Reset
+          <i class="fa-solid fa-rotate-left"></i>
         </button>
         <input type="file" id="adminCvUploadInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden">
       </div>
-      <div id="adminCvList"></div>
+
+      <div id="adminCvList" class="admin-list"></div>
     </div>
 
     <!-- COMPANIES -->
@@ -966,19 +1066,50 @@
         <i class="fa-solid fa-info-circle mr-1"></i>
         Perubahan langsung tersimpan ke GitHub → sync otomatis ke semua device.
       </div>
-      <div class="admin-panel-head">
-        <h3>Daftar Perusahaan</h3>
+
+      <div class="admin-toolbar">
+        <div class="admin-toolbar-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="adminCompaniesSearch" placeholder="Cari perusahaan..." />
+        </div>
+        <select id="adminCompaniesFilter" class="admin-select">
+          <option value="">Semua Kategori</option>
+        </select>
         <button id="adminCompaniesAddBtn" class="admin-btn admin-btn-primary">
           <i class="fa-solid fa-plus"></i> Tambah
         </button>
-        <button id="adminCompaniesSaveBtn" class="admin-btn admin-btn-primary">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Save ke GitHub
+        <button id="adminCompaniesSaveBtn" class="admin-btn admin-btn-secondary">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
         </button>
         <button id="adminCompaniesReset" class="admin-btn admin-btn-secondary">
-          <i class="fa-solid fa-rotate-left"></i> Reset
+          <i class="fa-solid fa-rotate-left"></i>
         </button>
       </div>
-      <div id="adminCompaniesList"></div>
+
+      <div id="adminCompaniesList" class="admin-list"></div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div data-admin-panel="categories" class="hidden">
+      <div class="admin-hint">
+        <i class="fa-solid fa-info-circle mr-1"></i>
+        Kategori digunakan untuk mengelompokkan perusahaan di Direktori Perusahaan.
+      </div>
+
+      <div class="admin-toolbar">
+        <div class="admin-toolbar-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="adminCategoriesSearch" placeholder="Cari kategori..." />
+        </div>
+        <button id="adminCategoriesAddBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-plus"></i> Tambah Kategori
+        </button>
+        <button id="adminCategoriesSaveBtn" class="admin-btn admin-btn-secondary">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </button>
+      </div>
+
+      <div id="adminCategoriesList" class="admin-list"></div>
     </div>
 
     <!-- EMAIL -->
@@ -987,19 +1118,24 @@
         <i class="fa-solid fa-info-circle mr-1"></i>
         Gunakan placeholder <code>[Kurung Siku]</code> untuk data yang bisa diisi cepat user.
       </div>
-      <div class="admin-panel-head">
-        <h3>Template Email</h3>
+
+      <div class="admin-toolbar">
+        <div class="admin-toolbar-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="adminEmailSearch" placeholder="Cari template email..." />
+        </div>
         <button id="adminEmailAddBtn" class="admin-btn admin-btn-primary">
           <i class="fa-solid fa-plus"></i> Tambah
         </button>
-        <button id="adminEmailSaveBtn" class="admin-btn admin-btn-primary">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Save ke GitHub
+        <button id="adminEmailSaveBtn" class="admin-btn admin-btn-secondary">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
         </button>
         <button id="adminEmailReset" class="admin-btn admin-btn-secondary">
-          <i class="fa-solid fa-rotate-left"></i> Reset
+          <i class="fa-solid fa-rotate-left"></i>
         </button>
       </div>
-      <div id="adminEmailList"></div>
+
+      <div id="adminEmailList" class="admin-list"></div>
     </div>
 
     <!-- SETTINGS -->
@@ -1027,7 +1163,7 @@
           <ol class="gh-steps-list">
             <li>Buka <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a></li>
             <li>Klik <strong>Generate new token (classic)</strong></li>
-            <li>Centang scope <code>repo</code> (Full control)</li>
+            <li>Centang scope <code>repo</code> (HANYA INI)</li>
             <li>Generate → copy token (<code>ghp_...</code>)</li>
             <li>Tempel di field "Token" di bawah</li>
           </ol>
@@ -1064,37 +1200,101 @@
         </div>
       </div>
 
-      <div class="admin-hint mt-6">
-        <i class="fa-solid fa-lock mr-1"></i>
-        <strong>Ganti Password Admin</strong> — default <code>admin123</code>.
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <h3><i class="fa-solid fa-lock"></i> Ganti Password Admin</h3>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Password Lama</label>
+          <input type="password" id="adminPassOld" class="admin-input" placeholder="••••••">
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Password Baru (min 4 karakter)</label>
+          <input type="password" id="adminPassNew" class="admin-input" placeholder="••••••">
+        </div>
+        <button id="adminPassChangeBtn" class="admin-btn admin-btn-primary">
+          <i class="fa-solid fa-key"></i> Ganti Password
+        </button>
       </div>
-      <div class="admin-form-group">
-        <label class="admin-form-label">Password Lama</label>
-        <input type="password" id="adminPassOld" class="admin-input" placeholder="••••••">
-      </div>
-      <div class="admin-form-group">
-        <label class="admin-form-label">Password Baru (min 4 karakter)</label>
-        <input type="password" id="adminPassNew" class="admin-input" placeholder="••••••">
-      </div>
-      <button id="adminPassChangeBtn" class="admin-btn admin-btn-primary mb-6">
-        <i class="fa-solid fa-key"></i> Ganti Password
-      </button>
 
-      <div class="admin-hint mt-6">
-        <i class="fa-solid fa-database mr-1"></i>
-        <strong>Backup Config</strong> — simpan konfigurasi GitHub untuk dipindah ke device lain.
-      </div>
-      <div class="flex gap-2 flex-wrap">
-        <button id="adminExportBtn" class="admin-btn admin-btn-primary">
-          <i class="fa-solid fa-download"></i> Export Config
-        </button>
-        <button id="adminImportBtn" class="admin-btn admin-btn-secondary">
-          <i class="fa-solid fa-upload"></i> Import Config
-        </button>
-        <input type="file" id="adminImportInput" accept="application/json" class="hidden">
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <h3><i class="fa-solid fa-database"></i> Backup & Restore</h3>
+        </div>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+          Simpan konfigurasi GitHub & password untuk dipindah ke device lain.
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <button id="adminExportBtn" class="admin-btn admin-btn-primary">
+            <i class="fa-solid fa-download"></i> Export Config
+          </button>
+          <button id="adminImportBtn" class="admin-btn admin-btn-secondary">
+            <i class="fa-solid fa-upload"></i> Import Config
+          </button>
+          <input type="file" id="adminImportInput" accept="application/json" class="hidden">
+        </div>
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ADMIN GENERIC MODAL -->
+<div id="adminModal" class="admin-modal hidden">
+  <div class="admin-modal-backdrop" data-modal-close></div>
+  <div class="admin-modal-card">
+    <div class="admin-modal-head">
+      <div class="admin-modal-title-wrap">
+        <div class="admin-modal-icon" id="adminModalIcon">
+          <i class="fa-solid fa-pen"></i>
+        </div>
+        <div>
+          <h3 id="adminModalTitle">Edit</h3>
+          <p id="adminModalSubtitle">Isi form di bawah</p>
+        </div>
+      </div>
+      <button class="admin-modal-close" data-modal-close>
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="admin-modal-body" id="adminModalBody"></div>
+    <div class="admin-modal-foot">
+      <button class="admin-btn admin-btn-secondary" data-modal-close>
+        <i class="fa-solid fa-xmark"></i> Batal
+      </button>
+      <button class="admin-btn admin-btn-primary" id="adminModalSubmit">
+        <i class="fa-solid fa-check"></i> Simpan
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN CONFIRM MODAL -->
+<div id="adminConfirmModal" class="admin-modal hidden">
+  <div class="admin-modal-backdrop" data-confirm-close></div>
+  <div class="admin-modal-card admin-modal-sm">
+    <div class="admin-modal-head">
+      <div class="admin-modal-title-wrap">
+        <div class="admin-modal-icon admin-modal-icon-warn">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 id="adminConfirmTitle">Konfirmasi</h3>
+          <p id="adminConfirmSubtitle">Apakah Anda yakin?</p>
+        </div>
+      </div>
+    </div>
+    <div class="admin-modal-body">
+      <p id="adminConfirmMessage" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed"></p>
+    </div>
+    <div class="admin-modal-foot">
+      <button class="admin-btn admin-btn-secondary" data-confirm-close>
+        <i class="fa-solid fa-xmark"></i> Batal
+      </button>
+      <button class="admin-btn admin-btn-danger" id="adminConfirmOk">
+        <i class="fa-solid fa-check"></i> Ya, Lanjutkan
+      </button>
+    </div>
   </div>
 </div>
 
