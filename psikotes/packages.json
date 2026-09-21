@@ -230,6 +230,40 @@
               ],
               "correct": "C",
               "modelAnswer": ""
+            },
+            {
+              "id": "muaycku25nf9wt",
+              "type": "mc",
+              "text": "9 - 6 + 7 = ...",
+              "image": null,
+              "options": [
+                {
+                  "id": "A",
+                  "text": "8",
+                  "image": null,
+                  "trait": ""
+                },
+                {
+                  "id": "B",
+                  "text": "9",
+                  "image": null,
+                  "trait": ""
+                },
+                {
+                  "id": "C",
+                  "text": "10",
+                  "image": null,
+                  "trait": ""
+                },
+                {
+                  "id": "D",
+                  "text": "11",
+                  "image": null,
+                  "trait": ""
+                }
+              ],
+              "correct": "C",
+              "modelAnswer": ""
             }
           ]
         }
