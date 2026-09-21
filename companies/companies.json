@@ -615,19 +615,6 @@
           "subject": "Apply via e-recruitment"
         }
       ]
-    },
-    {
-      "id": "muahs2scjsbf5n",
-      "name": "PT Asep Ganteng",
-      "category": "manufaktur",
-      "location": "Bandung",
-      "apply": [
-        {
-          "type": "email",
-          "value": "asep@gmail.com",
-          "subject": "Lamaran Pekerjaan_Nama"
-        }
-      ]
     }
   ],
   "disclaimer": "Data email & link dikumpulkan dari sumber publik. Selalu verifikasi dari website resmi perusahaan sebelum melamar.",
