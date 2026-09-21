@@ -36,10 +36,10 @@
 <link rel="stylesheet" href="css/components.css">
 </head>
 
-<body class="flex flex-col h-dvh overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 antialiased selection:bg-indigo-100 selection:text-indigo-700" style="height:100vh;height:100dvh;">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 antialiased selection:bg-indigo-100 selection:text-indigo-700" style="height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;">
 
-<!-- HEADER -->
-<header class="shrink-0 glass-header px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-30 gap-2 sm:gap-3" style="padding-top:max(0.625rem, env(safe-area-inset-top));">
+<!-- ===== HEADER ===== -->
+<header class="glass-header px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-30 shrink-0 gap-2 sm:gap-3" style="padding-top:max(0.625rem, env(safe-area-inset-top));">
   <div class="flex items-center gap-2.5 min-w-0">
     <div class="bg-gradient-to-br from-indigo-500 to-violet-600 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
       <i class="fa-solid fa-layer-group text-base sm:text-lg"></i>
@@ -68,10 +68,10 @@
   </button>
 </header>
 
-<!-- MAIN -->
+<!-- ===== MAIN ===== -->
 <main id="appContent" class="flex-1 min-h-0 relative overflow-hidden">
 
-  <!-- EDITOR -->
+  <!-- ========== EDITOR ========== -->
   <section id="view-editor" class="view absolute inset-0 flex flex-col md:flex-row overflow-hidden">
     <input type="file" id="fileInput" multiple accept="application/pdf,image/*" class="hidden">
     <aside class="hidden md:flex md:w-80 lg:w-96 shrink-0 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-y-auto">
@@ -154,7 +154,7 @@
     </div>
   </section>
 
-  <!-- IMAGE → PDF -->
+  <!-- ========== IMAGE → PDF ========== -->
   <section id="view-image2pdf" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
     <input type="file" id="i2pInput" multiple accept="image/*" class="hidden">
     <div class="shrink-0 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
@@ -209,7 +209,7 @@
     <div id="i2pBackdrop" class="md:hidden fixed inset-0 bg-black/50 z-50 hidden" style="z-index:50;"></div>
   </section>
 
-  <!-- SPLIT -->
+  <!-- ========== SPLIT ========== -->
   <section id="view-split" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
     <input type="file" id="splitInput" accept="application/pdf" class="hidden">
     <div class="shrink-0 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
@@ -251,7 +251,7 @@
     </div>
   </section>
 
-  <!-- PHOTO STUDIO -->
+  <!-- ========== PHOTO STUDIO ========== -->
   <section id="view-photo" class="view hidden absolute inset-0 flex flex-col md:flex-row overflow-hidden">
     <input type="file" id="photoInput" accept="image/*" class="hidden">
     <input type="file" id="photoInputMobile" accept="image/*" class="hidden">
@@ -459,7 +459,7 @@
     <div id="photoBackdrop" class="md:hidden fixed inset-0 bg-black/50 z-50 hidden" style="z-index:50;"></div>
   </section>
 
-  <!-- CV BUILDER -->
+  <!-- ========== CV BUILDER ========== -->
   <section id="view-cv" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
     <div id="cvTemplatesList" class="flex-1 min-h-0 overflow-y-auto">
       <div class="max-w-5xl mx-auto p-4">
@@ -620,7 +620,7 @@
     </div>
   </section>
 
-  <!-- COMPANIES -->
+  <!-- ========== COMPANIES ========== -->
   <section id="view-companies" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
     <div id="companiesList" class="flex-1 min-h-0 overflow-y-auto">
       <div class="max-w-5xl mx-auto p-4 pb-24">
@@ -667,7 +667,7 @@
     </div>
   </section>
 
-  <!-- EMAIL -->
+  <!-- ========== EMAIL ========== -->
   <section id="view-email" class="view hidden absolute inset-0 flex flex-col overflow-hidden">
     <div id="emailTemplatesList" class="flex-1 min-h-0 overflow-y-auto">
       <div class="max-w-5xl mx-auto p-4">
@@ -778,7 +778,7 @@
 
 </main>
 
-<!-- MOBILE NAV -->
+<!-- ===== MOBILE NAV ===== -->
 <nav id="navMobile" class="lg:hidden shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 grid grid-cols-7 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
   <button data-tab="editor"    class="m-nav-btn py-2"><i class="fa-solid fa-file-pdf"></i><span>Editor</span></button>
   <button data-tab="image2pdf" class="m-nav-btn py-2"><i class="fa-solid fa-image"></i><span>Image</span></button>
@@ -789,7 +789,7 @@
   <button data-tab="email"     class="m-nav-btn py-2"><i class="fa-regular fa-envelope"></i><span>Email</span></button>
 </nav>
 
-<!-- CV CHOICE MODAL -->
+<!-- ===== CV CHOICE MODAL ===== -->
 <div id="cvChoiceModal" class="fixed inset-0 z-[100] hidden items-end sm:items-center justify-center" style="z-index:100;">
   <div id="cvChoiceBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
   <div id="cvChoiceSheet" class="cv-choice-sheet relative w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl z-10">
@@ -845,6 +845,7 @@
   </div>
 </div>
 
+<!-- ===== CAMERA MODAL ===== -->
 <div id="cameraModal" class="fixed inset-0 bg-black/95 backdrop-blur-sm z-[80] hidden flex-col" style="z-index:80;">
   <div class="flex justify-between items-center p-4 sm:p-6 text-white">
     <h2 class="text-base sm:text-lg font-bold">Ambil Foto</h2>
@@ -863,11 +864,14 @@
   </div>
 </div>
 
-<div id="toastContainer" class="fixed top-16 sm:top-20 right-3 sm:right-4 z-[110] flex flex-col gap-2 pointer-events-none max-w-[calc(100vw-1.5rem)] sm:max-w-sm" style="z-index:110;"></div>
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toastContainer" class="fixed top-16 sm:top-20 right-3 sm:right-4 z-[2000] flex flex-col gap-2 pointer-events-none max-w-[calc(100vw-1.5rem)] sm:max-w-sm" style="z-index:2000;"></div>
 
 <input type="file" id="cvImageInput" accept="image/*" class="hidden">
 
-<!-- ============ LOGIN SCREEN ============ -->
+<!-- ============================================ -->
+<!-- LOGIN SCREEN                                 -->
+<!-- ============================================ -->
 <div id="loginScreen" class="hidden">
   <div class="login-card">
     <div class="login-logo">
@@ -913,7 +917,9 @@
   </div>
 </div>
 
-<!-- ============ ADMIN DASHBOARD v3 ============ -->
+<!-- ============================================ -->
+<!-- ADMIN DASHBOARD v3                           -->
+<!-- ============================================ -->
 <div id="adminDashboard" class="hidden">
   <div class="admin-header">
     <div class="admin-header-icon">
@@ -1043,7 +1049,7 @@
       <div class="admin-toolbar">
         <div class="admin-toolbar-search">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="adminCvSearch" placeholder="Cari template CV..." />
+          <input type="text" id="adminCvSearch" placeholder="Cari template CV...">
         </div>
         <button id="adminCvUploadBtn" class="admin-btn admin-btn-primary">
           <i class="fa-solid fa-cloud-arrow-up"></i> Upload .docx
@@ -1070,7 +1076,7 @@
       <div class="admin-toolbar">
         <div class="admin-toolbar-search">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="adminCompaniesSearch" placeholder="Cari perusahaan..." />
+          <input type="text" id="adminCompaniesSearch" placeholder="Cari perusahaan...">
         </div>
         <select id="adminCompaniesFilter" class="admin-select">
           <option value="">Semua Kategori</option>
@@ -1099,7 +1105,7 @@
       <div class="admin-toolbar">
         <div class="admin-toolbar-search">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="adminCategoriesSearch" placeholder="Cari kategori..." />
+          <input type="text" id="adminCategoriesSearch" placeholder="Cari kategori...">
         </div>
         <button id="adminCategoriesAddBtn" class="admin-btn admin-btn-primary">
           <i class="fa-solid fa-plus"></i> Tambah Kategori
@@ -1122,7 +1128,7 @@
       <div class="admin-toolbar">
         <div class="admin-toolbar-search">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="adminEmailSearch" placeholder="Cari template email..." />
+          <input type="text" id="adminEmailSearch" placeholder="Cari template email...">
         </div>
         <button id="adminEmailAddBtn" class="admin-btn admin-btn-primary">
           <i class="fa-solid fa-plus"></i> Tambah
@@ -1239,7 +1245,7 @@
   </div>
 </div>
 
-<!-- ADMIN GENERIC MODAL -->
+<!-- ===== ADMIN GENERIC MODAL ===== -->
 <div id="adminModal" class="admin-modal hidden">
   <div class="admin-modal-backdrop" data-modal-close></div>
   <div class="admin-modal-card">
@@ -1269,7 +1275,7 @@
   </div>
 </div>
 
-<!-- ADMIN CONFIRM MODAL -->
+<!-- ===== ADMIN CONFIRM MODAL ===== -->
 <div id="adminConfirmModal" class="admin-modal hidden">
   <div class="admin-modal-backdrop" data-confirm-close></div>
   <div class="admin-modal-card admin-modal-sm">
@@ -1298,7 +1304,9 @@
   </div>
 </div>
 
-<!-- ===== SCRIPTS ===== -->
+<!-- ============================================ -->
+<!-- LIBRARIES                                     -->
+<!-- ============================================ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -1307,6 +1315,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<!-- ===== AI Background Removal (ESM multi-CDN) ===== -->
 <script type="module">
   (async function loadBgRemovalAI() {
     const CDNS = [
@@ -1322,14 +1331,21 @@
         if (typeof fn === 'function') {
           window.imglyRemoveBackground = fn;
           window.dispatchEvent(new CustomEvent('imgy:ready'));
+          console.info('[AI] ✅ Loaded from', url);
           return;
         }
-      } catch (err) { console.warn('[AI] CDN gagal:', url); }
+      } catch (err) {
+        console.warn('[AI] ❌ Failed CDN:', url);
+      }
     }
     window.dispatchEvent(new CustomEvent('imgy:error'));
+    console.error('[AI] All CDNs failed.');
   })();
 </script>
 
+<!-- ============================================ -->
+<!-- APP SCRIPTS (ORDER MATTERS)                  -->
+<!-- ============================================ -->
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/github.js"></script>
@@ -1342,13 +1358,24 @@
 <script src="js/cv-builder.js"></script>
 <script src="js/companies.js"></script>
 <script src="js/app.js"></script>
+
+<!-- ===== AUTH & ADMIN INIT ===== -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(async () => {
-      if (DA.auth) await DA.auth.init();
-      if (DA.admin) DA.admin.init();
+      try {
+        if (DA.auth) await DA.auth.init();
+      } catch (e) {
+        console.error('[App] auth.init error:', e);
+      }
+      try {
+        if (DA.admin) DA.admin.init();
+      } catch (e) {
+        console.error('[App] admin.init error:', e);
+      }
     }, 50);
   });
 </script>
+
 </body>
 </html>
