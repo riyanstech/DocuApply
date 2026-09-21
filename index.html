@@ -157,7 +157,6 @@
       </div>
     </div>
 
-    <!-- Mobile Settings Sheet for Editor -->
     <div id="editorSettingsSheet" class="md:hidden fixed inset-x-0 bottom-0 max-h-[70vh] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl z-[60] translate-y-full transition-transform duration-300" style="padding-bottom:env(safe-area-inset-bottom);z-index:60;">
       <div class="pt-3 pb-1 flex justify-center"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
       <div class="px-4 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
@@ -819,7 +818,10 @@
       <div class="max-w-5xl mx-auto p-4">
         <div class="text-center mb-6 mt-2">
           <h2 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Latihan Psikotes</h2>
-          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Pilih paket psikotes untuk mulai berlatih</p>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">Pilih paket psikotes untuk mulai berlatih</p>
+          <button id="pkHistoryBtn" class="pk-history-btn">
+            <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Hasil
+          </button>
         </div>
         <div id="pkLoading" class="text-center py-12">
           <div class="loader !w-8 !h-8 !border-slate-300 !border-t-indigo-500 mx-auto"></div>
@@ -836,6 +838,38 @@
       </div>
     </div>
 
+    <!-- HISTORY WRAP -->
+    <div id="pkHistoryWrap" class="hidden flex-1 min-h-0 overflow-y-auto">
+      <div class="max-w-3xl mx-auto p-4 pb-20">
+        <div class="shrink-0 flex items-center gap-3 mb-4">
+          <button id="pkHistoryBack" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">Riwayat Hasil</h2>
+            <p class="text-[11px] text-slate-400">Perkembangan skor latihan Anda</p>
+          </div>
+          <button id="pkHistoryClear" class="w-9 h-9 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center justify-center text-rose-500" title="Hapus semua">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+
+        <div id="pkHistoryStats" class="pk-hist-stats-grid mb-4"></div>
+
+        <div id="pkHistoryChart" class="pk-chart-box mb-5"></div>
+
+        <div id="pkHistoryList" class="space-y-2"></div>
+
+        <div id="pkHistoryEmpty" class="hidden text-center py-16">
+          <div class="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-clock-rotate-left text-3xl text-slate-300 dark:text-slate-600"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-600 dark:text-slate-300 mb-1">Belum ada riwayat</h3>
+          <p class="text-xs text-slate-400">Selesaikan tes pertama Anda untuk melihat riwayat di sini</p>
+        </div>
+      </div>
+    </div>
+
     <!-- TEST WRAP -->
     <div id="pkTestWrap" class="hidden flex-1 min-h-0 flex-col overflow-hidden">
       <div class="shrink-0 px-3 sm:px-5 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
@@ -844,7 +878,10 @@
             <i class="fa-solid fa-arrow-left"></i>
           </button>
           <div class="flex-1 min-w-0">
-            <div id="pkTestPkgName" class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate"></div>
+            <div class="flex items-center gap-2">
+              <div id="pkTestPkgName" class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate"></div>
+              <span id="pkTestModeBadge" class="pk-mode-badge exam">Ujian</span>
+            </div>
             <div id="pkTestSecName" class="text-[11px] text-indigo-500 font-semibold"></div>
           </div>
           <div id="pkTestTimer" class="pk-timer">00:00</div>
@@ -877,7 +914,7 @@
       </div>
     </div>
 
-    <!-- WORKSHEET WRAP (BARU) -->
+    <!-- WORKSHEET WRAP -->
     <div id="pkWorksheetWrap" class="hidden flex-1 min-h-0 flex-col overflow-hidden">
       <div class="shrink-0 px-3 sm:px-5 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
         <div class="max-w-5xl mx-auto flex items-center gap-3">
@@ -934,9 +971,14 @@
         <div id="pkResultScore" class="mb-4"></div>
         <div id="pkResultStats" class="pk-stats-grid mb-6"></div>
         <div id="pkResultReview"></div>
-        <button id="pkResultClose" class="btn-bounce w-full mt-6 btn-primary py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30">
-          <i class="fa-solid fa-check"></i> Selesai
-        </button>
+        <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button id="pkResultPdf" class="btn-bounce bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 py-4 rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center gap-2">
+            <i class="fa-solid fa-file-pdf text-rose-500"></i> Export PDF
+          </button>
+          <button id="pkResultClose" class="btn-bounce btn-primary py-4 rounded-2xl font-bold text-sm shadow-lg shadow-indigo-500/30">
+            <i class="fa-solid fa-check"></i> Selesai
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1032,9 +1074,7 @@
       </div>
     </div>
     <div id="pkStartInfo" class="p-4 sm:p-5 space-y-2.5 overflow-y-auto"></div>
-    <div id="pkStartFooter" class="p-4 sm:p-5 pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));">
-      <!-- Rendered dynamically -->
-    </div>
+    <div id="pkStartFooter" class="p-4 sm:p-5 pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2" style="padding-bottom:max(0.75rem, env(safe-area-inset-bottom));"></div>
     <div class="px-4 pb-4">
       <button id="pkStartCancel" class="w-full py-3 rounded-2xl font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
         Tutup
@@ -1533,7 +1573,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<!-- ===== AI Background Removal (ESM multi-CDN) ===== -->
+<!-- ===== AI Background Removal ===== -->
 <script type="module">
   (async function loadBgRemovalAI() {
     const CDNS = [
@@ -1562,7 +1602,7 @@
 </script>
 
 <!-- ============================================ -->
-<!-- APP SCRIPTS (ORDER MATTERS)                  -->
+<!-- APP SCRIPTS                                  -->
 <!-- ============================================ -->
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
@@ -1579,20 +1619,11 @@
 <script src="js/admin-psikotes.js"></script>
 <script src="js/app.js"></script>
 
-<!-- ===== AUTH & ADMIN INIT ===== -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(async () => {
-      try {
-        if (DA.auth) await DA.auth.init();
-      } catch (e) {
-        console.error('[App] auth.init error:', e);
-      }
-      try {
-        if (DA.admin) DA.admin.init();
-      } catch (e) {
-        console.error('[App] admin.init error:', e);
-      }
+      try { if (DA.auth) await DA.auth.init(); } catch (e) { console.error('[App] auth.init:', e); }
+      try { if (DA.admin) DA.admin.init(); } catch (e) { console.error('[App] admin.init:', e); }
     }, 50);
   });
 </script>
