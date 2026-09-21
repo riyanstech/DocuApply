@@ -300,19 +300,6 @@
       ]
     },
     {
-      "id": "johar-jagra-andalan",
-      "name": "PT. Johar Jagra Andalan",
-      "category": "manufaktur",
-      "location": "Bandung",
-      "apply": [
-        {
-          "type": "email",
-          "value": "hrdjaa@gmail.com",
-          "subject": "Lamaran Pekerjaan_Nama"
-        }
-      ]
-    },
-    {
       "id": "lingga-kanaka-jaya",
       "name": "PT. Lingga Kanaka Jaya",
       "category": "manufaktur",
