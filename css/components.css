@@ -13,8 +13,10 @@
 #cvChoiceModal.hidden,
 #photoBackdrop.hidden,
 #i2pBackdrop.hidden,
+#editorBackdrop.hidden,
 #photoSidebar.hidden,
-#i2pSheet.hidden {
+#i2pSheet.hidden,
+#editorSettingsSheet.hidden {
   display: none !important;
   pointer-events: none !important;
   visibility: hidden !important;
@@ -301,6 +303,14 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
   #i2pSheet.open { transform: translateY(0) !important; }
   #i2pBackdrop:not(.hidden) { opacity: 0; transition: opacity 0.3s ease; z-index: 50; }
   #i2pBackdrop.show { display: block !important; opacity: 1; z-index: 50; }
+}
+
+/* Editor Mobile Sheet */
+@media (max-width: 767px) {
+  #editorSettingsSheet:not(.hidden) { transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1); z-index: 60; }
+  #editorSettingsSheet.open { transform: translateY(0) !important; }
+  #editorBackdrop:not(.hidden) { opacity: 0; transition: opacity 0.3s ease; z-index: 50; }
+  #editorBackdrop.show { display: block !important; opacity: 1; z-index: 50; }
 }
 
 /* ============ Z-Index Stacking ============ */
