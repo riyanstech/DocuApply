@@ -1,13 +1,3 @@
 {
-  "templates": [
-    {
-      "id": "muaieb3yo1isie",
-      "name": "Asep",
-      "desc": "Template kustom admin",
-      "icon": "fa-envelope",
-      "color": "slate",
-      "subject": "Lamaran Pekerjaan - [Posisi yang Dilamar]",
-      "body": "Kepada Yth,\nHRD [Nama Perusahaan]\n\nDengan hormat,\n..."
-    }
-  ]
+  "templates": []
 }
