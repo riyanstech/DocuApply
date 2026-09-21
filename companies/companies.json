@@ -500,19 +500,6 @@
       ]
     },
     {
-      "id": "ateja",
-      "name": "Ateja",
-      "category": "textile",
-      "location": "Bandung",
-      "apply": [
-        {
-          "type": "link",
-          "value": "https://career.ateja.co.id/",
-          "subject": "Apply via career portal"
-        }
-      ]
-    },
-    {
       "id": "graha-seribusatujaya",
       "name": "PT. Graha Seribusatujaya",
       "category": "manufaktur",
