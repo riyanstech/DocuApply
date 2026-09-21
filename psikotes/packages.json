@@ -162,7 +162,42 @@
           "name": "Tes Matematika Dasar",
           "type": "matematika-dasar",
           "duration": 2,
-          "questions": []
+          "questions": [
+            {
+              "id": "muay9foiv4nm2z",
+              "type": "mc",
+              "text": "7+7−5=…",
+              "image": null,
+              "options": [
+                {
+                  "id": "A",
+                  "text": "8",
+                  "image": null,
+                  "trait": ""
+                },
+                {
+                  "id": "B",
+                  "text": "9",
+                  "image": null,
+                  "trait": ""
+                },
+                {
+                  "id": "C",
+                  "text": "10",
+                  "image": null,
+                  "trait": ""
+                },
+                {
+                  "id": "D",
+                  "text": "11",
+                  "image": null,
+                  "trait": ""
+                }
+              ],
+              "correct": "B",
+              "modelAnswer": ""
+            }
+          ]
         }
       ]
     }
