@@ -552,19 +552,6 @@
       ]
     },
     {
-      "id": "alfamart-bdg-1",
-      "name": "Alfamart - Cabang Bandung 1",
-      "category": "retail",
-      "location": "Bandung",
-      "apply": [
-        {
-          "type": "link",
-          "value": "http://bit.ly/PelamarAlfaBandung1",
-          "subject": "Pelamar Alfa Bandung 1"
-        }
-      ]
-    },
-    {
       "id": "alfamart-bdg-2",
       "name": "Alfamart - Cabang Bandung 2 / Cimahi",
       "category": "retail",
@@ -617,6 +604,5 @@
       ]
     }
   ],
-  "disclaimer": "Data email & link dikumpulkan dari sumber publik. Selalu verifikasi dari website resmi perusahaan sebelum melamar.",
-  "lastUpdated": "2025-01"
+  "disclaimer": "Data email & link dikumpulkan dari sumber publik. Selalu verifikasi dari website resmi perusahaan sebelum melamar."
 }
