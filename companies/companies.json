@@ -526,19 +526,6 @@
       ]
     },
     {
-      "id": "stanli",
-      "name": "PT. Stanli",
-      "category": "manufaktur",
-      "location": "Bandung",
-      "apply": [
-        {
-          "type": "link",
-          "value": "https://bit.ly/OperatorStanli",
-          "subject": "Operator"
-        }
-      ]
-    },
-    {
       "id": "gistex-textile",
       "name": "PT. Gistex Textile",
       "category": "textile",
