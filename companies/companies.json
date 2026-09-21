@@ -552,19 +552,6 @@
       ]
     },
     {
-      "id": "alfamart-bdg-2",
-      "name": "Alfamart - Cabang Bandung 2 / Cimahi",
-      "category": "retail",
-      "location": "Cimahi",
-      "apply": [
-        {
-          "type": "link",
-          "value": "http://bit.ly/satbdg2_cimahi_area",
-          "subject": "Pelamar Alfa Bandung 2 / Cimahi"
-        }
-      ]
-    },
-    {
       "id": "stanli",
       "name": "PT. Stanli",
       "category": "manufaktur",
